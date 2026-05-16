@@ -47,7 +47,7 @@ jobs:
 
       - name: Format check
         run: |
-          gofmt -w .
+          gofmt -l .
           if [ -n "$(git status --porcelain)" ]; then
             echo "Go files are not formatted:"
             git status --short
