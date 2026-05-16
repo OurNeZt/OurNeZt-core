@@ -1,0 +1,10 @@
+.env
+.env.local
+bin/
+coverage.out
+dist/
+tmp/
+vendor/
+*.exe
+*.test
+
