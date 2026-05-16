@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package ournezt.v1;
+
+option go_package = "github.com/OurNeZt/ournezt-core/internal/gen/proto/ournezt/v1;ourneztv1";
+
+import "ournezt/v1/finance.proto";
+import "ournezt/v1/housing.proto";
+
+service DashboardService {
+  rpc GetHouseholdDashboard(GetHouseholdDashboardRequest) returns (HouseholdDashboard);
+}
+
+message GetHouseholdDashboardRequest {
+  string viewer_user_id = 1;
+  string family_id = 2;
+}
+
+message HouseholdDashboard {
+  string family_id = 1;
+  HouseholdIncomeSummary income = 2;
+  int64 cash_savings_cents = 3;
+  repeated HousingAffordability housing_affordability = 4;
+}

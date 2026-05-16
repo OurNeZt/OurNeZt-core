@@ -1,0 +1,82 @@
+syntax = "proto3";
+
+package ournezt.v1;
+
+option go_package = "github.com/OurNeZt/ournezt-core/internal/gen/proto/ournezt/v1;ourneztv1";
+
+service HousingService {
+  rpc CreateHousingOption(HousingOption) returns (HousingOption);
+  rpc GetHousingOption(GetHousingOptionRequest) returns (HousingOption);
+  rpc ListHousingOptions(ListHousingOptionsRequest) returns (ListHousingOptionsResponse);
+  rpc UpdateHousingOption(HousingOption) returns (HousingOption);
+  rpc DeleteHousingOption(DeleteHousingOptionRequest) returns (DeleteHousingOptionResponse);
+  rpc CalculateHousingAffordability(CalculateHousingAffordabilityRequest) returns (HousingAffordability);
+}
+
+message HousingOption {
+  string id = 1;
+  string family_id = 2;
+  string name = 3;
+  string housing_type = 4;
+  string location = 5;
+  string unit_type = 6;
+  int64 purchase_price_cents = 7;
+  int64 grant_amount_cents = 8;
+  string loan_type = 9;
+  int64 loan_amount_cents = 10;
+  int64 interest_rate_bps = 11;
+  int32 loan_tenure_months = 12;
+  int64 downpayment_percent_bps = 13;
+  int64 renovation_budget_cents = 14;
+  int64 furniture_budget_cents = 15;
+  int64 legal_fees_cents = 16;
+  int64 buyer_stamp_duty_cents = 17;
+  int64 monthly_maintenance_cents = 18;
+  string expected_key_collection_date = 19;
+}
+
+message GetHousingOptionRequest {
+  string viewer_user_id = 1;
+  string housing_id = 2;
+}
+
+message ListHousingOptionsRequest {
+  string viewer_user_id = 1;
+  string family_id = 2;
+}
+
+message ListHousingOptionsResponse {
+  repeated HousingOption housing_options = 1;
+}
+
+message DeleteHousingOptionRequest {
+  string actor_user_id = 1;
+  string housing_id = 2;
+}
+
+message DeleteHousingOptionResponse {}
+
+message CalculateHousingAffordabilityRequest {
+  HousingOption housing_option = 1;
+  int64 cash_savings_cents = 2;
+  int64 cpf_oa_cents = 3;
+  int64 take_home_cents = 4;
+  int64 monthly_expenses_cents = 5;
+}
+
+message HousingAffordability {
+  string housing_option_id = 1;
+  int64 net_purchase_price_cents = 2;
+  int64 required_downpayment_cents = 3;
+  int64 upfront_cost_cents = 4;
+  int64 estimated_loan_amount_cents = 5;
+  int64 monthly_mortgage_cents = 6;
+  int64 cpf_used_cents = 7;
+  int64 cash_top_up_required_cents = 8;
+  int64 remaining_cash_cents = 9;
+  int64 remaining_cpf_oa_cents = 10;
+  int64 monthly_housing_cost_cents = 11;
+  int64 monthly_surplus_after_housing_cents = 12;
+  string rating = 13;
+}
+

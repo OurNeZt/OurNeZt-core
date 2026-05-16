@@ -1,0 +1,10 @@
+DROP TABLE IF EXISTS housing_options;
+DROP TABLE IF EXISTS cpf_profiles;
+DROP TABLE IF EXISTS person_profiles;
+DROP TABLE IF EXISTS family_invites;
+DROP TABLE IF EXISTS family_members;
+DROP TABLE IF EXISTS families;
+DROP TABLE IF EXISTS sessions;
+DROP TABLE IF EXISTS users;
+DROP EXTENSION IF EXISTS pgcrypto;
+

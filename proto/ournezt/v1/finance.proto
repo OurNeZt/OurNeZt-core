@@ -1,0 +1,66 @@
+syntax = "proto3";
+
+package ournezt.v1;
+
+option go_package = "github.com/OurNeZt/ournezt-core/internal/gen/proto/ournezt/v1;ourneztv1";
+
+import "ournezt/v1/person.proto";
+
+service IncomeService {
+  rpc CalculateIncomeBreakdown(CalculateIncomeBreakdownRequest) returns (IncomeBreakdown);
+  rpc CalculateHouseholdIncomeSummary(CalculateHouseholdIncomeSummaryRequest) returns (HouseholdIncomeSummary);
+}
+
+service CPFService {
+  rpc CalculateCPFContribution(CalculateCPFContributionRequest) returns (CPFContribution);
+}
+
+message CalculateIncomeBreakdownRequest {
+  PersonProfile person = 1;
+}
+
+message CalculateHouseholdIncomeSummaryRequest {
+  repeated PersonProfile people = 1;
+}
+
+message IncomeBreakdown {
+  string person_id = 1;
+  int64 current_gross_income_cents = 2;
+  int64 projected_gross_income_cents = 3;
+  int64 employee_cpf_cents = 4;
+  int64 employer_cpf_cents = 5;
+  int64 take_home_income_cents = 6;
+  int64 monthly_expenses_cents = 7;
+  int64 monthly_surplus_cents = 8;
+  string cpf_planning_note = 9;
+}
+
+message HouseholdIncomeSummary {
+  int64 current_gross_income_cents = 1;
+  int64 projected_gross_income_cents = 2;
+  int64 take_home_income_cents = 3;
+  int64 employee_cpf_cents = 4;
+  int64 employer_cpf_cents = 5;
+  int64 monthly_expenses_cents = 6;
+  int64 monthly_surplus_cents = 7;
+  int64 current_cpf_oa_cents = 8;
+  int64 current_cpf_sa_cents = 9;
+  int64 current_cpf_ma_cents = 10;
+  bool may_need_deferred_assessment = 11;
+}
+
+message CalculateCPFContributionRequest {
+  int32 age = 1;
+  int64 monthly_wage_cents = 2;
+  string employment_status = 3;
+}
+
+message CPFContribution {
+  int64 cpf_applicable_wage_cents = 1;
+  int64 employee_cents = 2;
+  int64 employer_cents = 3;
+  int64 total_cents = 4;
+  int64 ordinary_account_cents = 5;
+  int64 special_account_cents = 6;
+  int64 medisave_account_cents = 7;
+}

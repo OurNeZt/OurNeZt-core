@@ -1,0 +1,70 @@
+syntax = "proto3";
+
+package ournezt.v1;
+
+option go_package = "github.com/OurNeZt/ournezt-core/internal/gen/proto/ournezt/v1;ourneztv1";
+
+service FamilyService {
+  rpc CreateFamily(CreateFamilyRequest) returns (Family);
+  rpc GetFamily(GetFamilyRequest) returns (Family);
+  rpc ListUserFamilies(ListUserFamiliesRequest) returns (ListUserFamiliesResponse);
+  rpc JoinFamilyByCode(JoinFamilyByCodeRequest) returns (Family);
+  rpc GenerateFamilyJoinCode(GenerateFamilyJoinCodeRequest) returns (GenerateFamilyJoinCodeResponse);
+  rpc ListFamilyMembers(ListFamilyMembersRequest) returns (ListFamilyMembersResponse);
+}
+
+message Family {
+  string id = 1;
+  string name = 2;
+  string family_type = 3;
+}
+
+message FamilyMember {
+  string family_id = 1;
+  string user_id = 2;
+  string display_name = 3;
+  string role = 4;
+}
+
+message CreateFamilyRequest {
+  string owner_user_id = 1;
+  string name = 2;
+  string family_type = 3;
+}
+
+message GetFamilyRequest {
+  string viewer_user_id = 1;
+  string family_id = 2;
+}
+
+message ListUserFamiliesRequest {
+  string user_id = 1;
+}
+
+message ListUserFamiliesResponse {
+  repeated Family families = 1;
+}
+
+message JoinFamilyByCodeRequest {
+  string user_id = 1;
+  string code = 2;
+}
+
+message GenerateFamilyJoinCodeRequest {
+  string actor_user_id = 1;
+  string family_id = 2;
+}
+
+message GenerateFamilyJoinCodeResponse {
+  string code = 1;
+}
+
+message ListFamilyMembersRequest {
+  string actor_user_id = 1;
+  string family_id = 2;
+}
+
+message ListFamilyMembersResponse {
+  repeated FamilyMember members = 1;
+}
+

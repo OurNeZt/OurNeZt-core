@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+package ournezt.v1;
+
+option go_package = "github.com/OurNeZt/ournezt-core/internal/gen/proto/ournezt/v1;ourneztv1";
+
+service PersonService {
+  rpc CreatePersonProfile(PersonProfile) returns (PersonProfile);
+  rpc GetPersonProfile(GetPersonProfileRequest) returns (PersonProfile);
+  rpc ListPersonProfilesByFamily(ListPersonProfilesByFamilyRequest) returns (ListPersonProfilesByFamilyResponse);
+  rpc UpdatePersonProfile(PersonProfile) returns (PersonProfile);
+  rpc DeletePersonProfile(DeletePersonProfileRequest) returns (DeletePersonProfileResponse);
+}
+
+message PersonProfile {
+  string id = 1;
+  string family_id = 2;
+  string name = 3;
+  int32 age = 4;
+  string relationship_label = 5;
+  string employment_status = 6;
+  int64 gross_monthly_income_cents = 7;
+  int64 expected_future_income_cents = 8;
+  string expected_income_start_date = 9;
+  string graduation_date = 10;
+  string ord_date = 11;
+  int64 cash_savings_cents = 12;
+  int64 cpf_oa_cents = 13;
+  int64 cpf_sa_cents = 14;
+  int64 cpf_ma_cents = 15;
+  int64 monthly_expenses_cents = 16;
+}
+
+message GetPersonProfileRequest {
+  string viewer_user_id = 1;
+  string person_id = 2;
+}
+
+message ListPersonProfilesByFamilyRequest {
+  string viewer_user_id = 1;
+  string family_id = 2;
+}
+
+message ListPersonProfilesByFamilyResponse {
+  repeated PersonProfile people = 1;
+}
+
+message DeletePersonProfileRequest {
+  string actor_user_id = 1;
+  string person_id = 2;
+}
+
+message DeletePersonProfileResponse {}
+

@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package ournezt.v1;
+
+option go_package = "github.com/OurNeZt/ournezt-core/internal/gen/proto/ournezt/v1;ourneztv1";
+
+service AuthService {
+  rpc Login(LoginRequest) returns (LoginResponse);
+  rpc ValidateSession(ValidateSessionRequest) returns (ValidateSessionResponse);
+  rpc CreateUser(CreateUserRequest) returns (User);
+  rpc DisableUser(DisableUserRequest) returns (DisableUserResponse);
+}
+
+message User {
+  string id = 1;
+  string email = 2;
+  string display_name = 3;
+  string role = 4;
+  bool disabled = 5;
+}
+
+message LoginRequest {
+  string email = 1;
+  string password = 2;
+}
+
+message LoginResponse {
+  User user = 1;
+  string session_token = 2;
+}
+
+message ValidateSessionRequest {
+  string session_token = 1;
+}
+
+message ValidateSessionResponse {
+  User user = 1;
+}
+
+message CreateUserRequest {
+  string email = 1;
+  string display_name = 2;
+  string password = 3;
+  string role = 4;
+}
+
+message DisableUserRequest {
+  string user_id = 1;
+}
+
+message DisableUserResponse {}
+
