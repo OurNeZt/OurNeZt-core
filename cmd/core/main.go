@@ -55,4 +55,3 @@ func main() {
 	logger.Info("ournezt core shutting down")
 	server.GracefulStop()
 }
-

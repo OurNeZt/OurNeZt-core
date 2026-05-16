@@ -16,7 +16,7 @@ type UserRepository interface {
 }
 
 type AuthService struct {
-	users         UserRepository
+	users        UserRepository
 	argon2Params security.Argon2Params
 }
 
@@ -65,4 +65,3 @@ func (s AuthService) Login(ctx context.Context, email, password string) (domain.
 
 	return user, nil
 }
-

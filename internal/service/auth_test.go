@@ -161,4 +161,3 @@ func fastServiceArgon2Params() security.Argon2Params {
 		KeyLength:   32,
 	}
 }
-

@@ -32,4 +32,3 @@ func TestNewSessionTokenReturnsDifferentValues(t *testing.T) {
 		t.Fatal("two session tokens were identical")
 	}
 }
-

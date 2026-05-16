@@ -17,4 +17,3 @@ func NewSessionToken(byteLength int) (string, error) {
 
 	return base64.RawURLEncoding.EncodeToString(buffer), nil
 }
-

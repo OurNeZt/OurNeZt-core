@@ -92,4 +92,3 @@ func TestLoadFallsBackForInvalidNumbers(t *testing.T) {
 		t.Fatalf("SessionTokenBytes = %d, want 32", got.SessionTokenBytes)
 	}
 }
-

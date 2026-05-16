@@ -10,4 +10,3 @@ var (
 	ErrInvalidArgument = errors.New("invalid argument")
 	ErrDisabledUser    = errors.New("disabled user")
 )
-

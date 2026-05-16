@@ -27,4 +27,3 @@ type Housing interface {
 	UpdateHousingOption(ctx context.Context, option domain.HousingOption) (domain.HousingOption, error)
 	DeleteHousingOption(ctx context.Context, housingID domain.ID, actorID domain.ID) error
 }
-

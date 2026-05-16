@@ -6,10 +6,10 @@ import (
 )
 
 type HouseholdDashboard struct {
-	FamilyID              domain.ID
-	Income                calculation.HouseholdIncomeSummary
-	CashSavingsCents      int64
-	HousingAffordability  []calculation.HousingAffordability
+	FamilyID             domain.ID
+	Income               calculation.HouseholdIncomeSummary
+	CashSavingsCents     int64
+	HousingAffordability []calculation.HousingAffordability
 }
 
 func BuildHouseholdDashboard(familyID domain.ID, people []domain.PersonProfile, housingOptions []domain.HousingOption) HouseholdDashboard {
@@ -21,9 +21,9 @@ func BuildHouseholdDashboard(familyID domain.ID, people []domain.PersonProfile, 
 	}
 
 	assets := calculation.HouseholdAssets{
-		CashSavingsCents:    cash,
-		CPFOACents:          income.CurrentCPFOACents,
-		TakeHomeCents:       income.TakeHomeIncomeCents,
+		CashSavingsCents:     cash,
+		CPFOACents:           income.CurrentCPFOACents,
+		TakeHomeCents:        income.TakeHomeIncomeCents,
 		MonthlyExpensesCents: income.MonthlyExpensesCents,
 	}
 
@@ -39,4 +39,3 @@ func BuildHouseholdDashboard(familyID domain.ID, people []domain.PersonProfile, 
 		HousingAffordability: results,
 	}
 }
-
