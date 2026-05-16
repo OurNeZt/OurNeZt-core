@@ -1,0 +1,185 @@
+name: prepare-release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Version bump type"
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      dry_run:
+        description: "Run without pushing branch or tag"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  prepare-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Fetch tags
+        run: git fetch --tags --force
+
+      - name: Find latest tag
+        id: latest
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          LAST_TAG="$(git tag --list 'v*' | sort -V | tail -n1 || true)"
+
+          if [ -z "$LAST_TAG" ]; then
+            LAST_TAG="v0.0.0"
+          fi
+
+          echo "last_tag=$LAST_TAG" >> "$GITHUB_OUTPUT"
+          echo "Latest tag: $LAST_TAG"
+
+      - name: Compute next version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BASE="${{ steps.latest.outputs.last_tag }}"
+          BASE="${BASE#v}"
+
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$BASE"
+
+          case "${{ inputs.bump }}" in
+            major)
+              MAJOR=$((MAJOR + 1))
+              MINOR=0
+              PATCH=0
+              ;;
+            minor)
+              MINOR=$((MINOR + 1))
+              PATCH=0
+              ;;
+            patch)
+              PATCH=$((PATCH + 1))
+              ;;
+            *)
+              echo "Invalid bump type: ${{ inputs.bump }}"
+              exit 1
+              ;;
+          esac
+
+          NEXT="${MAJOR}.${MINOR}.${PATCH}"
+
+          echo "next=$NEXT" >> "$GITHUB_OUTPUT"
+          echo "tag=v$NEXT" >> "$GITHUB_OUTPUT"
+          echo "Next version: v$NEXT"
+
+      - name: Create release branch
+        if: ${{ inputs.dry_run == false }}
+        id: branch
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BRANCH="release/v${{ steps.version.outputs.next }}"
+          git checkout -b "$BRANCH"
+
+          echo "name=$BRANCH" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare changelog
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          FILE="CHANGELOG.md"
+          DATE="$(date +'%Y-%m-%d')"
+          VERSION="${{ steps.version.outputs.next }}"
+
+          if [ ! -f "$FILE" ]; then
+            {
+              echo "# Changelog"
+              echo
+              echo "---"
+              echo
+            } > "$FILE"
+          fi
+
+          cat > /tmp/entry.md <<EOF
+          ## [v${VERSION}] - ${DATE}
+
+          ### Added
+          - (fill)
+
+          ### Changed
+          - (fill)
+
+          ### Fixed
+          - (fill)
+
+          ### Removed
+          - (fill)
+          EOF
+
+          sed -i 's/^          //' /tmp/entry.md
+
+          if grep -qx -- '---' "$FILE"; then
+            awk 'NR==FNR{e[n++]=$0; next}
+                 {print}
+                 !ins && $0=="---"{print ""; for(i=0;i<n;i++) print e[i]; ins=1}
+                 END{if(!ins){print ""; for(i=0;i<n;i++) print e[i]; print ""}}
+                ' /tmp/entry.md "$FILE" > /tmp/new && mv /tmp/new "$FILE"
+          else
+            { head -n1 "$FILE"; echo; cat /tmp/entry.md; tail -n +2 "$FILE"; } > /tmp/new && mv /tmp/new "$FILE"
+          fi
+
+      - name: Commit changelog
+        if: ${{ inputs.dry_run == false }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git add CHANGELOG.md
+          git diff --cached --quiet || git commit -m "chore: prepare v${{ steps.version.outputs.next }} changelog"
+
+      - name: Tag and push
+        if: ${{ inputs.dry_run == false }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          TAG="v${{ steps.version.outputs.next }}"
+
+          git tag -a "$TAG" -m "release $TAG"
+
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}"
+
+          git push origin "${{ steps.branch.outputs.name }}"
+          git push origin "$TAG"
+
+      - name: Open PR to dev
+        if: ${{ inputs.dry_run == false }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr create \
+            --title "chore: prepare v${{ steps.version.outputs.next }} changelog" \
+            --body "Adds the changelog template for v${{ steps.version.outputs.next }}." \
+            --head "${{ steps.branch.outputs.name }}" \
+            --base "dev"

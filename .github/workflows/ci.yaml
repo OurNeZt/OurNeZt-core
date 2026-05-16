@@ -1,0 +1,70 @@
+name: ci
+
+on:
+  pull_request:
+    branches: [dev]
+  push:
+    branches: [dev]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+          cache: true
+
+      - name: Install tools
+        run: |
+          go install github.com/bufbuild/buf/cmd/buf@latest
+          go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
+      - name: Generate proto
+        run: make proto
+
+      - name: Generate sqlc
+        run: make sqlc
+
+      - name: Check generated files are committed
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "Generated files are not committed:"
+            git status --short
+            git diff
+            exit 1
+          fi
+
+      - name: Format check
+        run: |
+          gofmt -w .
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "Go files are not formatted:"
+            git status --short
+            git diff
+            exit 1
+          fi
+
+      - name: Run tests
+        run: go test ./...
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t ournezt-core:test .
