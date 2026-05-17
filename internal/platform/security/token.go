@@ -1,6 +1,7 @@
 package security
 
 import (
+	"crypto/sha256"
 	"crypto/rand"
 	"encoding/base64"
 )
@@ -16,4 +17,9 @@ func NewSessionToken(byteLength int) (string, error) {
 	}
 
 	return base64.RawURLEncoding.EncodeToString(buffer), nil
+}
+
+func HashToken(token string) string {
+	sum := sha256.Sum256([]byte(token))
+	return base64.RawURLEncoding.EncodeToString(sum[:])
 }
