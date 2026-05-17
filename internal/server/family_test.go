@@ -164,4 +164,3 @@ func TestFamilyServerCreateFamilyRequiresOwnerID(t *testing.T) {
 }
 
 var _ repository.Families = (*fakeFamiliesRepository)(nil)
-

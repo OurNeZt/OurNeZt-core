@@ -56,4 +56,3 @@ func TestDashboardServerGetHouseholdDashboard(t *testing.T) {
 		t.Fatalf("housing affordability len = %d, want 1", len(response.GetHousingAffordability()))
 	}
 }
-

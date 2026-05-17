@@ -47,9 +47,9 @@ func (s DashboardServer) GetHouseholdDashboard(ctx context.Context, req *ournezt
 
 	dashboard := service.BuildHouseholdDashboard(familyID, people, housingOptions)
 	response := &ourneztv1.HouseholdDashboard{
-		FamilyId:         string(dashboard.FamilyID),
-		Income:           householdIncomeToProto(dashboard.Income),
-		CashSavingsCents: dashboard.CashSavingsCents,
+		FamilyId:             string(dashboard.FamilyID),
+		Income:               householdIncomeToProto(dashboard.Income),
+		CashSavingsCents:     dashboard.CashSavingsCents,
 		HousingAffordability: make([]*ourneztv1.HousingAffordability, 0, len(dashboard.HousingAffordability)),
 	}
 	for _, affordability := range dashboard.HousingAffordability {
@@ -57,4 +57,3 @@ func (s DashboardServer) GetHouseholdDashboard(ctx context.Context, req *ournezt
 	}
 	return response, nil
 }
-

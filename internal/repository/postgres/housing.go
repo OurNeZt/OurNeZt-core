@@ -173,15 +173,15 @@ func (r HousingRepository) DeleteHousingOption(ctx context.Context, housingID do
 
 func scanHousingRow(scanner interface{ Scan(dest ...any) error }) (domain.HousingOption, error) {
 	var (
-		option            domain.HousingOption
-		id                string
-		familyID          string
-		housingType       string
-		loanType          string
-		expectedKeyDate   sql.NullString
-		interestRateBps   int32
-		loanTenureMonths  int32
-		downpaymentBps    int32
+		option           domain.HousingOption
+		id               string
+		familyID         string
+		housingType      string
+		loanType         string
+		expectedKeyDate  sql.NullString
+		interestRateBps  int32
+		loanTenureMonths int32
+		downpaymentBps   int32
 	)
 
 	err := scanner.Scan(
@@ -221,4 +221,3 @@ func scanHousingRow(scanner interface{ Scan(dest ...any) error }) (domain.Housin
 	option.ExpectedKeyCollectionDate = parseOptionalDate(expectedKeyDate)
 	return option, nil
 }
-

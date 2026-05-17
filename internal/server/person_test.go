@@ -108,4 +108,3 @@ func datePtr(v string) *time.Time {
 	parsed, _ := time.Parse("2006-01-02", v)
 	return &parsed
 }
-

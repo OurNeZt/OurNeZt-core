@@ -12,11 +12,11 @@ func TestFinanceServerCalculateIncomeBreakdown(t *testing.T) {
 
 	response, err := server.CalculateIncomeBreakdown(context.Background(), &ourneztv1.CalculateIncomeBreakdownRequest{
 		Person: &ourneztv1.PersonProfile{
-			Id:                     "person_1",
-			Age:                    30,
-			EmploymentStatus:       "full_time_employee",
+			Id:                      "person_1",
+			Age:                     30,
+			EmploymentStatus:        "full_time_employee",
 			GrossMonthlyIncomeCents: 500000,
-			MonthlyExpensesCents:   150000,
+			MonthlyExpensesCents:    150000,
 		},
 	})
 	if err != nil {
@@ -36,12 +36,12 @@ func TestFinanceServerCalculateHouseholdIncomeSummary(t *testing.T) {
 	response, err := server.CalculateHouseholdIncomeSummary(context.Background(), &ourneztv1.CalculateHouseholdIncomeSummaryRequest{
 		People: []*ourneztv1.PersonProfile{
 			{
-				Id:                     "person_1",
-				Age:                    30,
-				EmploymentStatus:       "full_time_employee",
+				Id:                      "person_1",
+				Age:                     30,
+				EmploymentStatus:        "full_time_employee",
 				GrossMonthlyIncomeCents: 500000,
-				CpfOaCents:             2000000,
-				MonthlyExpensesCents:   150000,
+				CpfOaCents:              2000000,
+				MonthlyExpensesCents:    150000,
 			},
 			{
 				Id:                        "person_2",
@@ -76,4 +76,3 @@ func TestFinanceServerCalculateCPFContribution(t *testing.T) {
 		t.Fatalf("total cpf cents = %d, want > 0", response.GetTotalCents())
 	}
 }
-

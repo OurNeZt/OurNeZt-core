@@ -118,4 +118,3 @@ func (s AuthServer) DisableUser(ctx context.Context, req *ourneztv1.DisableUserR
 
 	return &ourneztv1.DisableUserResponse{}, nil
 }
-

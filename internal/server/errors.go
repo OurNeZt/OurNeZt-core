@@ -31,4 +31,3 @@ func toStatusError(err error) error {
 		return status.Error(codes.Internal, "internal error")
 	}
 }
-

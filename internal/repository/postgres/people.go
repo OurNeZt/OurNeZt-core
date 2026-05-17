@@ -168,14 +168,14 @@ func (r PersonRepository) DeletePersonProfile(ctx context.Context, personID doma
 
 func scanPersonRow(scanner interface{ Scan(dest ...any) error }) (domain.PersonProfile, error) {
 	var (
-		profile             domain.PersonProfile
-		id                  string
-		familyID            string
-		employmentStatus    string
-		age                 int32
-		expectedStartDate   sql.NullString
-		graduationDate      sql.NullString
-		ordDate             sql.NullString
+		profile           domain.PersonProfile
+		id                string
+		familyID          string
+		employmentStatus  string
+		age               int32
+		expectedStartDate sql.NullString
+		graduationDate    sql.NullString
+		ordDate           sql.NullString
 	)
 
 	err := scanner.Scan(

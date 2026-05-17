@@ -132,4 +132,3 @@ func (s HousingServer) CalculateHousingAffordability(_ context.Context, req *our
 	result := calculation.CalculateHousingAffordability(option, assets)
 	return housingAffordabilityToProto(result), nil
 }
-

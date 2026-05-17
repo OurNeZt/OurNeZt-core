@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/OurNeZt/ournezt-core/internal/calculation"
-	ourneztv1 "github.com/OurNeZt/ournezt-core/internal/gen/proto/ournezt/v1"
 	"github.com/OurNeZt/ournezt-core/internal/domain"
+	ourneztv1 "github.com/OurNeZt/ournezt-core/internal/gen/proto/ournezt/v1"
 	"github.com/OurNeZt/ournezt-core/internal/platform/apperror"
 )
 
@@ -214,19 +214,18 @@ func cpfContributionToProto(in calculation.CPFContribution) *ourneztv1.CPFContri
 
 func housingAffordabilityToProto(in calculation.HousingAffordability) *ourneztv1.HousingAffordability {
 	return &ourneztv1.HousingAffordability{
-		HousingOptionId:                string(in.HousingOptionID),
-		NetPurchasePriceCents:          in.NetPurchasePriceCents,
-		RequiredDownpaymentCents:       in.RequiredDownpaymentCents,
-		UpfrontCostCents:               in.UpfrontCostCents,
-		EstimatedLoanAmountCents:       in.EstimatedLoanAmountCents,
-		MonthlyMortgageCents:           in.MonthlyMortgageCents,
-		CpfUsedCents:                   in.CPFUsedCents,
-		CashTopUpRequiredCents:         in.CashTopUpRequiredCents,
-		RemainingCashCents:             in.RemainingCashCents,
-		RemainingCpfOaCents:            in.RemainingCPFOACents,
-		MonthlyHousingCostCents:        in.MonthlyHousingCostCents,
+		HousingOptionId:                 string(in.HousingOptionID),
+		NetPurchasePriceCents:           in.NetPurchasePriceCents,
+		RequiredDownpaymentCents:        in.RequiredDownpaymentCents,
+		UpfrontCostCents:                in.UpfrontCostCents,
+		EstimatedLoanAmountCents:        in.EstimatedLoanAmountCents,
+		MonthlyMortgageCents:            in.MonthlyMortgageCents,
+		CpfUsedCents:                    in.CPFUsedCents,
+		CashTopUpRequiredCents:          in.CashTopUpRequiredCents,
+		RemainingCashCents:              in.RemainingCashCents,
+		RemainingCpfOaCents:             in.RemainingCPFOACents,
+		MonthlyHousingCostCents:         in.MonthlyHousingCostCents,
 		MonthlySurplusAfterHousingCents: in.MonthlySurplusAfterHousingCents,
-		Rating:                         string(in.Rating),
+		Rating:                          string(in.Rating),
 	}
 }
-

@@ -61,4 +61,3 @@ func (s FinanceServer) CalculateCPFContribution(_ context.Context, req *ourneztv
 	)
 	return cpfContributionToProto(contribution), nil
 }
-

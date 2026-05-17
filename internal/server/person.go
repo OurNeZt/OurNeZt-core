@@ -111,4 +111,3 @@ func (s PersonServer) DeletePersonProfile(ctx context.Context, req *ourneztv1.De
 	}
 	return &ourneztv1.DeletePersonProfileResponse{}, nil
 }
-

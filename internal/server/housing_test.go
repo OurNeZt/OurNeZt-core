@@ -48,13 +48,13 @@ func TestHousingServerCreateOption(t *testing.T) {
 	server := NewHousingServer(repo)
 
 	response, err := server.CreateHousingOption(context.Background(), &ourneztv1.HousingOption{
-		FamilyId:             "family_1",
-		Name:                 "BTO",
-		HousingType:          "bto",
-		LoanType:             "hdb",
-		PurchasePriceCents:   45000000,
-		InterestRateBps:      260,
-		LoanTenureMonths:     300,
+		FamilyId:              "family_1",
+		Name:                  "BTO",
+		HousingType:           "bto",
+		LoanType:              "hdb",
+		PurchasePriceCents:    45000000,
+		InterestRateBps:       260,
+		LoanTenureMonths:      300,
 		DownpaymentPercentBps: 2000,
 	})
 	if err != nil {
@@ -83,9 +83,9 @@ func TestHousingServerCalculateAffordability(t *testing.T) {
 			LoanTenureMonths:      300,
 			DownpaymentPercentBps: 2000,
 		},
-		CashSavingsCents:    5000000,
-		CpfOaCents:          3000000,
-		TakeHomeCents:       650000,
+		CashSavingsCents:     5000000,
+		CpfOaCents:           3000000,
+		TakeHomeCents:        650000,
 		MonthlyExpensesCents: 200000,
 	})
 	if err != nil {
@@ -116,4 +116,3 @@ func TestHousingServerDeleteOption(t *testing.T) {
 }
 
 var _ repository.Housing = (*fakeHousingRepository)(nil)
-

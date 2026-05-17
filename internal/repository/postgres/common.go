@@ -79,4 +79,3 @@ func parseOptionalDate(v sql.NullString) *time.Time {
 	}
 	return &parsed
 }
-

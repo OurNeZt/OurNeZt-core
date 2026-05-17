@@ -12,8 +12,8 @@ import (
 )
 
 type fakeUserRepository struct {
-	created domain.User
-	users   map[string]domain.User
+	created  domain.User
+	users    map[string]domain.User
 	disabled []domain.ID
 }
 

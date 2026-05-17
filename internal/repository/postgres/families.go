@@ -225,4 +225,3 @@ func scanFamilyRow(scanner interface{ Scan(dest ...any) error }) (domain.Family,
 	family.Type = domain.FamilyType(kind)
 	return family, nil
 }
-
