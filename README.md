@@ -20,7 +20,7 @@
 <br />
 <div align="center">
   <a href="https://github.com/OurNeZt/OurNeZt-core">
-    <img src="assets/OurNeZt-Core-Logo.png" alt="OurNeZt Core Logo" width="220">
+    <img src="assets/OurNeZt-Core-Logo.png" alt="OurNeZt Core Logo" width="450">
   </a>
 
   <h1 align="center">OurNeZt Core</h1>
