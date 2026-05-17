@@ -12,7 +12,7 @@ on:
           - minor
           - major
       dry_run:
-        description: "Run without pushing branch, tag, or PR"
+        description: "Run without pushing branch or PR"
         required: false
         type: boolean
         default: false
@@ -50,6 +50,50 @@ jobs:
 
           echo "last_tag=$LAST_TAG" >> "$GITHUB_OUTPUT"
           echo "Latest tag: $LAST_TAG"
+
+      - name: Check for backend module changes
+        id: module_changes
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          LAST_TAG="${{ steps.latest.outputs.last_tag }}"
+
+          if [ "$LAST_TAG" = "v0.0.0" ]; then
+            RANGE="HEAD"
+          else
+            RANGE="${LAST_TAG}..HEAD"
+          fi
+
+          echo "Checking changed files in range: $RANGE"
+
+          CHANGED_FILES="$(git diff --name-only "$RANGE" || true)"
+
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
+
+          MODULE_CHANGED="false"
+
+          while IFS= read -r file; do
+            case "$file" in
+              cmd/*|internal/*|migrations/*|proto/*|buf.yaml|buf.gen.yaml|sqlc.yaml|go.mod|go.sum|Dockerfile|.dockerignore)
+                MODULE_CHANGED="true"
+                ;;
+            esac
+          done <<< "$CHANGED_FILES"
+
+          echo "changed=$MODULE_CHANGED" >> "$GITHUB_OUTPUT"
+
+          if [ "$MODULE_CHANGED" != "true" ]; then
+            echo "No backend module changes detected since $LAST_TAG."
+          fi
+
+      - name: Stop if no backend module changes
+        if: steps.module_changes.outputs.changed != 'true'
+        shell: bash
+        run: |
+          echo "No backend module changes detected. Skipping release preparation."
+          exit 0
 
       - name: Compute next version
         id: version
@@ -98,6 +142,18 @@ jobs:
 
           if git rev-parse "$TAG" >/dev/null 2>&1; then
             echo "Tag $TAG already exists."
+            exit 1
+          fi
+
+      - name: Stop if release branch already exists
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BRANCH="release/${{ steps.version.outputs.tag }}"
+
+          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+            echo "Release branch $BRANCH already exists."
             exit 1
           fi
 
@@ -170,7 +226,7 @@ jobs:
         if: ${{ inputs.dry_run == true }}
         shell: bash
         run: |
-          echo "Dry run enabled. No branch, tag, or PR will be pushed."
+          echo "Dry run enabled. No branch or PR will be pushed."
           echo "Next version: ${{ steps.version.outputs.tag }}"
           echo
           git diff -- CHANGELOG.md || true
@@ -187,17 +243,7 @@ jobs:
           git add CHANGELOG.md
           git diff --cached --quiet || git commit -m "chore: prepare ${{ steps.version.outputs.tag }} changelog"
 
-      - name: Create annotated tag
-        if: ${{ inputs.dry_run == false }}
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          TAG="${{ steps.version.outputs.tag }}"
-
-          git tag -a "$TAG" -m "Release $TAG"
-
-      - name: Push branch and tag
+      - name: Push release branch
         if: ${{ inputs.dry_run == false }}
         shell: bash
         env:
@@ -208,7 +254,6 @@ jobs:
           git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}"
 
           git push origin "${{ steps.branch.outputs.name }}"
-          git push origin "${{ steps.version.outputs.tag }}"
 
       - name: Open PR to stable
         if: ${{ inputs.dry_run == false }}
@@ -217,6 +262,6 @@ jobs:
         run: |
           gh pr create \
             --title "chore: prepare ${{ steps.version.outputs.tag }} release" \
-            --body "Prepares the changelog and release tag for ${{ steps.version.outputs.tag }}." \
+            --body "Prepares the changelog for ${{ steps.version.outputs.tag }}. The release tag will be created after this PR is merged into stable." \
             --head "${{ steps.branch.outputs.name }}" \
             --base "stable"
