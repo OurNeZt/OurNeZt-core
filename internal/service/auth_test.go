@@ -12,8 +12,9 @@ import (
 )
 
 type fakeUserRepository struct {
-	created domain.User
-	users   map[string]domain.User
+	created  domain.User
+	users    map[string]domain.User
+	disabled []domain.ID
 }
 
 func (r *fakeUserRepository) CreateUser(_ context.Context, user domain.User) (domain.User, error) {
@@ -36,7 +37,8 @@ func (r *fakeUserRepository) GetUserByEmail(_ context.Context, email string) (do
 	return user, nil
 }
 
-func (r *fakeUserRepository) DisableUser(_ context.Context, _ domain.ID) error {
+func (r *fakeUserRepository) DisableUser(_ context.Context, userID domain.ID) error {
+	r.disabled = append(r.disabled, userID)
 	return nil
 }
 
@@ -149,6 +151,27 @@ func TestLoginRejectsDisabledUser(t *testing.T) {
 	_, err := service.Login(context.Background(), "person@example.com", "temporary-pass")
 	if !errors.Is(err, apperror.ErrDisabledUser) {
 		t.Fatalf("Login error = %v, want ErrDisabledUser", err)
+	}
+}
+
+func TestDisableUserRejectsMissingID(t *testing.T) {
+	service := NewAuthService(&fakeUserRepository{}, fastServiceArgon2Params())
+
+	err := service.DisableUser(context.Background(), "")
+	if !errors.Is(err, apperror.ErrInvalidArgument) {
+		t.Fatalf("DisableUser error = %v, want ErrInvalidArgument", err)
+	}
+}
+
+func TestDisableUserDelegatesToRepository(t *testing.T) {
+	repo := &fakeUserRepository{}
+	service := NewAuthService(repo, fastServiceArgon2Params())
+
+	if err := service.DisableUser(context.Background(), "user_9"); err != nil {
+		t.Fatalf("DisableUser returned error: %v", err)
+	}
+	if len(repo.disabled) != 1 || repo.disabled[0] != "user_9" {
+		t.Fatalf("repo disabled users = %#v, want [user_9]", repo.disabled)
 	}
 }
 

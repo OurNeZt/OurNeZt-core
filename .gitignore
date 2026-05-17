@@ -7,4 +7,5 @@ tmp/
 vendor/
 *.exe
 *.test
-
+core
+OurNeZt-core

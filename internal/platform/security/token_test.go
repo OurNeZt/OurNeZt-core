@@ -32,3 +32,19 @@ func TestNewSessionTokenReturnsDifferentValues(t *testing.T) {
 		t.Fatal("two session tokens were identical")
 	}
 }
+
+func TestHashTokenDeterministicAndDistinct(t *testing.T) {
+	first := HashToken("token-one")
+	second := HashToken("token-one")
+	third := HashToken("token-two")
+
+	if first != second {
+		t.Fatalf("HashToken not deterministic: %q != %q", first, second)
+	}
+	if first == third {
+		t.Fatalf("HashToken collision for different inputs: %q", first)
+	}
+	if strings.ContainsAny(first, "+/=") {
+		t.Fatalf("hash %q is not raw URL-safe base64", first)
+	}
+}
