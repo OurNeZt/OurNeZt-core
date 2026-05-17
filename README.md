@@ -119,7 +119,7 @@ The service is built as a backend-first gRPC API, making it suitable for fronten
 ## Architecture Overview
 
 <p align="center">
-  <img src="assets/ournezt-core-arch-diag-dark.png" alt="OurNeZt Core Architecture Diagram" width="100%">
+  <img src="assets/OurNeZt-core-arch-diag-dark.png" alt="OurNeZt Core Architecture Diagram" width="100%">
 </p>
 
 OurNeZt Core is designed as the backend API layer for the OurNeZt ecosystem. Client-facing applications such as the web app, client app, or an API gateway communicate with the core service through gRPC or HTTP/REST through a gateway layer.
