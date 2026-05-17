@@ -9,20 +9,20 @@ import (
 func TestHouseholdSummarySeparatesCurrentAndProjectedIncome(t *testing.T) {
 	people := []domain.PersonProfile{
 		{
-			ID:                      "person_1",
-			Age:                     25,
-			EmploymentStatus:        domain.EmploymentFullTime,
-			GrossMonthlyIncomeCents:  400000,
+			ID:                        "person_1",
+			Age:                       25,
+			EmploymentStatus:          domain.EmploymentFullTime,
+			GrossMonthlyIncomeCents:   400000,
 			ExpectedFutureIncomeCents: 450000,
-			MonthlyExpensesCents:    120000,
-			CPFOACents:              2000000,
+			MonthlyExpensesCents:      120000,
+			CPFOACents:                2000000,
 		},
 		{
-			ID:                      "person_2",
-			Age:                     24,
-			EmploymentStatus:        domain.EmploymentStudent,
+			ID:                        "person_2",
+			Age:                       24,
+			EmploymentStatus:          domain.EmploymentStudent,
 			ExpectedFutureIncomeCents: 380000,
-			MonthlyExpensesCents:    80000,
+			MonthlyExpensesCents:      80000,
 		},
 	}
 
@@ -38,4 +38,3 @@ func TestHouseholdSummarySeparatesCurrentAndProjectedIncome(t *testing.T) {
 		t.Fatal("MayNeedDeferredAssessment = false, want true")
 	}
 }
-

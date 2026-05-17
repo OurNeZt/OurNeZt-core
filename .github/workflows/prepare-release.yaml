@@ -12,7 +12,7 @@ on:
           - minor
           - major
       dry_run:
-        description: "Run without pushing branch or tag"
+        description: "Run without pushing branch or PR"
         required: false
         type: boolean
         default: false
@@ -26,16 +26,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout dev
         uses: actions/checkout@v4
         with:
+          ref: dev
           fetch-depth: 0
           persist-credentials: false
 
       - name: Fetch tags
         run: git fetch --tags --force
 
-      - name: Find latest tag
+      - name: Find latest release tag
         id: latest
         shell: bash
         run: |
@@ -49,6 +50,50 @@ jobs:
 
           echo "last_tag=$LAST_TAG" >> "$GITHUB_OUTPUT"
           echo "Latest tag: $LAST_TAG"
+
+      - name: Check for backend module changes
+        id: module_changes
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          LAST_TAG="${{ steps.latest.outputs.last_tag }}"
+
+          if [ "$LAST_TAG" = "v0.0.0" ]; then
+            RANGE="HEAD"
+          else
+            RANGE="${LAST_TAG}..HEAD"
+          fi
+
+          echo "Checking changed files in range: $RANGE"
+
+          CHANGED_FILES="$(git diff --name-only "$RANGE" || true)"
+
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
+
+          MODULE_CHANGED="false"
+
+          while IFS= read -r file; do
+            case "$file" in
+              cmd/*|internal/*|migrations/*|proto/*|buf.yaml|buf.gen.yaml|sqlc.yaml|go.mod|go.sum|Dockerfile|.dockerignore)
+                MODULE_CHANGED="true"
+                ;;
+            esac
+          done <<< "$CHANGED_FILES"
+
+          echo "changed=$MODULE_CHANGED" >> "$GITHUB_OUTPUT"
+
+          if [ "$MODULE_CHANGED" != "true" ]; then
+            echo "No backend module changes detected since $LAST_TAG."
+          fi
+
+      - name: Stop if no backend module changes
+        if: steps.module_changes.outputs.changed != 'true'
+        shell: bash
+        run: |
+          echo "No backend module changes detected. Skipping release preparation."
+          exit 0
 
       - name: Compute next version
         id: version
@@ -81,10 +126,36 @@ jobs:
           esac
 
           NEXT="${MAJOR}.${MINOR}.${PATCH}"
+          TAG="v${NEXT}"
 
           echo "next=$NEXT" >> "$GITHUB_OUTPUT"
-          echo "tag=v$NEXT" >> "$GITHUB_OUTPUT"
-          echo "Next version: v$NEXT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+          echo "Next version: $TAG"
+
+      - name: Stop if tag already exists
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          TAG="${{ steps.version.outputs.tag }}"
+
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists."
+            exit 1
+          fi
+
+      - name: Stop if release branch already exists
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BRANCH="release/${{ steps.version.outputs.tag }}"
+
+          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+            echo "Release branch $BRANCH already exists."
+            exit 1
+          fi
 
       - name: Create release branch
         if: ${{ inputs.dry_run == false }}
@@ -93,19 +164,21 @@ jobs:
         run: |
           set -euo pipefail
 
-          BRANCH="release/v${{ steps.version.outputs.next }}"
+          BRANCH="release/${{ steps.version.outputs.tag }}"
+
           git checkout -b "$BRANCH"
 
           echo "name=$BRANCH" >> "$GITHUB_OUTPUT"
+          echo "Created branch: $BRANCH"
 
-      - name: Prepare changelog
+      - name: Prepare CHANGELOG.md
         shell: bash
         run: |
           set -euo pipefail
 
           FILE="CHANGELOG.md"
           DATE="$(date +'%Y-%m-%d')"
-          VERSION="${{ steps.version.outputs.next }}"
+          TAG="${{ steps.version.outputs.tag }}"
 
           if [ ! -f "$FILE" ]; then
             {
@@ -117,7 +190,7 @@ jobs:
           fi
 
           cat > /tmp/entry.md <<EOF
-          ## [v${VERSION}] - ${DATE}
+          ## [${TAG}] - ${DATE}
 
           ### Added
           - (fill)
@@ -134,6 +207,11 @@ jobs:
 
           sed -i 's/^          //' /tmp/entry.md
 
+          if grep -q "^## \[${TAG}\]" "$FILE"; then
+            echo "CHANGELOG.md already contains ${TAG}."
+            exit 1
+          fi
+
           if grep -qx -- '---' "$FILE"; then
             awk 'NR==FNR{e[n++]=$0; next}
                  {print}
@@ -144,19 +222,28 @@ jobs:
             { head -n1 "$FILE"; echo; cat /tmp/entry.md; tail -n +2 "$FILE"; } > /tmp/new && mv /tmp/new "$FILE"
           fi
 
+      - name: Show dry run result
+        if: ${{ inputs.dry_run == true }}
+        shell: bash
+        run: |
+          echo "Dry run enabled. No branch or PR will be pushed."
+          echo "Next version: ${{ steps.version.outputs.tag }}"
+          echo
+          git diff -- CHANGELOG.md || true
+
       - name: Commit changelog
         if: ${{ inputs.dry_run == false }}
         shell: bash
         run: |
           set -euo pipefail
 
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
           git add CHANGELOG.md
-          git diff --cached --quiet || git commit -m "chore: prepare v${{ steps.version.outputs.next }} changelog"
+          git diff --cached --quiet || git commit -m "chore: prepare ${{ steps.version.outputs.tag }} changelog"
 
-      - name: Tag and push
+      - name: Push release branch
         if: ${{ inputs.dry_run == false }}
         shell: bash
         env:
@@ -164,22 +251,17 @@ jobs:
         run: |
           set -euo pipefail
 
-          TAG="v${{ steps.version.outputs.next }}"
-
-          git tag -a "$TAG" -m "release $TAG"
-
           git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}"
 
           git push origin "${{ steps.branch.outputs.name }}"
-          git push origin "$TAG"
 
-      - name: Open PR to dev
+      - name: Open PR to stable
         if: ${{ inputs.dry_run == false }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh pr create \
-            --title "chore: prepare v${{ steps.version.outputs.next }} changelog" \
-            --body "Adds the changelog template for v${{ steps.version.outputs.next }}." \
+            --title "chore: prepare ${{ steps.version.outputs.tag }} release" \
+            --body "Prepares the changelog for ${{ steps.version.outputs.tag }}. The release tag will be created after this PR is merged into stable." \
             --head "${{ steps.branch.outputs.name }}" \
-            --base "dev"
+            --base "stable"

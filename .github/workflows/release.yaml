@@ -1,0 +1,235 @@
+name: release
+
+on:
+  pull_request:
+    branches: [stable]
+    types: [closed]
+
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+
+    outputs:
+      ok: ${{ steps.check.outputs.ok }}
+
+    steps:
+      - name: Check trigger
+        id: check
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            if [ "${{ github.event.pull_request.merged }}" != "true" ]; then
+              echo "ok=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+
+            if [ "${{ github.event.pull_request.base.ref }}" != "stable" ]; then
+              echo "ok=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+
+            if [[ "${{ github.event.pull_request.head.ref }}" != release/* ]]; then
+              echo "ok=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "ok=false" >> "$GITHUB_OUTPUT"
+
+  release:
+    needs: guard
+    if: ${{ needs.guard.outputs.ok == 'true' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout stable commit
+        uses: actions/checkout@v4
+        with:
+          ref: stable
+          fetch-depth: 0
+
+      - name: Fetch tags
+        run: git fetch --tags --force
+
+      - name: Parse version from CHANGELOG.md
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          FILE="CHANGELOG.md"
+
+          if [ ! -f "$FILE" ]; then
+            echo "CHANGELOG.md not found" >&2
+            exit 1
+          fi
+
+          VERSION="$(grep -m1 -E '^## \[v?[0-9]+\.[0-9]+\.[0-9]+\] - [0-9]{4}-[0-9]{2}-[0-9]{2}$' "$FILE" \
+            | sed -E 's/^## \[v?([^]]+)\].*/\1/')"
+
+          if [ -z "$VERSION" ]; then
+            echo "Could not parse version from CHANGELOG.md" >&2
+            echo "Expected heading like: ## [v0.1.0] - YYYY-MM-DD" >&2
+            exit 1
+          fi
+
+          TAG="v${VERSION}"
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+          echo "Parsed version: $VERSION"
+          echo "Release tag: $TAG"
+
+      - name: Check if tag already exists
+        id: tagcheck
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          TAG="${{ steps.version.outputs.tag }}"
+
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Tag $TAG already exists."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "Tag $TAG does not exist yet."
+          fi
+
+      - name: Extract release notes
+        id: notes
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          VERSION="${{ steps.version.outputs.version }}"
+          FILE="CHANGELOG.md"
+          BODY_FILE="/tmp/ournezt_core_release_body.md"
+
+          NOTES="$(awk -v ver="## [${VERSION}]" -v ver2="## [v${VERSION}]" '
+            $0 ~ "^## \\[" { in_section=0 }
+            index($0, ver) == 1 || index($0, ver2) == 1 { in_section=1; next }
+            in_section { print }
+          ' "$FILE" | sed -e '1{/^$/d}')"
+
+          if [ -z "$NOTES" ]; then
+            echo "No changelog content found under version ${VERSION}" >&2
+            exit 1
+          fi
+
+          printf "%s\n" "$NOTES" > "$BODY_FILE"
+
+          cat >> "$BODY_FILE" <<EOF
+
+          ---
+
+          ## Distribution
+
+          ### Container Image
+
+          This release is published to GitHub Container Registry:
+
+          - \`ghcr.io/${{ github.repository_owner }}/ournezt-core:${{ steps.version.outputs.tag }}\`
+          - \`ghcr.io/${{ github.repository_owner }}/ournezt-core:latest\`
+
+          Pull with:
+
+          \`\`\`bash
+          docker pull ghcr.io/${{ github.repository_owner }}/ournezt-core:${{ steps.version.outputs.tag }}
+          \`\`\`
+          EOF
+
+          echo "body_path=$BODY_FILE" >> "$GITHUB_OUTPUT"
+
+      - name: Create annotated tag
+        if: steps.tagcheck.outputs.exists != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          TAG="${{ steps.version.outputs.tag }}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git tag -a "$TAG" -m "Release $TAG"
+          git push origin "$TAG"
+
+      - name: Check if GitHub Release exists
+        id: releasecheck
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          TAG="${{ steps.version.outputs.tag }}"
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "GitHub Release $TAG already exists."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "GitHub Release $TAG does not exist yet."
+          fi
+
+      - name: Create GitHub Release
+        if: steps.releasecheck.outputs.exists != 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: ${{ steps.version.outputs.tag }}
+          body_path: ${{ steps.notes.outputs.body_path }}
+          draft: false
+          prerelease: false
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/ournezt-core
+          tags: |
+            type=raw,value=${{ steps.version.outputs.tag }}
+            type=raw,value=latest
+
+      - name: Build and push Docker image to GHCR
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

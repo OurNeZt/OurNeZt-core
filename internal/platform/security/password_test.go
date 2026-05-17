@@ -66,4 +66,3 @@ func TestVerifyPasswordRejectsMalformedHash(t *testing.T) {
 		t.Fatal("VerifyPassword = true, want false")
 	}
 }
-

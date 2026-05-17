@@ -89,4 +89,3 @@ func decodeArgon2idHash(encodedHash string) (Argon2Params, []byte, []byte, error
 	params.KeyLength = uint32(len(key))
 	return params, salt, key, nil
 }
-

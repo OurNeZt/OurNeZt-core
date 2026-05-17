@@ -3,16 +3,16 @@ package calculation
 import "github.com/OurNeZt/ournezt-core/internal/domain"
 
 type IncomeBreakdown struct {
-	PersonID                    domain.ID
-	CurrentGrossIncomeCents      int64
-	ProjectedGrossIncomeCents    int64
-	EmployeeCPFCents             int64
-	EmployerCPFCents             int64
-	TakeHomeIncomeCents          int64
-	MonthlyExpensesCents         int64
-	MonthlySurplusCents          int64
-	CPFContribution              CPFContribution
-	CPFPlanningNote              string
+	PersonID                  domain.ID
+	CurrentGrossIncomeCents   int64
+	ProjectedGrossIncomeCents int64
+	EmployeeCPFCents          int64
+	EmployerCPFCents          int64
+	TakeHomeIncomeCents       int64
+	MonthlyExpensesCents      int64
+	MonthlySurplusCents       int64
+	CPFContribution           CPFContribution
+	CPFPlanningNote           string
 }
 
 type HouseholdIncomeSummary struct {
@@ -36,7 +36,7 @@ func CalculateIncomeBreakdown(person domain.PersonProfile) IncomeBreakdown {
 	takeHome := currentIncome - cpf.EmployeeCents
 
 	return IncomeBreakdown{
-		PersonID:                 person.ID,
+		PersonID:                  person.ID,
 		CurrentGrossIncomeCents:   currentIncome,
 		ProjectedGrossIncomeCents: projectedIncome,
 		EmployeeCPFCents:          cpf.EmployeeCents,
@@ -100,4 +100,3 @@ func cpfPlanningNote(status domain.EmploymentStatus) string {
 		return "CPF is estimated for ordinary wages using the configured planning rates."
 	}
 }
-

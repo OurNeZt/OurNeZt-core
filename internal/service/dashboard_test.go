@@ -9,23 +9,23 @@ import (
 func TestBuildHouseholdDashboardAggregatesIncomeCashAndHousing(t *testing.T) {
 	people := []domain.PersonProfile{
 		{
-			ID:                     "person_1",
-			FamilyID:               "family_1",
-			Age:                    30,
-			EmploymentStatus:       domain.EmploymentFullTime,
+			ID:                      "person_1",
+			FamilyID:                "family_1",
+			Age:                     30,
+			EmploymentStatus:        domain.EmploymentFullTime,
 			GrossMonthlyIncomeCents: 500000,
-			CashSavingsCents:       2000000,
-			CPFOACents:             3000000,
-			MonthlyExpensesCents:   150000,
+			CashSavingsCents:        2000000,
+			CPFOACents:              3000000,
+			MonthlyExpensesCents:    150000,
 		},
 		{
-			ID:                      "person_2",
-			FamilyID:                "family_1",
-			Age:                     25,
-			EmploymentStatus:        domain.EmploymentFutureEmployee,
+			ID:                        "person_2",
+			FamilyID:                  "family_1",
+			Age:                       25,
+			EmploymentStatus:          domain.EmploymentFutureEmployee,
 			ExpectedFutureIncomeCents: 420000,
-			CashSavingsCents:        1000000,
-			MonthlyExpensesCents:    50000,
+			CashSavingsCents:          1000000,
+			MonthlyExpensesCents:      50000,
 		},
 	}
 	housing := []domain.HousingOption{
@@ -64,4 +64,3 @@ func TestBuildHouseholdDashboardAggregatesIncomeCashAndHousing(t *testing.T) {
 		t.Fatalf("HousingOptionID = %q, want housing_1", got.HousingAffordability[0].HousingOptionID)
 	}
 }
-

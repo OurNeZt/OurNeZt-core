@@ -7,25 +7,25 @@ import (
 )
 
 type HousingAffordability struct {
-	HousingOptionID              domain.ID
-	NetPurchasePriceCents        int64
-	RequiredDownpaymentCents     int64
-	UpfrontCostCents             int64
-	EstimatedLoanAmountCents     int64
-	MonthlyMortgageCents         int64
-	CPFUsedCents                 int64
-	CashTopUpRequiredCents       int64
-	RemainingCashCents           int64
-	RemainingCPFOACents          int64
-	MonthlyHousingCostCents      int64
+	HousingOptionID                 domain.ID
+	NetPurchasePriceCents           int64
+	RequiredDownpaymentCents        int64
+	UpfrontCostCents                int64
+	EstimatedLoanAmountCents        int64
+	MonthlyMortgageCents            int64
+	CPFUsedCents                    int64
+	CashTopUpRequiredCents          int64
+	RemainingCashCents              int64
+	RemainingCPFOACents             int64
+	MonthlyHousingCostCents         int64
 	MonthlySurplusAfterHousingCents int64
-	Rating                       domain.AffordabilityRating
+	Rating                          domain.AffordabilityRating
 }
 
 type HouseholdAssets struct {
-	CashSavingsCents int64
-	CPFOACents       int64
-	TakeHomeCents    int64
+	CashSavingsCents     int64
+	CPFOACents           int64
+	TakeHomeCents        int64
 	MonthlyExpensesCents int64
 }
 
@@ -95,4 +95,3 @@ func affordabilityRating(monthlyHousingCostCents, takeHomeCents, monthlySurplusC
 		return domain.AffordabilityNotRecommended
 	}
 }
-
