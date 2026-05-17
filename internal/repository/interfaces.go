@@ -2,14 +2,25 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"github.com/OurNeZt/ournezt-core/internal/domain"
 )
+
+type FamilyMember struct {
+	FamilyID    domain.ID
+	UserID      domain.ID
+	DisplayName string
+	Role        domain.FamilyRole
+}
 
 type Families interface {
 	CreateFamily(ctx context.Context, family domain.Family, ownerID domain.ID) (domain.Family, error)
 	GetFamily(ctx context.Context, familyID domain.ID, viewerID domain.ID) (domain.Family, error)
 	ListUserFamilies(ctx context.Context, userID domain.ID) ([]domain.Family, error)
+	JoinFamilyByCode(ctx context.Context, userID domain.ID, codeHash string) (domain.Family, error)
+	GenerateFamilyJoinCode(ctx context.Context, actorID domain.ID, familyID domain.ID, codeHash string, expiresAt *time.Time) error
+	ListFamilyMembers(ctx context.Context, actorID domain.ID, familyID domain.ID) ([]FamilyMember, error)
 }
 
 type People interface {
