@@ -18,9 +18,13 @@ func NewHousingRepository(pool *pgxpool.Pool) HousingRepository {
 	return HousingRepository{Repository: New(pool)}
 }
 
-func (r HousingRepository) CreateHousingOption(ctx context.Context, option domain.HousingOption) (domain.HousingOption, error) {
+func (r HousingRepository) CreateHousingOption(ctx context.Context, option domain.HousingOption, actorID domain.ID) (domain.HousingOption, error) {
 	if strings.TrimSpace(string(option.FamilyID)) == "" || strings.TrimSpace(option.Name) == "" {
 		return domain.HousingOption{}, apperror.ErrInvalidArgument
+	}
+
+	if err := r.assertFamilyWriter(ctx, actorID, option.FamilyID); err != nil {
+		return domain.HousingOption{}, err
 	}
 
 	row := r.pool.QueryRow(ctx, `
@@ -110,13 +114,13 @@ func (r HousingRepository) ListHousingOptions(ctx context.Context, familyID doma
 	return options, nil
 }
 
-func (r HousingRepository) UpdateHousingOption(ctx context.Context, option domain.HousingOption) (domain.HousingOption, error) {
+func (r HousingRepository) UpdateHousingOption(ctx context.Context, option domain.HousingOption, actorID domain.ID) (domain.HousingOption, error) {
 	if strings.TrimSpace(string(option.ID)) == "" || strings.TrimSpace(option.Name) == "" {
 		return domain.HousingOption{}, apperror.ErrInvalidArgument
 	}
 
 	row := r.pool.QueryRow(ctx, `
-		UPDATE housing_options
+		UPDATE housing_options h
 		SET
 			name = $2,
 			housing_type = $3,
@@ -136,16 +140,21 @@ func (r HousingRepository) UpdateHousingOption(ctx context.Context, option domai
 			monthly_maintenance_cents = $17,
 			expected_key_collection_date = $18::date,
 			updated_at = now()
-		WHERE id = $1::uuid
+		FROM family_members fm
+		WHERE h.id = $1::uuid
+			AND fm.family_id = h.family_id
+			AND fm.user_id = $19::uuid
+			AND fm.role IN ('owner', 'admin', 'member')
 		RETURNING
-			id::text, family_id::text, name, housing_type, location, unit_type, purchase_price_cents,
-			grant_amount_cents, loan_type, loan_amount_cents, interest_rate_bps, loan_tenure_months,
-			downpayment_percent_bps, renovation_budget_cents, furniture_budget_cents, legal_fees_cents,
-			buyer_stamp_duty_cents, monthly_maintenance_cents, expected_key_collection_date::text, created_at, updated_at
+			h.id::text, h.family_id::text, h.name, h.housing_type, h.location, h.unit_type, h.purchase_price_cents,
+			h.grant_amount_cents, h.loan_type, h.loan_amount_cents, h.interest_rate_bps, h.loan_tenure_months,
+			h.downpayment_percent_bps, h.renovation_budget_cents, h.furniture_budget_cents, h.legal_fees_cents,
+			h.buyer_stamp_duty_cents, h.monthly_maintenance_cents, h.expected_key_collection_date::text, h.created_at, h.updated_at
 	`, string(option.ID), option.Name, string(option.Type), option.Location, option.UnitType, option.PurchasePriceCents,
 		option.GrantAmountCents, string(option.LoanType), option.LoanAmountCents, option.InterestRateBps,
 		option.LoanTenureMonths, option.DownpaymentPercentBps, option.RenovationBudgetCents, option.FurnitureBudgetCents,
-		option.LegalFeesCents, option.BuyerStampDutyCents, option.MonthlyMaintenanceCents, optionalDateString(option.ExpectedKeyCollectionDate))
+		option.LegalFeesCents, option.BuyerStampDutyCents, option.MonthlyMaintenanceCents, optionalDateString(option.ExpectedKeyCollectionDate),
+		string(actorID))
 
 	updated, err := scanHousingRow(row)
 	if err != nil {
@@ -161,6 +170,7 @@ func (r HousingRepository) DeleteHousingOption(ctx context.Context, housingID do
 		WHERE h.id = $1::uuid
 		  AND fm.family_id = h.family_id
 		  AND fm.user_id = $2::uuid
+		  AND fm.role IN ('owner', 'admin', 'member')
 	`, string(housingID), string(actorID))
 	if err != nil {
 		return normalizeError(err)

@@ -18,7 +18,7 @@ type fakeHousingRepository struct {
 	deletedID   domain.ID
 }
 
-func (r *fakeHousingRepository) CreateHousingOption(_ context.Context, option domain.HousingOption) (domain.HousingOption, error) {
+func (r *fakeHousingRepository) CreateHousingOption(_ context.Context, option domain.HousingOption, _ domain.ID) (domain.HousingOption, error) {
 	r.createInput = option
 	return r.created, nil
 }
@@ -31,7 +31,7 @@ func (r *fakeHousingRepository) ListHousingOptions(_ context.Context, _ domain.I
 	return r.list, nil
 }
 
-func (r *fakeHousingRepository) UpdateHousingOption(_ context.Context, option domain.HousingOption) (domain.HousingOption, error) {
+func (r *fakeHousingRepository) UpdateHousingOption(_ context.Context, option domain.HousingOption, _ domain.ID) (domain.HousingOption, error) {
 	r.createInput = option
 	return r.updated, nil
 }

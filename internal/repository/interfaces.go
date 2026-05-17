@@ -24,17 +24,17 @@ type Families interface {
 }
 
 type People interface {
-	CreatePersonProfile(ctx context.Context, profile domain.PersonProfile) (domain.PersonProfile, error)
+	CreatePersonProfile(ctx context.Context, profile domain.PersonProfile, actorID domain.ID) (domain.PersonProfile, error)
 	GetPersonProfile(ctx context.Context, personID domain.ID, viewerID domain.ID) (domain.PersonProfile, error)
 	ListPersonProfilesByFamily(ctx context.Context, familyID domain.ID, viewerID domain.ID) ([]domain.PersonProfile, error)
-	UpdatePersonProfile(ctx context.Context, profile domain.PersonProfile) (domain.PersonProfile, error)
+	UpdatePersonProfile(ctx context.Context, profile domain.PersonProfile, actorID domain.ID) (domain.PersonProfile, error)
 	DeletePersonProfile(ctx context.Context, personID domain.ID, actorID domain.ID) error
 }
 
 type Housing interface {
-	CreateHousingOption(ctx context.Context, option domain.HousingOption) (domain.HousingOption, error)
+	CreateHousingOption(ctx context.Context, option domain.HousingOption, actorID domain.ID) (domain.HousingOption, error)
 	GetHousingOption(ctx context.Context, housingID domain.ID, viewerID domain.ID) (domain.HousingOption, error)
 	ListHousingOptions(ctx context.Context, familyID domain.ID, viewerID domain.ID) ([]domain.HousingOption, error)
-	UpdateHousingOption(ctx context.Context, option domain.HousingOption) (domain.HousingOption, error)
+	UpdateHousingOption(ctx context.Context, option domain.HousingOption, actorID domain.ID) (domain.HousingOption, error)
 	DeleteHousingOption(ctx context.Context, housingID domain.ID, actorID domain.ID) error
 }

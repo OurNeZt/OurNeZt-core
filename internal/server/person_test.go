@@ -19,7 +19,7 @@ type fakePeopleRepository struct {
 	deletedID   domain.ID
 }
 
-func (r *fakePeopleRepository) CreatePersonProfile(_ context.Context, profile domain.PersonProfile) (domain.PersonProfile, error) {
+func (r *fakePeopleRepository) CreatePersonProfile(_ context.Context, profile domain.PersonProfile, _ domain.ID) (domain.PersonProfile, error) {
 	r.createInput = profile
 	return r.created, nil
 }
@@ -32,7 +32,7 @@ func (r *fakePeopleRepository) ListPersonProfilesByFamily(_ context.Context, _ d
 	return r.list, nil
 }
 
-func (r *fakePeopleRepository) UpdatePersonProfile(_ context.Context, profile domain.PersonProfile) (domain.PersonProfile, error) {
+func (r *fakePeopleRepository) UpdatePersonProfile(_ context.Context, profile domain.PersonProfile, _ domain.ID) (domain.PersonProfile, error) {
 	r.createInput = profile
 	return r.updated, nil
 }

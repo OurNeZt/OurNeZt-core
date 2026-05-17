@@ -32,6 +32,9 @@ func (s AuthService) CreateUser(ctx context.Context, email, displayName, passwor
 	if role == "" {
 		role = domain.UserRoleUser
 	}
+	if role != domain.UserRoleUser && role != domain.UserRoleAdmin {
+		return domain.User{}, apperror.ErrInvalidArgument
+	}
 
 	hash, err := security.HashPassword(password, s.argon2Params)
 	if err != nil {

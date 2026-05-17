@@ -11,10 +11,19 @@ import (
 type PersonServer struct {
 	ourneztv1.UnimplementedPersonServiceServer
 	people repository.People
+	auth   Authenticator
 }
 
-func NewPersonServer(people repository.People) PersonServer {
-	return PersonServer{people: people}
+func NewPersonServer(people repository.People, auth ...Authenticator) PersonServer {
+	var authenticator Authenticator
+	if len(auth) > 0 {
+		authenticator = auth[0]
+	}
+
+	return PersonServer{
+		people: people,
+		auth:   authenticator,
+	}
 }
 
 func (s PersonServer) CreatePersonProfile(ctx context.Context, req *ourneztv1.PersonProfile) (*ourneztv1.PersonProfile, error) {
@@ -23,7 +32,12 @@ func (s PersonServer) CreatePersonProfile(ctx context.Context, req *ourneztv1.Pe
 		return nil, toStatusError(err)
 	}
 
-	created, err := s.people.CreatePersonProfile(ctx, profile)
+	actorID, err := optionalAuthenticatedActorID(ctx, s.auth)
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+
+	created, err := s.people.CreatePersonProfile(ctx, profile, actorID)
 	if err != nil {
 		return nil, toStatusError(err)
 	}
@@ -34,7 +48,7 @@ func (s PersonServer) GetPersonProfile(ctx context.Context, req *ourneztv1.GetPe
 	if req == nil {
 		return nil, toStatusError(apperror.ErrInvalidArgument)
 	}
-	viewerID, err := requireID(req.GetViewerUserId())
+	viewerID, err := requestActorID(ctx, s.auth, req.GetViewerUserId())
 	if err != nil {
 		return nil, toStatusError(err)
 	}
@@ -54,7 +68,7 @@ func (s PersonServer) ListPersonProfilesByFamily(ctx context.Context, req *ourne
 	if req == nil {
 		return nil, toStatusError(apperror.ErrInvalidArgument)
 	}
-	viewerID, err := requireID(req.GetViewerUserId())
+	viewerID, err := requestActorID(ctx, s.auth, req.GetViewerUserId())
 	if err != nil {
 		return nil, toStatusError(err)
 	}
@@ -86,7 +100,12 @@ func (s PersonServer) UpdatePersonProfile(ctx context.Context, req *ourneztv1.Pe
 		return nil, toStatusError(apperror.ErrInvalidArgument)
 	}
 
-	updated, err := s.people.UpdatePersonProfile(ctx, profile)
+	actorID, err := optionalAuthenticatedActorID(ctx, s.auth)
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+
+	updated, err := s.people.UpdatePersonProfile(ctx, profile, actorID)
 	if err != nil {
 		return nil, toStatusError(err)
 	}
@@ -97,7 +116,7 @@ func (s PersonServer) DeletePersonProfile(ctx context.Context, req *ourneztv1.De
 	if req == nil {
 		return nil, toStatusError(apperror.ErrInvalidArgument)
 	}
-	actorID, err := requireID(req.GetActorUserId())
+	actorID, err := requestActorID(ctx, s.auth, req.GetActorUserId())
 	if err != nil {
 		return nil, toStatusError(err)
 	}

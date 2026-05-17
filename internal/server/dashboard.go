@@ -13,12 +13,19 @@ type DashboardServer struct {
 	ourneztv1.UnimplementedDashboardServiceServer
 	people  repository.People
 	housing repository.Housing
+	auth    Authenticator
 }
 
-func NewDashboardServer(people repository.People, housing repository.Housing) DashboardServer {
+func NewDashboardServer(people repository.People, housing repository.Housing, auth ...Authenticator) DashboardServer {
+	var authenticator Authenticator
+	if len(auth) > 0 {
+		authenticator = auth[0]
+	}
+
 	return DashboardServer{
 		people:  people,
 		housing: housing,
+		auth:    authenticator,
 	}
 }
 
@@ -27,7 +34,7 @@ func (s DashboardServer) GetHouseholdDashboard(ctx context.Context, req *ournezt
 		return nil, toStatusError(apperror.ErrInvalidArgument)
 	}
 
-	viewerID, err := requireID(req.GetViewerUserId())
+	viewerID, err := requestActorID(ctx, s.auth, req.GetViewerUserId())
 	if err != nil {
 		return nil, toStatusError(err)
 	}

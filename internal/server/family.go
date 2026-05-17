@@ -17,19 +17,25 @@ type FamilyServer struct {
 	ourneztv1.UnimplementedFamilyServiceServer
 
 	families repository.Families
+	auth     Authenticator
 	codeTTL  time.Duration
 	now      func() time.Time
 }
 
-func NewFamilyServer(families repository.Families, codeTTL time.Duration, now func() time.Time) FamilyServer {
+func NewFamilyServer(families repository.Families, codeTTL time.Duration, now func() time.Time, auth ...Authenticator) FamilyServer {
 	if codeTTL <= 0 {
 		codeTTL = 7 * 24 * time.Hour
 	}
 	if now == nil {
 		now = time.Now
 	}
+	var authenticator Authenticator
+	if len(auth) > 0 {
+		authenticator = auth[0]
+	}
 	return FamilyServer{
 		families: families,
+		auth:     authenticator,
 		codeTTL:  codeTTL,
 		now:      now,
 	}
@@ -39,7 +45,7 @@ func (s FamilyServer) CreateFamily(ctx context.Context, req *ourneztv1.CreateFam
 	if req == nil {
 		return nil, toStatusError(apperror.ErrInvalidArgument)
 	}
-	ownerID, err := requireID(req.GetOwnerUserId())
+	ownerID, err := requestActorID(ctx, s.auth, req.GetOwnerUserId())
 	if err != nil {
 		return nil, toStatusError(err)
 	}
@@ -55,7 +61,7 @@ func (s FamilyServer) GetFamily(ctx context.Context, req *ourneztv1.GetFamilyReq
 	if req == nil {
 		return nil, toStatusError(apperror.ErrInvalidArgument)
 	}
-	viewerID, err := requireID(req.GetViewerUserId())
+	viewerID, err := requestActorID(ctx, s.auth, req.GetViewerUserId())
 	if err != nil {
 		return nil, toStatusError(err)
 	}
@@ -75,7 +81,7 @@ func (s FamilyServer) ListUserFamilies(ctx context.Context, req *ourneztv1.ListU
 	if req == nil {
 		return nil, toStatusError(apperror.ErrInvalidArgument)
 	}
-	userID, err := requireID(req.GetUserId())
+	userID, err := requestActorID(ctx, s.auth, req.GetUserId())
 	if err != nil {
 		return nil, toStatusError(err)
 	}
@@ -98,7 +104,7 @@ func (s FamilyServer) JoinFamilyByCode(ctx context.Context, req *ourneztv1.JoinF
 	if req == nil {
 		return nil, toStatusError(apperror.ErrInvalidArgument)
 	}
-	userID, err := requireID(req.GetUserId())
+	userID, err := requestActorID(ctx, s.auth, req.GetUserId())
 	if err != nil {
 		return nil, toStatusError(err)
 	}
@@ -118,7 +124,7 @@ func (s FamilyServer) GenerateFamilyJoinCode(ctx context.Context, req *ourneztv1
 	if req == nil {
 		return nil, toStatusError(apperror.ErrInvalidArgument)
 	}
-	actorID, err := requireID(req.GetActorUserId())
+	actorID, err := requestActorID(ctx, s.auth, req.GetActorUserId())
 	if err != nil {
 		return nil, toStatusError(err)
 	}
@@ -143,7 +149,7 @@ func (s FamilyServer) ListFamilyMembers(ctx context.Context, req *ourneztv1.List
 	if req == nil {
 		return nil, toStatusError(apperror.ErrInvalidArgument)
 	}
-	actorID, err := requireID(req.GetActorUserId())
+	actorID, err := requestActorID(ctx, s.auth, req.GetActorUserId())
 	if err != nil {
 		return nil, toStatusError(err)
 	}

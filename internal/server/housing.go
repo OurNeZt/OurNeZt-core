@@ -12,10 +12,19 @@ import (
 type HousingServer struct {
 	ourneztv1.UnimplementedHousingServiceServer
 	housing repository.Housing
+	auth    Authenticator
 }
 
-func NewHousingServer(housing repository.Housing) HousingServer {
-	return HousingServer{housing: housing}
+func NewHousingServer(housing repository.Housing, auth ...Authenticator) HousingServer {
+	var authenticator Authenticator
+	if len(auth) > 0 {
+		authenticator = auth[0]
+	}
+
+	return HousingServer{
+		housing: housing,
+		auth:    authenticator,
+	}
 }
 
 func (s HousingServer) CreateHousingOption(ctx context.Context, req *ourneztv1.HousingOption) (*ourneztv1.HousingOption, error) {
@@ -24,7 +33,12 @@ func (s HousingServer) CreateHousingOption(ctx context.Context, req *ourneztv1.H
 		return nil, toStatusError(err)
 	}
 
-	created, err := s.housing.CreateHousingOption(ctx, option)
+	actorID, err := optionalAuthenticatedActorID(ctx, s.auth)
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+
+	created, err := s.housing.CreateHousingOption(ctx, option, actorID)
 	if err != nil {
 		return nil, toStatusError(err)
 	}
@@ -35,7 +49,7 @@ func (s HousingServer) GetHousingOption(ctx context.Context, req *ourneztv1.GetH
 	if req == nil {
 		return nil, toStatusError(apperror.ErrInvalidArgument)
 	}
-	viewerID, err := requireID(req.GetViewerUserId())
+	viewerID, err := requestActorID(ctx, s.auth, req.GetViewerUserId())
 	if err != nil {
 		return nil, toStatusError(err)
 	}
@@ -55,7 +69,7 @@ func (s HousingServer) ListHousingOptions(ctx context.Context, req *ourneztv1.Li
 	if req == nil {
 		return nil, toStatusError(apperror.ErrInvalidArgument)
 	}
-	viewerID, err := requireID(req.GetViewerUserId())
+	viewerID, err := requestActorID(ctx, s.auth, req.GetViewerUserId())
 	if err != nil {
 		return nil, toStatusError(err)
 	}
@@ -87,7 +101,12 @@ func (s HousingServer) UpdateHousingOption(ctx context.Context, req *ourneztv1.H
 		return nil, toStatusError(apperror.ErrInvalidArgument)
 	}
 
-	updated, err := s.housing.UpdateHousingOption(ctx, option)
+	actorID, err := optionalAuthenticatedActorID(ctx, s.auth)
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+
+	updated, err := s.housing.UpdateHousingOption(ctx, option, actorID)
 	if err != nil {
 		return nil, toStatusError(err)
 	}
@@ -98,7 +117,7 @@ func (s HousingServer) DeleteHousingOption(ctx context.Context, req *ourneztv1.D
 	if req == nil {
 		return nil, toStatusError(apperror.ErrInvalidArgument)
 	}
-	actorID, err := requireID(req.GetActorUserId())
+	actorID, err := requestActorID(ctx, s.auth, req.GetActorUserId())
 	if err != nil {
 		return nil, toStatusError(err)
 	}

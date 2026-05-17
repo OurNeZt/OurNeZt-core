@@ -41,6 +41,32 @@ func (r Repository) hasFamilyAccess(ctx context.Context, userID domain.ID, famil
 	return exists, nil
 }
 
+func (r Repository) assertFamilyWriter(ctx context.Context, userID domain.ID, familyID domain.ID) error {
+	if strings.TrimSpace(string(userID)) == "" || strings.TrimSpace(string(familyID)) == "" {
+		return apperror.ErrInvalidArgument
+	}
+
+	var hasWriterRole bool
+	err := r.pool.QueryRow(ctx, `
+		SELECT EXISTS(
+			SELECT 1
+			FROM family_members
+			WHERE family_id = $1::uuid
+			  AND user_id = $2::uuid
+			  AND role IN ('owner', 'admin', 'member')
+		)
+	`, string(familyID), string(userID)).Scan(&hasWriterRole)
+	if err != nil {
+		return normalizeError(err)
+	}
+
+	if !hasWriterRole {
+		return apperror.ErrForbidden
+	}
+
+	return nil
+}
+
 func normalizeError(err error) error {
 	if err == nil {
 		return nil
@@ -52,9 +78,12 @@ func normalizeError(err error) error {
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) {
 		switch pgErr.Code {
-		case "23505":
+		case "23505": // unique_violation
 			return apperror.ErrConflict
-		case "22P02":
+		case "22P02", // invalid_text_representation, usually bad UUID casts
+			"23502", // not_null_violation
+			"23503", // foreign_key_violation
+			"23514": // check_violation
 			return apperror.ErrInvalidArgument
 		}
 	}

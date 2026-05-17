@@ -63,11 +63,11 @@ func main() {
 	})
 
 	authServer := server.NewAuthServer(authService, userRepo, cfg.SessionTokenBytes, 24*time.Hour, nil)
-	familyServer := server.NewFamilyServer(familyRepo, 7*24*time.Hour, nil)
-	personServer := server.NewPersonServer(personRepo)
-	housingServer := server.NewHousingServer(housingRepo)
+	familyServer := server.NewFamilyServer(familyRepo, 7*24*time.Hour, nil, authServer)
+	personServer := server.NewPersonServer(personRepo, authServer)
+	housingServer := server.NewHousingServer(housingRepo, authServer)
 	financeServer := server.NewFinanceServer()
-	dashboardServer := server.NewDashboardServer(personRepo, housingRepo)
+	dashboardServer := server.NewDashboardServer(personRepo, housingRepo, authServer)
 
 	ourneztv1.RegisterAuthServiceServer(grpcServer, authServer)
 	ourneztv1.RegisterFamilyServiceServer(grpcServer, familyServer)

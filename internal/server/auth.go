@@ -51,7 +51,18 @@ func (s AuthServer) CreateUser(ctx context.Context, req *ourneztv1.CreateUserReq
 		return nil, toStatusError(apperror.ErrInvalidArgument)
 	}
 
-	user, err := s.auth.CreateUser(ctx, req.GetEmail(), req.GetDisplayName(), req.GetPassword(), domain.UserRole(req.GetRole()))
+	role := domain.UserRole(req.GetRole())
+	if role == "" {
+		role = domain.UserRoleUser
+	}
+
+	if role == domain.UserRoleAdmin {
+		if _, err := authenticatedAdmin(ctx, s); err != nil {
+			return nil, toStatusError(err)
+		}
+	}
+
+	user, err := s.auth.CreateUser(ctx, req.GetEmail(), req.GetDisplayName(), req.GetPassword(), role)
 	if err != nil {
 		return nil, toStatusError(err)
 	}
@@ -104,9 +115,19 @@ func (s AuthServer) DisableUser(ctx context.Context, req *ourneztv1.DisableUserR
 	if req == nil {
 		return nil, toStatusError(apperror.ErrInvalidArgument)
 	}
+
+	actor, err := authenticatedAdmin(ctx, s)
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+
 	userID, err := requireID(req.GetUserId())
 	if err != nil {
 		return nil, toStatusError(err)
+	}
+
+	if userID == actor.ID {
+		return nil, toStatusError(apperror.ErrInvalidArgument)
 	}
 
 	if err := s.auth.DisableUser(ctx, userID); err != nil {

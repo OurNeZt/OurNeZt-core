@@ -12,6 +12,7 @@ import (
 	"github.com/OurNeZt/ournezt-core/internal/platform/security"
 	"github.com/OurNeZt/ournezt-core/internal/service"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
@@ -162,10 +163,19 @@ func TestAuthServerValidateSessionRejectsEmptyToken(t *testing.T) {
 func TestAuthServerDisableUserDisablesAndRevokes(t *testing.T) {
 	repo := &fakeServerUserRepository{}
 	authService := service.NewAuthService(repo, fastServerArgon2Params())
-	sessions := &fakeAuthSessionStore{}
+	sessions := &fakeAuthSessionStore{
+		usersByToken: map[string]domain.User{
+			security.HashToken("admin-token"): {
+				ID:    "admin_1",
+				Email: "admin@example.com",
+				Role:  domain.UserRoleAdmin,
+			},
+		},
+	}
 	server := NewAuthServer(authService, sessions, 32, time.Hour, time.Now)
 
-	_, err := server.DisableUser(context.Background(), &ourneztv1.DisableUserRequest{UserId: "user_9"})
+	ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs("x-session-token", "admin-token"))
+	_, err := server.DisableUser(ctx, &ourneztv1.DisableUserRequest{UserId: "user_9"})
 	if err != nil {
 		t.Fatalf("DisableUser returned error: %v", err)
 	}
@@ -174,6 +184,27 @@ func TestAuthServerDisableUserDisablesAndRevokes(t *testing.T) {
 	}
 	if len(sessions.revokedUsers) != 1 || sessions.revokedUsers[0] != "user_9" {
 		t.Fatalf("revoked users = %#v, want [user_9]", sessions.revokedUsers)
+	}
+}
+
+func TestAuthServerDisableUserRejectsNonAdmin(t *testing.T) {
+	repo := &fakeServerUserRepository{}
+	authService := service.NewAuthService(repo, fastServerArgon2Params())
+	sessions := &fakeAuthSessionStore{
+		usersByToken: map[string]domain.User{
+			security.HashToken("user-token"): {
+				ID:    "user_1",
+				Email: "user@example.com",
+				Role:  domain.UserRoleUser,
+			},
+		},
+	}
+	server := NewAuthServer(authService, sessions, 32, time.Hour, time.Now)
+
+	ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs("x-session-token", "user-token"))
+	_, err := server.DisableUser(ctx, &ourneztv1.DisableUserRequest{UserId: "user_9"})
+	if status.Code(err) != codes.PermissionDenied {
+		t.Fatalf("status code = %v, want PermissionDenied", status.Code(err))
 	}
 }
 
