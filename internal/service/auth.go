@@ -65,3 +65,10 @@ func (s AuthService) Login(ctx context.Context, email, password string) (domain.
 
 	return user, nil
 }
+
+func (s AuthService) DisableUser(ctx context.Context, userID domain.ID) error {
+	if strings.TrimSpace(string(userID)) == "" {
+		return apperror.ErrInvalidArgument
+	}
+	return s.users.DisableUser(ctx, userID)
+}
