@@ -8,6 +8,15 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type AdminAccessKey struct {
+	ID        pgtype.UUID        `json:"id"`
+	UserID    pgtype.UUID        `json:"user_id"`
+	TokenHash string             `json:"token_hash"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+	UsedAt    pgtype.Timestamptz `json:"used_at"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
 type CpfProfile struct {
 	PersonProfileID      pgtype.UUID        `json:"person_profile_id"`
 	OrdinaryAccountCents int64              `json:"ordinary_account_cents"`
@@ -96,12 +105,13 @@ type Session struct {
 }
 
 type User struct {
-	ID           pgtype.UUID        `json:"id"`
-	Email        string             `json:"email"`
-	DisplayName  string             `json:"display_name"`
-	Role         string             `json:"role"`
-	PasswordHash string             `json:"password_hash"`
-	DisabledAt   pgtype.Timestamptz `json:"disabled_at"`
-	CreatedAt    pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+	ID                 pgtype.UUID        `json:"id"`
+	Email              string             `json:"email"`
+	DisplayName        string             `json:"display_name"`
+	Role               string             `json:"role"`
+	PasswordHash       string             `json:"password_hash"`
+	MustChangePassword bool               `json:"must_change_password"`
+	DisabledAt         pgtype.Timestamptz `json:"disabled_at"`
+	CreatedAt          pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt          pgtype.Timestamptz `json:"updated_at"`
 }
