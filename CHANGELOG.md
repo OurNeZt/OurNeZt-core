@@ -9,16 +9,24 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [v1.1.0] - 2026-05-26
 
 ### Added
-- (fill)
+- Added admin bootstrap support for creating the initial admin user through environment-based configuration.
+- Added deployment-friendly first-admin initialisation flow for fresh OurNeZt Core instances.
+- Added configuration support for admin bootstrap credentials and startup validation.
 
 ### Changed
-- (fill)
+- Refactored auth server startup flow for cleaner initialisation and dependency handling.
+- Updated auth context and handler logic to better support the new authentication flow.
+- Updated the auth API contract to match the revised authentication schema.
+- Regenerated Go protobuf bindings for the updated auth API.
+- Updated domain models and user repository logic to support the admin bootstrap flow.
+- Updated database migrations for the revised auth and user model requirements.
 
 ### Fixed
-- (fill)
+- Fixed first-deployment setup by removing the need to manually insert the first admin user into the database.
+- Fixed auth flow consistency between startup configuration, API handlers, domain models, and repository logic.
 
 ### Removed
-- (fill)
+- Removed reliance on manual database insertion for initial admin account creation.
 
 ## [v1.0.0] - 2026-05-17
 
