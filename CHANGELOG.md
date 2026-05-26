@@ -9,16 +9,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [v1.1.1] - 2026-05-26
 
 ### Added
-- (fill)
+- No Additions in this release.
 
 ### Changed
-- (fill)
+- No Changes in this release.
 
 ### Fixed
-- (fill)
+- Fix wrongly synced files
 
 ### Removed
-- (fill)
+- No removals in this release.
 
 ## [v1.1.0] - 2026-05-26
 
