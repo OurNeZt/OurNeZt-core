@@ -39,11 +39,12 @@ func formatDate(value *time.Time) string {
 
 func userToProto(user domain.User) *ourneztv1.User {
 	return &ourneztv1.User{
-		Id:          string(user.ID),
-		Email:       user.Email,
-		DisplayName: user.DisplayName,
-		Role:        string(user.Role),
-		Disabled:    user.DisabledAt != nil,
+		Id:                 string(user.ID),
+		Email:              user.Email,
+		DisplayName:        user.DisplayName,
+		Role:               string(user.Role),
+		Disabled:           user.DisabledAt != nil,
+		MustChangePassword: user.MustChangePassword,
 	}
 }
 
