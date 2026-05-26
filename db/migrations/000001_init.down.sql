@@ -4,6 +4,7 @@ DROP TABLE IF EXISTS person_profiles;
 DROP TABLE IF EXISTS family_invites;
 DROP TABLE IF EXISTS family_members;
 DROP TABLE IF EXISTS families;
+DROP TABLE IF EXISTS admin_access_keys;
 DROP TABLE IF EXISTS sessions;
 DROP TABLE IF EXISTS users;
 DROP EXTENSION IF EXISTS pgcrypto;
