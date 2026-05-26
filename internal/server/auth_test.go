@@ -27,9 +27,10 @@ type fakeAuthSessionStore struct {
 }
 
 type fakeServerUserRepository struct {
-	created  domain.User
-	users    map[string]domain.User
-	disabled []domain.ID
+	created         domain.User
+	users           map[string]domain.User
+	disabled        []domain.ID
+	adminAccessKeys map[string]time.Time
 }
 
 func (s *fakeAuthSessionStore) CreateSession(_ context.Context, userID domain.ID, tokenHash string, expiresAt time.Time) error {
@@ -75,9 +76,74 @@ func (r *fakeServerUserRepository) GetUserByEmail(_ context.Context, email strin
 	return user, nil
 }
 
+func (r *fakeServerUserRepository) HasActiveAdmin(_ context.Context) (bool, error) {
+	for _, user := range r.users {
+		if user.Role == domain.UserRoleAdmin && user.DisabledAt == nil {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (r *fakeServerUserRepository) GetUserByID(_ context.Context, userID domain.ID) (domain.User, error) {
+	for _, user := range r.users {
+		if user.ID == userID {
+			return user, nil
+		}
+	}
+	return domain.User{}, apperror.ErrNotFound
+}
+
+func (r *fakeServerUserRepository) PromoteToBootstrapAdmin(_ context.Context, userID domain.ID, displayName string, passwordHash string) (domain.User, error) {
+	for email, user := range r.users {
+		if user.ID == userID {
+			user.Role = domain.UserRoleAdmin
+			user.DisplayName = displayName
+			user.PasswordHash = passwordHash
+			user.MustChangePassword = true
+			user.DisabledAt = nil
+			r.users[email] = user
+			return user, nil
+		}
+	}
+	return domain.User{}, apperror.ErrNotFound
+}
+
 func (r *fakeServerUserRepository) DisableUser(_ context.Context, userID domain.ID) error {
 	r.disabled = append(r.disabled, userID)
 	return nil
+}
+
+func (r *fakeServerUserRepository) UpdateUserPassword(_ context.Context, userID domain.ID, passwordHash string, mustChangePassword bool) error {
+	for email, user := range r.users {
+		if user.ID == userID {
+			user.PasswordHash = passwordHash
+			user.MustChangePassword = mustChangePassword
+			r.users[email] = user
+			return nil
+		}
+	}
+	return apperror.ErrNotFound
+}
+
+func (r *fakeServerUserRepository) CreateAdminAccessKey(_ context.Context, userID domain.ID, tokenHash string, expiresAt time.Time) error {
+	if r.adminAccessKeys == nil {
+		r.adminAccessKeys = map[string]time.Time{}
+	}
+	r.adminAccessKeys[string(userID)+"|"+tokenHash] = expiresAt
+	return nil
+}
+
+func (r *fakeServerUserRepository) ConsumeAdminAccessKey(_ context.Context, userID domain.ID, tokenHash string, now time.Time) (bool, error) {
+	expiresAt, ok := r.adminAccessKeys[string(userID)+"|"+tokenHash]
+	if !ok {
+		return false, nil
+	}
+	if now.After(expiresAt) {
+		return false, nil
+	}
+	delete(r.adminAccessKeys, string(userID)+"|"+tokenHash)
+	return true, nil
 }
 
 func TestAuthServerLoginCreatesSessionAndReturnsToken(t *testing.T) {
@@ -205,6 +271,99 @@ func TestAuthServerDisableUserRejectsNonAdmin(t *testing.T) {
 	_, err := server.DisableUser(ctx, &ourneztv1.DisableUserRequest{UserId: "user_9"})
 	if status.Code(err) != codes.PermissionDenied {
 		t.Fatalf("status code = %v, want PermissionDenied", status.Code(err))
+	}
+}
+
+func TestAuthServerChangePassword(t *testing.T) {
+	hash, err := security.HashPassword("temporary-pass", fastServerArgon2Params())
+	if err != nil {
+		t.Fatalf("HashPassword returned error: %v", err)
+	}
+	repo := &fakeServerUserRepository{
+		users: map[string]domain.User{
+			"admin@example.com": {
+				ID:                 "admin_1",
+				Email:              "admin@example.com",
+				Role:               domain.UserRoleAdmin,
+				PasswordHash:       hash,
+				MustChangePassword: true,
+			},
+		},
+	}
+	authService := service.NewAuthService(repo, fastServerArgon2Params())
+	sessions := &fakeAuthSessionStore{
+		usersByToken: map[string]domain.User{
+			security.HashToken("admin-token"): {
+				ID:                 "admin_1",
+				Email:              "admin@example.com",
+				Role:               domain.UserRoleAdmin,
+				PasswordHash:       hash,
+				MustChangePassword: true,
+			},
+		},
+	}
+	server := NewAuthServer(authService, sessions, 32, time.Hour, time.Now)
+
+	ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs("x-session-token", "admin-token"))
+	_, err = server.ChangePassword(ctx, &ourneztv1.ChangePasswordRequest{
+		CurrentPassword: "temporary-pass",
+		NewPassword:     "safer-pass",
+	})
+	if err != nil {
+		t.Fatalf("ChangePassword returned error: %v", err)
+	}
+	updated := repo.users["admin@example.com"]
+	if updated.MustChangePassword {
+		t.Fatal("MustChangePassword = true after change, want false")
+	}
+}
+
+func TestAuthServerGenerateAndConsumeAdminAccessKey(t *testing.T) {
+	hash, err := security.HashPassword("safer-pass", fastServerArgon2Params())
+	if err != nil {
+		t.Fatalf("HashPassword returned error: %v", err)
+	}
+	repo := &fakeServerUserRepository{
+		users: map[string]domain.User{
+			"admin@example.com": {
+				ID:           "admin_1",
+				Email:        "admin@example.com",
+				Role:         domain.UserRoleAdmin,
+				PasswordHash: hash,
+			},
+		},
+	}
+	authService := service.NewAuthService(repo, fastServerArgon2Params())
+	sessions := &fakeAuthSessionStore{
+		usersByToken: map[string]domain.User{
+			security.HashToken("admin-token"): {
+				ID:           "admin_1",
+				Email:        "admin@example.com",
+				Role:         domain.UserRoleAdmin,
+				PasswordHash: hash,
+			},
+		},
+	}
+	now := time.Date(2026, 5, 25, 0, 0, 0, 0, time.UTC)
+	server := NewAuthServer(authService, sessions, 32, time.Hour, func() time.Time { return now })
+	ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs("x-session-token", "admin-token"))
+
+	generateResp, err := server.GenerateAdminAccessKey(ctx, &ourneztv1.GenerateAdminAccessKeyRequest{})
+	if err != nil {
+		t.Fatalf("GenerateAdminAccessKey returned error: %v", err)
+	}
+	if generateResp.GetAccessKey() == "" {
+		t.Fatal("AccessKey is empty")
+	}
+
+	consumeResp, err := server.ConsumeAdminAccessKey(ctx, &ourneztv1.ConsumeAdminAccessKeyRequest{
+		AccessKey: generateResp.GetAccessKey(),
+	})
+	if err != nil {
+		t.Fatalf("ConsumeAdminAccessKey returned error: %v", err)
+	}
+	if !consumeResp.GetAccessGranted() {
+		t.Fatal("AccessGranted = false, want true")
 	}
 }
 

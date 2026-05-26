@@ -212,7 +212,6 @@ jobs:
             exit 1
           fi
 
-          # Insert newest release at the top of the release entries section.
           if grep -qx -- '---' "$FILE"; then
             awk 'NR==FNR{e[n++]=$0; next}
                  {print}
