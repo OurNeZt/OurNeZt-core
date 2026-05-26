@@ -6,6 +6,7 @@ CREATE TABLE users (
     display_name TEXT NOT NULL DEFAULT '',
     role TEXT NOT NULL CHECK (role IN ('admin', 'user')),
     password_hash TEXT NOT NULL,
+    must_change_password BOOLEAN NOT NULL DEFAULT false,
     disabled_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -17,6 +18,15 @@ CREATE TABLE sessions (
     token_hash TEXT NOT NULL UNIQUE,
     expires_at TIMESTAMPTZ NOT NULL,
     revoked_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE admin_access_keys (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token_hash TEXT NOT NULL UNIQUE,
+    expires_at TIMESTAMPTZ NOT NULL,
+    used_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -109,6 +119,7 @@ CREATE TABLE housing_options (
 );
 
 CREATE INDEX sessions_user_id_idx ON sessions(user_id);
+CREATE INDEX admin_access_keys_user_id_idx ON admin_access_keys(user_id);
 CREATE INDEX family_members_user_id_idx ON family_members(user_id);
 CREATE INDEX person_profiles_family_id_idx ON person_profiles(family_id);
 CREATE INDEX housing_options_family_id_idx ON housing_options(family_id);

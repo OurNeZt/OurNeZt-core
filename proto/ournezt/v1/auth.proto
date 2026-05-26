@@ -7,6 +7,9 @@ option go_package = "github.com/OurNeZt/ournezt-core/internal/gen/proto/ournezt/
 service AuthService {
   rpc Login(LoginRequest) returns (LoginResponse);
   rpc ValidateSession(ValidateSessionRequest) returns (ValidateSessionResponse);
+  rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordResponse);
+  rpc GenerateAdminAccessKey(GenerateAdminAccessKeyRequest) returns (GenerateAdminAccessKeyResponse);
+  rpc ConsumeAdminAccessKey(ConsumeAdminAccessKeyRequest) returns (ConsumeAdminAccessKeyResponse);
   rpc CreateUser(CreateUserRequest) returns (User);
   rpc DisableUser(DisableUserRequest) returns (DisableUserResponse);
 }
@@ -17,6 +20,7 @@ message User {
   string display_name = 3;
   string role = 4;
   bool disabled = 5;
+  bool must_change_password = 6;
 }
 
 message LoginRequest {
@@ -35,6 +39,28 @@ message ValidateSessionRequest {
 
 message ValidateSessionResponse {
   User user = 1;
+}
+
+message ChangePasswordRequest {
+  string current_password = 1;
+  string new_password = 2;
+}
+
+message ChangePasswordResponse {}
+
+message GenerateAdminAccessKeyRequest {}
+
+message GenerateAdminAccessKeyResponse {
+  string access_key = 1;
+  string expires_at = 2;
+}
+
+message ConsumeAdminAccessKeyRequest {
+  string access_key = 1;
+}
+
+message ConsumeAdminAccessKeyResponse {
+  bool access_granted = 1;
 }
 
 message CreateUserRequest {
