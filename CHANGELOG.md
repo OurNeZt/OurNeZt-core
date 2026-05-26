@@ -6,6 +6,20 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ---
 
+## [v1.1.1] - 2026-05-26
+
+### Added
+- No Additions in this release.
+
+### Changed
+- No Changes in this release.
+
+### Fixed
+- Fix wrongly synced files
+
+### Removed
+- No removals in this release.
+
 ## [v1.1.0] - 2026-05-26
 
 ### Added
