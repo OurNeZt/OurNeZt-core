@@ -111,6 +111,57 @@ func (s AuthServer) ValidateSession(ctx context.Context, req *ourneztv1.Validate
 	return &ourneztv1.ValidateSessionResponse{User: userToProto(user)}, nil
 }
 
+func (s AuthServer) ChangePassword(ctx context.Context, req *ourneztv1.ChangePasswordRequest) (*ourneztv1.ChangePasswordResponse, error) {
+	if req == nil {
+		return nil, toStatusError(apperror.ErrInvalidArgument)
+	}
+
+	userID, err := authenticateUserID(ctx, s)
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+
+	if err := s.auth.ChangePassword(ctx, userID, req.GetCurrentPassword(), req.GetNewPassword()); err != nil {
+		return nil, toStatusError(err)
+	}
+
+	return &ourneztv1.ChangePasswordResponse{}, nil
+}
+
+func (s AuthServer) GenerateAdminAccessKey(ctx context.Context, _ *ourneztv1.GenerateAdminAccessKeyRequest) (*ourneztv1.GenerateAdminAccessKeyResponse, error) {
+	admin, err := authenticatedAdmin(ctx, s)
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+
+	key, expiresAt, err := s.auth.GenerateAdminAccessKey(ctx, admin.ID, s.tokenBytes, 10*time.Minute, s.now())
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+
+	return &ourneztv1.GenerateAdminAccessKeyResponse{
+		AccessKey: key,
+		ExpiresAt: expiresAt.UTC().Format(time.RFC3339),
+	}, nil
+}
+
+func (s AuthServer) ConsumeAdminAccessKey(ctx context.Context, req *ourneztv1.ConsumeAdminAccessKeyRequest) (*ourneztv1.ConsumeAdminAccessKeyResponse, error) {
+	if req == nil {
+		return nil, toStatusError(apperror.ErrInvalidArgument)
+	}
+
+	admin, err := authenticatedAdmin(ctx, s)
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+
+	if err := s.auth.ConsumeAdminAccessKey(ctx, admin.ID, req.GetAccessKey(), s.now()); err != nil {
+		return nil, toStatusError(err)
+	}
+
+	return &ourneztv1.ConsumeAdminAccessKeyResponse{AccessGranted: true}, nil
+}
+
 func (s AuthServer) DisableUser(ctx context.Context, req *ourneztv1.DisableUserRequest) (*ourneztv1.DisableUserResponse, error) {
 	if req == nil {
 		return nil, toStatusError(apperror.ErrInvalidArgument)

@@ -56,7 +56,7 @@ func (q *Queries) CreateFamily(ctx context.Context, arg CreateFamilyParams) (Fam
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (email, display_name, role, password_hash)
 VALUES ($1, $2, $3, $4)
-RETURNING id, email, display_name, role, password_hash, disabled_at, created_at, updated_at
+RETURNING id, email, display_name, role, password_hash, must_change_password, disabled_at, created_at, updated_at
 `
 
 type CreateUserParams struct {
@@ -80,6 +80,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.DisplayName,
 		&i.Role,
 		&i.PasswordHash,
+		&i.MustChangePassword,
 		&i.DisabledAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -99,7 +100,7 @@ func (q *Queries) DisableUser(ctx context.Context, id pgtype.UUID) error {
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, email, display_name, role, password_hash, disabled_at, created_at, updated_at FROM users
+SELECT id, email, display_name, role, password_hash, must_change_password, disabled_at, created_at, updated_at FROM users
 WHERE email = $1
 `
 
@@ -112,6 +113,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.DisplayName,
 		&i.Role,
 		&i.PasswordHash,
+		&i.MustChangePassword,
 		&i.DisabledAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,

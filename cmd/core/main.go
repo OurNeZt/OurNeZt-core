@@ -62,6 +62,28 @@ func main() {
 		KeyLength:   32,
 	})
 
+	if (cfg.BootstrapAdminEmail == "") != (cfg.BootstrapAdminPassword == "") {
+		logger.Error("bootstrap admin config invalid", "reason", "set both BOOTSTRAP_ADMIN_EMAIL and BOOTSTRAP_ADMIN_PASSWORD together")
+		os.Exit(1)
+	}
+	if cfg.BootstrapAdminEmail != "" {
+		adminUser, bootstrapped, ensureErr := authService.EnsureBootstrapAdmin(
+			ctx,
+			cfg.BootstrapAdminEmail,
+			cfg.BootstrapAdminDisplayName,
+			cfg.BootstrapAdminPassword,
+		)
+		if ensureErr != nil {
+			logger.Error("bootstrap admin failed", "error", ensureErr)
+			os.Exit(1)
+		}
+		if bootstrapped {
+			logger.Info("bootstrap admin ensured", "email", adminUser.Email, "user_id", adminUser.ID)
+		} else {
+			logger.Info("bootstrap admin skipped", "reason", "active admin already exists")
+		}
+	}
+
 	authServer := server.NewAuthServer(authService, userRepo, cfg.SessionTokenBytes, 24*time.Hour, nil)
 	familyServer := server.NewFamilyServer(familyRepo, 7*24*time.Hour, nil, authServer)
 	personServer := server.NewPersonServer(personRepo, authServer)

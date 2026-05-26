@@ -12,14 +12,15 @@ const (
 )
 
 type User struct {
-	ID           ID
-	Email        string
-	DisplayName  string
-	Role         UserRole
-	PasswordHash string
-	DisabledAt   *time.Time
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	ID                 ID
+	Email              string
+	DisplayName        string
+	Role               UserRole
+	PasswordHash       string
+	MustChangePassword bool
+	DisabledAt         *time.Time
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
 }
 
 type FamilyType string
