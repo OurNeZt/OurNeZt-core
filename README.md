@@ -191,12 +191,19 @@ The service is configured using environment variables.
 Example:
 
 ```bash
-export OURNEZT_GRPC_ADDR=":50051"
-export OURNEZT_DATABASE_URL="postgres://ournezt:ournezt@localhost:5432/ournezt?sslmode=disable"
-export OURNEZT_SESSION_TOKEN_BYTES="32"
+export GRPC_ADDR=":50051"
+export DATABASE_URL="postgres://ournezt:ournezt@localhost:5432/ournezt?sslmode=disable"
+export SESSION_TOKEN_BYTES="32"
+export BOOTSTRAP_ADMIN_EMAIL = "admin@example.com"
+export BOOTSTRAP_ADMIN_PASSWORD = "P@ssw0rd"
+export BOOTSTRAP_ADMIN_DISPLAY_NAME = "Admin"
 ```
 
-Adjust the variable names based on the current config package if they change.
+Behaviour:
+
+- If no active admin exists, startup creates (or promotes) this account to admin.
+- The bootstrap admin is forced to change password on first login.
+- If any active admin already exists, bootstrap is skipped.
 
 ---
 
@@ -214,26 +221,6 @@ Example using `grpcurl`:
 
 ```bash
 grpcurl -plaintext localhost:50051 list
-```
-
-For authenticated requests, pass the session token as metadata:
-
-```bash
-grpcurl \
-  -plaintext \
-  -H "authorization: Bearer <session-token>" \
-  localhost:50051 \
-  ournezt.v1.AuthService/ValidateSession
-```
-
-Alternatively:
-
-```bash
-grpcurl \
-  -plaintext \
-  -H "x-session-token: <session-token>" \
-  localhost:50051 \
-  ournezt.v1.AuthService/ValidateSession
 ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -284,10 +271,20 @@ Run the container:
 ```bash
 docker run --rm \
   -p 50051:50051 \
-  -e OURNEZT_GRPC_ADDR=":50051" \
-  -e OURNEZT_DATABASE_URL="postgres://ournezt:ournezt@host.docker.internal:5432/ournezt?sslmode=disable" \
+  -e GRPC_ADDR=":50051" \
+  -e DATABASE_URL="postgres://ournezt:ournezt@host.docker.internal:5432/ournezt?sslmode=disable" \
+  -e RUN_MIGRATIONS="true" \
+  -e BOOTSTRAP_ADMIN_EMAIL="admin@ournezt.local" \
+  -e BOOTSTRAP_ADMIN_PASSWORD="P@ssw0rd" \
+  -e BOOTSTRAP_ADMIN_DISPLAY_NAME="Admin" \
   ournezt-core:local
 ```
+
+Container startup behavior:
+
+- Runs migrations automatically before starting the app (`RUN_MIGRATIONS=true` by default).
+- Uses `MIGRATIONS_PATH` if you need a custom migrations directory.
+- Then starts the gRPC server, where bootstrap admin logic can run from `BOOTSTRAP_ADMIN_*` env vars.
 
 Released images are published to GitHub Container Registry:
 
