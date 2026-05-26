@@ -9,32 +9,26 @@ import (
 )
 
 type Config struct {
-	AppEnv                    string
-	GRPCAddr                  string
-	DatabaseURL               string
-	BootstrapAdminEmail       string
-	BootstrapAdminPassword    string
-	BootstrapAdminDisplayName string
-	ShutdownTimeout           time.Duration
-	SessionTokenBytes         int
-	PasswordMemoryKB          uint32
-	PasswordIterations        uint32
-	PasswordParallelism       uint8
+	AppEnv              string
+	GRPCAddr            string
+	DatabaseURL         string
+	ShutdownTimeout     time.Duration
+	SessionTokenBytes   int
+	PasswordMemoryKB    uint32
+	PasswordIterations  uint32
+	PasswordParallelism uint8
 }
 
 func Load() Config {
 	return Config{
-		AppEnv:                    env("APP_ENV", "development"),
-		GRPCAddr:                  env("GRPC_ADDR", ":50051"),
-		DatabaseURL:               env("DATABASE_URL", ""),
-		BootstrapAdminEmail:       env("BOOTSTRAP_ADMIN_EMAIL", ""),
-		BootstrapAdminPassword:    env("BOOTSTRAP_ADMIN_PASSWORD", ""),
-		BootstrapAdminDisplayName: env("BOOTSTRAP_ADMIN_DISPLAY_NAME", "Bootstrap Admin"),
-		ShutdownTimeout:           envDuration("SHUTDOWN_TIMEOUT", 10*time.Second),
-		SessionTokenBytes:         envInt("SESSION_TOKEN_BYTES", 32),
-		PasswordMemoryKB:          uint32(envInt("PASSWORD_MEMORY_KB", 64*1024)),
-		PasswordIterations:        uint32(envInt("PASSWORD_ITERATIONS", 3)),
-		PasswordParallelism:       uint8(envInt("PASSWORD_PARALLELISM", 2)),
+		AppEnv:              env("APP_ENV", "development"),
+		GRPCAddr:            env("GRPC_ADDR", ":50051"),
+		DatabaseURL:         env("DATABASE_URL", ""),
+		ShutdownTimeout:     envDuration("SHUTDOWN_TIMEOUT", 10*time.Second),
+		SessionTokenBytes:   envInt("SESSION_TOKEN_BYTES", 32),
+		PasswordMemoryKB:    uint32(envInt("PASSWORD_MEMORY_KB", 64*1024)),
+		PasswordIterations:  uint32(envInt("PASSWORD_ITERATIONS", 3)),
+		PasswordParallelism: uint8(envInt("PASSWORD_PARALLELISM", 2)),
 	}
 }
 
