@@ -12,16 +12,9 @@ import (
 )
 
 type fakeUserRepository struct {
-	created         domain.User
-	users           map[string]domain.User
-	disabled        []domain.ID
-	hasActiveAdmin  bool
-	passwordUpdates []struct {
-		userID     domain.ID
-		hash       string
-		mustChange bool
-	}
-	adminAccessKeys map[string]time.Time
+	created  domain.User
+	users    map[string]domain.User
+	disabled []domain.ID
 }
 
 func (r *fakeUserRepository) CreateUser(_ context.Context, user domain.User) (domain.User, error) {
@@ -44,78 +37,9 @@ func (r *fakeUserRepository) GetUserByEmail(_ context.Context, email string) (do
 	return user, nil
 }
 
-func (r *fakeUserRepository) HasActiveAdmin(_ context.Context) (bool, error) {
-	return r.hasActiveAdmin, nil
-}
-
-func (r *fakeUserRepository) GetUserByID(_ context.Context, userID domain.ID) (domain.User, error) {
-	for _, user := range r.users {
-		if user.ID == userID {
-			return user, nil
-		}
-	}
-	return domain.User{}, apperror.ErrNotFound
-}
-
-func (r *fakeUserRepository) PromoteToBootstrapAdmin(_ context.Context, userID domain.ID, displayName string, passwordHash string) (domain.User, error) {
-	for email, user := range r.users {
-		if user.ID == userID {
-			user.Role = domain.UserRoleAdmin
-			user.DisplayName = displayName
-			user.PasswordHash = passwordHash
-			user.MustChangePassword = true
-			user.DisabledAt = nil
-			r.users[email] = user
-			return user, nil
-		}
-	}
-	return domain.User{}, apperror.ErrNotFound
-}
-
-func (r *fakeUserRepository) UpdateUserPassword(_ context.Context, userID domain.ID, passwordHash string, mustChangePassword bool) error {
-	r.passwordUpdates = append(r.passwordUpdates, struct {
-		userID     domain.ID
-		hash       string
-		mustChange bool
-	}{
-		userID:     userID,
-		hash:       passwordHash,
-		mustChange: mustChangePassword,
-	})
-
-	for email, user := range r.users {
-		if user.ID == userID {
-			user.PasswordHash = passwordHash
-			user.MustChangePassword = mustChangePassword
-			r.users[email] = user
-		}
-	}
-	return nil
-}
-
 func (r *fakeUserRepository) DisableUser(_ context.Context, userID domain.ID) error {
 	r.disabled = append(r.disabled, userID)
 	return nil
-}
-
-func (r *fakeUserRepository) CreateAdminAccessKey(_ context.Context, userID domain.ID, tokenHash string, expiresAt time.Time) error {
-	if r.adminAccessKeys == nil {
-		r.adminAccessKeys = map[string]time.Time{}
-	}
-	r.adminAccessKeys[string(userID)+"|"+tokenHash] = expiresAt
-	return nil
-}
-
-func (r *fakeUserRepository) ConsumeAdminAccessKey(_ context.Context, userID domain.ID, tokenHash string, now time.Time) (bool, error) {
-	expiresAt, ok := r.adminAccessKeys[string(userID)+"|"+tokenHash]
-	if !ok {
-		return false, nil
-	}
-	if now.After(expiresAt) {
-		return false, nil
-	}
-	delete(r.adminAccessKeys, string(userID)+"|"+tokenHash)
-	return true, nil
 }
 
 func TestCreateUserNormalizesEmailAndHashesPassword(t *testing.T) {
@@ -136,9 +60,6 @@ func TestCreateUserNormalizesEmailAndHashesPassword(t *testing.T) {
 	if got.Role != domain.UserRoleUser {
 		t.Fatalf("Role = %q, want user", got.Role)
 	}
-	if got.MustChangePassword {
-		t.Fatal("MustChangePassword = true, want false for normal users")
-	}
 	if got.PasswordHash == "temporary-pass" {
 		t.Fatal("PasswordHash contains the raw password")
 	}
@@ -149,19 +70,6 @@ func TestCreateUserNormalizesEmailAndHashesPassword(t *testing.T) {
 	}
 	if !ok {
 		t.Fatal("created password hash did not verify")
-	}
-}
-
-func TestCreateAdminUserRequiresPasswordChange(t *testing.T) {
-	repo := &fakeUserRepository{}
-	service := NewAuthService(repo, fastServiceArgon2Params())
-
-	got, err := service.CreateUser(context.Background(), "admin@example.com", "Admin", "temporary-pass", domain.UserRoleAdmin)
-	if err != nil {
-		t.Fatalf("CreateUser returned error: %v", err)
-	}
-	if !got.MustChangePassword {
-		t.Fatal("MustChangePassword = false, want true for admin users")
 	}
 }
 
@@ -264,143 +172,6 @@ func TestDisableUserDelegatesToRepository(t *testing.T) {
 	}
 	if len(repo.disabled) != 1 || repo.disabled[0] != "user_9" {
 		t.Fatalf("repo disabled users = %#v, want [user_9]", repo.disabled)
-	}
-}
-
-func TestChangePasswordUpdatesHashAndClearsFlag(t *testing.T) {
-	hash, err := security.HashPassword("temporary-pass", fastServiceArgon2Params())
-	if err != nil {
-		t.Fatalf("HashPassword returned error: %v", err)
-	}
-	repo := &fakeUserRepository{
-		users: map[string]domain.User{
-			"admin@example.com": {
-				ID:                 "admin_1",
-				Email:              "admin@example.com",
-				PasswordHash:       hash,
-				MustChangePassword: true,
-				Role:               domain.UserRoleAdmin,
-			},
-		},
-	}
-	service := NewAuthService(repo, fastServiceArgon2Params())
-
-	err = service.ChangePassword(context.Background(), "admin_1", "temporary-pass", "safer-pass")
-	if err != nil {
-		t.Fatalf("ChangePassword returned error: %v", err)
-	}
-	if len(repo.passwordUpdates) != 1 {
-		t.Fatalf("password updates = %d, want 1", len(repo.passwordUpdates))
-	}
-	if repo.passwordUpdates[0].mustChange {
-		t.Fatal("mustChange flag stayed true after password change")
-	}
-	ok, verifyErr := security.VerifyPassword("safer-pass", repo.passwordUpdates[0].hash)
-	if verifyErr != nil {
-		t.Fatalf("VerifyPassword returned error: %v", verifyErr)
-	}
-	if !ok {
-		t.Fatal("updated hash did not verify")
-	}
-}
-
-func TestGenerateAndConsumeAdminAccessKey(t *testing.T) {
-	repo := &fakeUserRepository{
-		users: map[string]domain.User{
-			"admin@example.com": {
-				ID:    "admin_1",
-				Email: "admin@example.com",
-				Role:  domain.UserRoleAdmin,
-			},
-		},
-	}
-	service := NewAuthService(repo, fastServiceArgon2Params())
-	now := time.Date(2026, 5, 25, 0, 0, 0, 0, time.UTC)
-
-	key, expiresAt, err := service.GenerateAdminAccessKey(context.Background(), "admin_1", 32, 5*time.Minute, now)
-	if err != nil {
-		t.Fatalf("GenerateAdminAccessKey returned error: %v", err)
-	}
-	if key == "" {
-		t.Fatal("generated key is empty")
-	}
-	if !expiresAt.Equal(now.Add(5 * time.Minute)) {
-		t.Fatalf("expiresAt = %v, want %v", expiresAt, now.Add(5*time.Minute))
-	}
-
-	err = service.ConsumeAdminAccessKey(context.Background(), "admin_1", key, now.Add(2*time.Minute))
-	if err != nil {
-		t.Fatalf("ConsumeAdminAccessKey returned error: %v", err)
-	}
-}
-
-func TestEnsureBootstrapAdminCreatesWhenNoAdminExists(t *testing.T) {
-	repo := &fakeUserRepository{users: map[string]domain.User{}}
-	service := NewAuthService(repo, fastServiceArgon2Params())
-
-	user, changed, err := service.EnsureBootstrapAdmin(context.Background(), "admin@ournezt.local", "Bootstrap Admin", "TempPass123!")
-	if err != nil {
-		t.Fatalf("EnsureBootstrapAdmin returned error: %v", err)
-	}
-	if !changed {
-		t.Fatal("changed = false, want true")
-	}
-	if user.Role != domain.UserRoleAdmin {
-		t.Fatalf("Role = %q, want admin", user.Role)
-	}
-	if !user.MustChangePassword {
-		t.Fatal("MustChangePassword = false, want true")
-	}
-}
-
-func TestEnsureBootstrapAdminPromotesExistingUser(t *testing.T) {
-	userHash, err := security.HashPassword("old", fastServiceArgon2Params())
-	if err != nil {
-		t.Fatalf("HashPassword returned error: %v", err)
-	}
-	repo := &fakeUserRepository{
-		users: map[string]domain.User{
-			"member@ournezt.local": {
-				ID:           "user_22",
-				Email:        "member@ournezt.local",
-				Role:         domain.UserRoleUser,
-				PasswordHash: userHash,
-			},
-		},
-	}
-	service := NewAuthService(repo, fastServiceArgon2Params())
-
-	user, changed, err := service.EnsureBootstrapAdmin(context.Background(), "member@ournezt.local", "Primary Admin", "TempPass123!")
-	if err != nil {
-		t.Fatalf("EnsureBootstrapAdmin returned error: %v", err)
-	}
-	if !changed {
-		t.Fatal("changed = false, want true")
-	}
-	if user.Role != domain.UserRoleAdmin {
-		t.Fatalf("Role = %q, want admin", user.Role)
-	}
-	if user.DisplayName != "Primary Admin" {
-		t.Fatalf("DisplayName = %q, want Primary Admin", user.DisplayName)
-	}
-}
-
-func TestEnsureBootstrapAdminSkipsWhenAdminExists(t *testing.T) {
-	repo := &fakeUserRepository{
-		users:          map[string]domain.User{},
-		hasActiveAdmin: true,
-	}
-	service := NewAuthService(repo, fastServiceArgon2Params())
-
-	user, changed, err := service.EnsureBootstrapAdmin(context.Background(), "admin@ournezt.local", "Bootstrap Admin", "TempPass123!")
-	if err != nil {
-		t.Fatalf("EnsureBootstrapAdmin returned error: %v", err)
-	}
-	if changed {
-		t.Fatal("changed = true, want false")
-	}
-	if user.ID != "" {
-		t.Fatalf("user.ID = %q, want empty", user.ID)
 	}
 }
 

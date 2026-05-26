@@ -27,8 +27,6 @@ func toStatusError(err error) error {
 		return status.Error(codes.NotFound, err.Error())
 	case errors.Is(err, apperror.ErrConflict):
 		return status.Error(codes.AlreadyExists, err.Error())
-	case errors.Is(err, apperror.ErrPasswordChangeRequired):
-		return status.Error(codes.FailedPrecondition, err.Error())
 	default:
 		return status.Error(codes.Internal, "internal error")
 	}
