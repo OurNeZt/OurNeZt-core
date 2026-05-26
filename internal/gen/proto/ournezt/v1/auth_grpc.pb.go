@@ -19,13 +19,10 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AuthService_Login_FullMethodName                  = "/ournezt.v1.AuthService/Login"
-	AuthService_ValidateSession_FullMethodName        = "/ournezt.v1.AuthService/ValidateSession"
-	AuthService_ChangePassword_FullMethodName         = "/ournezt.v1.AuthService/ChangePassword"
-	AuthService_GenerateAdminAccessKey_FullMethodName = "/ournezt.v1.AuthService/GenerateAdminAccessKey"
-	AuthService_ConsumeAdminAccessKey_FullMethodName  = "/ournezt.v1.AuthService/ConsumeAdminAccessKey"
-	AuthService_CreateUser_FullMethodName             = "/ournezt.v1.AuthService/CreateUser"
-	AuthService_DisableUser_FullMethodName            = "/ournezt.v1.AuthService/DisableUser"
+	AuthService_Login_FullMethodName           = "/ournezt.v1.AuthService/Login"
+	AuthService_ValidateSession_FullMethodName = "/ournezt.v1.AuthService/ValidateSession"
+	AuthService_CreateUser_FullMethodName      = "/ournezt.v1.AuthService/CreateUser"
+	AuthService_DisableUser_FullMethodName     = "/ournezt.v1.AuthService/DisableUser"
 )
 
 // AuthServiceClient is the client API for AuthService service.
@@ -34,9 +31,6 @@ const (
 type AuthServiceClient interface {
 	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
 	ValidateSession(ctx context.Context, in *ValidateSessionRequest, opts ...grpc.CallOption) (*ValidateSessionResponse, error)
-	ChangePassword(ctx context.Context, in *ChangePasswordRequest, opts ...grpc.CallOption) (*ChangePasswordResponse, error)
-	GenerateAdminAccessKey(ctx context.Context, in *GenerateAdminAccessKeyRequest, opts ...grpc.CallOption) (*GenerateAdminAccessKeyResponse, error)
-	ConsumeAdminAccessKey(ctx context.Context, in *ConsumeAdminAccessKeyRequest, opts ...grpc.CallOption) (*ConsumeAdminAccessKeyResponse, error)
 	CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*User, error)
 	DisableUser(ctx context.Context, in *DisableUserRequest, opts ...grpc.CallOption) (*DisableUserResponse, error)
 }
@@ -69,36 +63,6 @@ func (c *authServiceClient) ValidateSession(ctx context.Context, in *ValidateSes
 	return out, nil
 }
 
-func (c *authServiceClient) ChangePassword(ctx context.Context, in *ChangePasswordRequest, opts ...grpc.CallOption) (*ChangePasswordResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ChangePasswordResponse)
-	err := c.cc.Invoke(ctx, AuthService_ChangePassword_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *authServiceClient) GenerateAdminAccessKey(ctx context.Context, in *GenerateAdminAccessKeyRequest, opts ...grpc.CallOption) (*GenerateAdminAccessKeyResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GenerateAdminAccessKeyResponse)
-	err := c.cc.Invoke(ctx, AuthService_GenerateAdminAccessKey_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *authServiceClient) ConsumeAdminAccessKey(ctx context.Context, in *ConsumeAdminAccessKeyRequest, opts ...grpc.CallOption) (*ConsumeAdminAccessKeyResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ConsumeAdminAccessKeyResponse)
-	err := c.cc.Invoke(ctx, AuthService_ConsumeAdminAccessKey_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *authServiceClient) CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*User, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(User)
@@ -125,9 +89,6 @@ func (c *authServiceClient) DisableUser(ctx context.Context, in *DisableUserRequ
 type AuthServiceServer interface {
 	Login(context.Context, *LoginRequest) (*LoginResponse, error)
 	ValidateSession(context.Context, *ValidateSessionRequest) (*ValidateSessionResponse, error)
-	ChangePassword(context.Context, *ChangePasswordRequest) (*ChangePasswordResponse, error)
-	GenerateAdminAccessKey(context.Context, *GenerateAdminAccessKeyRequest) (*GenerateAdminAccessKeyResponse, error)
-	ConsumeAdminAccessKey(context.Context, *ConsumeAdminAccessKeyRequest) (*ConsumeAdminAccessKeyResponse, error)
 	CreateUser(context.Context, *CreateUserRequest) (*User, error)
 	DisableUser(context.Context, *DisableUserRequest) (*DisableUserResponse, error)
 	mustEmbedUnimplementedAuthServiceServer()
@@ -145,15 +106,6 @@ func (UnimplementedAuthServiceServer) Login(context.Context, *LoginRequest) (*Lo
 }
 func (UnimplementedAuthServiceServer) ValidateSession(context.Context, *ValidateSessionRequest) (*ValidateSessionResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ValidateSession not implemented")
-}
-func (UnimplementedAuthServiceServer) ChangePassword(context.Context, *ChangePasswordRequest) (*ChangePasswordResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method ChangePassword not implemented")
-}
-func (UnimplementedAuthServiceServer) GenerateAdminAccessKey(context.Context, *GenerateAdminAccessKeyRequest) (*GenerateAdminAccessKeyResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method GenerateAdminAccessKey not implemented")
-}
-func (UnimplementedAuthServiceServer) ConsumeAdminAccessKey(context.Context, *ConsumeAdminAccessKeyRequest) (*ConsumeAdminAccessKeyResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method ConsumeAdminAccessKey not implemented")
 }
 func (UnimplementedAuthServiceServer) CreateUser(context.Context, *CreateUserRequest) (*User, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateUser not implemented")
@@ -218,60 +170,6 @@ func _AuthService_ValidateSession_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AuthService_ChangePassword_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ChangePasswordRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AuthServiceServer).ChangePassword(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AuthService_ChangePassword_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AuthServiceServer).ChangePassword(ctx, req.(*ChangePasswordRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AuthService_GenerateAdminAccessKey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GenerateAdminAccessKeyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AuthServiceServer).GenerateAdminAccessKey(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AuthService_GenerateAdminAccessKey_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AuthServiceServer).GenerateAdminAccessKey(ctx, req.(*GenerateAdminAccessKeyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AuthService_ConsumeAdminAccessKey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ConsumeAdminAccessKeyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AuthServiceServer).ConsumeAdminAccessKey(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AuthService_ConsumeAdminAccessKey_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AuthServiceServer).ConsumeAdminAccessKey(ctx, req.(*ConsumeAdminAccessKeyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _AuthService_CreateUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateUserRequest)
 	if err := dec(in); err != nil {
@@ -322,18 +220,6 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ValidateSession",
 			Handler:    _AuthService_ValidateSession_Handler,
-		},
-		{
-			MethodName: "ChangePassword",
-			Handler:    _AuthService_ChangePassword_Handler,
-		},
-		{
-			MethodName: "GenerateAdminAccessKey",
-			Handler:    _AuthService_GenerateAdminAccessKey_Handler,
-		},
-		{
-			MethodName: "ConsumeAdminAccessKey",
-			Handler:    _AuthService_ConsumeAdminAccessKey_Handler,
 		},
 		{
 			MethodName: "CreateUser",

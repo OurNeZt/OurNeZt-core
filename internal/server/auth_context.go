@@ -12,7 +12,7 @@ import (
 
 const (
 	authorizationHeader = "authorization"
-	sessionTokenHeader  = "x-session-token"
+	sessionTokenHeader   = "x-session-token"
 )
 
 type Authenticator interface {
@@ -81,9 +81,6 @@ func authenticatedAdmin(ctx context.Context, auth Authenticator) (domain.User, e
 
 	if user.Role != domain.UserRoleAdmin {
 		return domain.User{}, apperror.ErrForbidden
-	}
-	if user.MustChangePassword {
-		return domain.User{}, apperror.ErrPasswordChangeRequired
 	}
 
 	return user, nil
