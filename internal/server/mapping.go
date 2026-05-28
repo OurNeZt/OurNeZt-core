@@ -76,6 +76,7 @@ func personFromProto(in *ourneztv1.PersonProfile) (domain.PersonProfile, error) 
 	return domain.PersonProfile{
 		ID:                        domain.ID(strings.TrimSpace(in.GetId())),
 		FamilyID:                  domain.ID(strings.TrimSpace(in.GetFamilyId())),
+		LinkedUserID:              domain.ID(strings.TrimSpace(in.GetLinkedUserId())),
 		Name:                      strings.TrimSpace(in.GetName()),
 		Age:                       int(in.GetAge()),
 		RelationshipLabel:         strings.TrimSpace(in.GetRelationshipLabel()),
@@ -97,6 +98,7 @@ func personToProto(person domain.PersonProfile) *ourneztv1.PersonProfile {
 	return &ourneztv1.PersonProfile{
 		Id:                        string(person.ID),
 		FamilyId:                  string(person.FamilyID),
+		LinkedUserId:              string(person.LinkedUserID),
 		Name:                      person.Name,
 		Age:                       int32(person.Age),
 		RelationshipLabel:         person.RelationshipLabel,

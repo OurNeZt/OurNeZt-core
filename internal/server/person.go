@@ -2,7 +2,9 @@ package server
 
 import (
 	"context"
+	"strings"
 
+	"github.com/OurNeZt/ournezt-core/internal/domain"
 	ourneztv1 "github.com/OurNeZt/ournezt-core/internal/gen/proto/ournezt/v1"
 	"github.com/OurNeZt/ournezt-core/internal/platform/apperror"
 	"github.com/OurNeZt/ournezt-core/internal/repository"
@@ -29,6 +31,9 @@ func NewPersonServer(people repository.People, auth ...Authenticator) PersonServ
 func (s PersonServer) CreatePersonProfile(ctx context.Context, req *ourneztv1.PersonProfile) (*ourneztv1.PersonProfile, error) {
 	profile, err := personFromProto(req)
 	if err != nil {
+		return nil, toStatusError(err)
+	}
+	if err := validateAndNormalizePersonProfile(&profile); err != nil {
 		return nil, toStatusError(err)
 	}
 
@@ -126,6 +131,9 @@ func (s PersonServer) UpdatePersonProfile(ctx context.Context, req *ourneztv1.Pe
 	if profile.ID == "" {
 		return nil, toStatusError(apperror.ErrInvalidArgument)
 	}
+	if err := validateAndNormalizePersonProfile(&profile); err != nil {
+		return nil, toStatusError(err)
+	}
 
 	actorID, err := optionalAuthenticatedActorID(ctx, s.auth)
 	if err != nil {
@@ -156,4 +164,51 @@ func (s PersonServer) DeletePersonProfile(ctx context.Context, req *ourneztv1.De
 		return nil, toStatusError(err)
 	}
 	return &ourneztv1.DeletePersonProfileResponse{}, nil
+}
+
+func validateAndNormalizePersonProfile(profile *domain.PersonProfile) error {
+	if profile == nil {
+		return apperror.ErrInvalidArgument
+	}
+	if strings.TrimSpace(profile.Name) == "" {
+		return apperror.ErrInvalidArgument
+	}
+
+	switch strings.TrimSpace(strings.ToLower(profile.RelationshipLabel)) {
+	case "spouse", "fiance", "fiancee", "occupant", "self", "me":
+	default:
+		return apperror.ErrInvalidArgument
+	}
+
+	switch profile.EmploymentStatus {
+	case domain.EmploymentFullTime:
+		profile.ExpectedFutureIncomeCents = 0
+		profile.ExpectedIncomeStartDate = nil
+		profile.GraduationDate = nil
+		profile.ORDDate = nil
+	case domain.EmploymentStudent:
+		profile.ORDDate = nil
+		if profile.GraduationDate == nil {
+			return apperror.ErrInvalidArgument
+		}
+	case domain.EmploymentFullTimeNSF:
+		profile.GraduationDate = nil
+		if profile.ORDDate == nil {
+			return apperror.ErrInvalidArgument
+		}
+	default:
+		return apperror.ErrInvalidArgument
+	}
+
+	if profile.GrossMonthlyIncomeCents < 0 ||
+		profile.ExpectedFutureIncomeCents < 0 ||
+		profile.CashSavingsCents < 0 ||
+		profile.CPFOACents < 0 ||
+		profile.CPFSACents < 0 ||
+		profile.CPFMACents < 0 ||
+		profile.MonthlyExpensesCents < 0 {
+		return apperror.ErrInvalidArgument
+	}
+
+	return nil
 }
