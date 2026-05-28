@@ -333,6 +333,178 @@ func (x *ListPersonProfilesByFamilyResponse) GetPeople() []*PersonProfile {
 	return nil
 }
 
+type ListIncomeHistoryByFamilyRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ViewerUserId  string                 `protobuf:"bytes,1,opt,name=viewer_user_id,json=viewerUserId,proto3" json:"viewer_user_id,omitempty"`
+	FamilyId      string                 `protobuf:"bytes,2,opt,name=family_id,json=familyId,proto3" json:"family_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListIncomeHistoryByFamilyRequest) Reset() {
+	*x = ListIncomeHistoryByFamilyRequest{}
+	mi := &file_ournezt_v1_person_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListIncomeHistoryByFamilyRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListIncomeHistoryByFamilyRequest) ProtoMessage() {}
+
+func (x *ListIncomeHistoryByFamilyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ournezt_v1_person_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListIncomeHistoryByFamilyRequest.ProtoReflect.Descriptor instead.
+func (*ListIncomeHistoryByFamilyRequest) Descriptor() ([]byte, []int) {
+	return file_ournezt_v1_person_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *ListIncomeHistoryByFamilyRequest) GetViewerUserId() string {
+	if x != nil {
+		return x.ViewerUserId
+	}
+	return ""
+}
+
+func (x *ListIncomeHistoryByFamilyRequest) GetFamilyId() string {
+	if x != nil {
+		return x.FamilyId
+	}
+	return ""
+}
+
+type IncomeHistoryEntry struct {
+	state                     protoimpl.MessageState `protogen:"open.v1"`
+	PersonId                  string                 `protobuf:"bytes,1,opt,name=person_id,json=personId,proto3" json:"person_id,omitempty"`
+	PersonName                string                 `protobuf:"bytes,2,opt,name=person_name,json=personName,proto3" json:"person_name,omitempty"`
+	GrossMonthlyIncomeCents   int64                  `protobuf:"varint,3,opt,name=gross_monthly_income_cents,json=grossMonthlyIncomeCents,proto3" json:"gross_monthly_income_cents,omitempty"`
+	ExpectedFutureIncomeCents int64                  `protobuf:"varint,4,opt,name=expected_future_income_cents,json=expectedFutureIncomeCents,proto3" json:"expected_future_income_cents,omitempty"`
+	RecordedAt                string                 `protobuf:"bytes,5,opt,name=recorded_at,json=recordedAt,proto3" json:"recorded_at,omitempty"`
+	unknownFields             protoimpl.UnknownFields
+	sizeCache                 protoimpl.SizeCache
+}
+
+func (x *IncomeHistoryEntry) Reset() {
+	*x = IncomeHistoryEntry{}
+	mi := &file_ournezt_v1_person_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *IncomeHistoryEntry) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*IncomeHistoryEntry) ProtoMessage() {}
+
+func (x *IncomeHistoryEntry) ProtoReflect() protoreflect.Message {
+	mi := &file_ournezt_v1_person_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use IncomeHistoryEntry.ProtoReflect.Descriptor instead.
+func (*IncomeHistoryEntry) Descriptor() ([]byte, []int) {
+	return file_ournezt_v1_person_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *IncomeHistoryEntry) GetPersonId() string {
+	if x != nil {
+		return x.PersonId
+	}
+	return ""
+}
+
+func (x *IncomeHistoryEntry) GetPersonName() string {
+	if x != nil {
+		return x.PersonName
+	}
+	return ""
+}
+
+func (x *IncomeHistoryEntry) GetGrossMonthlyIncomeCents() int64 {
+	if x != nil {
+		return x.GrossMonthlyIncomeCents
+	}
+	return 0
+}
+
+func (x *IncomeHistoryEntry) GetExpectedFutureIncomeCents() int64 {
+	if x != nil {
+		return x.ExpectedFutureIncomeCents
+	}
+	return 0
+}
+
+func (x *IncomeHistoryEntry) GetRecordedAt() string {
+	if x != nil {
+		return x.RecordedAt
+	}
+	return ""
+}
+
+type ListIncomeHistoryByFamilyResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Entries       []*IncomeHistoryEntry  `protobuf:"bytes,1,rep,name=entries,proto3" json:"entries,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListIncomeHistoryByFamilyResponse) Reset() {
+	*x = ListIncomeHistoryByFamilyResponse{}
+	mi := &file_ournezt_v1_person_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListIncomeHistoryByFamilyResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListIncomeHistoryByFamilyResponse) ProtoMessage() {}
+
+func (x *ListIncomeHistoryByFamilyResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ournezt_v1_person_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListIncomeHistoryByFamilyResponse.ProtoReflect.Descriptor instead.
+func (*ListIncomeHistoryByFamilyResponse) Descriptor() ([]byte, []int) {
+	return file_ournezt_v1_person_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *ListIncomeHistoryByFamilyResponse) GetEntries() []*IncomeHistoryEntry {
+	if x != nil {
+		return x.Entries
+	}
+	return nil
+}
+
 type DeletePersonProfileRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ActorUserId   string                 `protobuf:"bytes,1,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
@@ -343,7 +515,7 @@ type DeletePersonProfileRequest struct {
 
 func (x *DeletePersonProfileRequest) Reset() {
 	*x = DeletePersonProfileRequest{}
-	mi := &file_ournezt_v1_person_proto_msgTypes[4]
+	mi := &file_ournezt_v1_person_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -355,7 +527,7 @@ func (x *DeletePersonProfileRequest) String() string {
 func (*DeletePersonProfileRequest) ProtoMessage() {}
 
 func (x *DeletePersonProfileRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ournezt_v1_person_proto_msgTypes[4]
+	mi := &file_ournezt_v1_person_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -368,7 +540,7 @@ func (x *DeletePersonProfileRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeletePersonProfileRequest.ProtoReflect.Descriptor instead.
 func (*DeletePersonProfileRequest) Descriptor() ([]byte, []int) {
-	return file_ournezt_v1_person_proto_rawDescGZIP(), []int{4}
+	return file_ournezt_v1_person_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *DeletePersonProfileRequest) GetActorUserId() string {
@@ -393,7 +565,7 @@ type DeletePersonProfileResponse struct {
 
 func (x *DeletePersonProfileResponse) Reset() {
 	*x = DeletePersonProfileResponse{}
-	mi := &file_ournezt_v1_person_proto_msgTypes[5]
+	mi := &file_ournezt_v1_person_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -405,7 +577,7 @@ func (x *DeletePersonProfileResponse) String() string {
 func (*DeletePersonProfileResponse) ProtoMessage() {}
 
 func (x *DeletePersonProfileResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ournezt_v1_person_proto_msgTypes[5]
+	mi := &file_ournezt_v1_person_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -418,7 +590,7 @@ func (x *DeletePersonProfileResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeletePersonProfileResponse.ProtoReflect.Descriptor instead.
 func (*DeletePersonProfileResponse) Descriptor() ([]byte, []int) {
-	return file_ournezt_v1_person_proto_rawDescGZIP(), []int{5}
+	return file_ournezt_v1_person_proto_rawDescGZIP(), []int{8}
 }
 
 var File_ournezt_v1_person_proto protoreflect.FileDescriptor
@@ -455,15 +627,29 @@ const file_ournezt_v1_person_proto_rawDesc = "" +
 	"\x0eviewer_user_id\x18\x01 \x01(\tR\fviewerUserId\x12\x1b\n" +
 	"\tfamily_id\x18\x02 \x01(\tR\bfamilyId\"W\n" +
 	"\"ListPersonProfilesByFamilyResponse\x121\n" +
-	"\x06people\x18\x01 \x03(\v2\x19.ournezt.v1.PersonProfileR\x06people\"]\n" +
+	"\x06people\x18\x01 \x03(\v2\x19.ournezt.v1.PersonProfileR\x06people\"e\n" +
+	" ListIncomeHistoryByFamilyRequest\x12$\n" +
+	"\x0eviewer_user_id\x18\x01 \x01(\tR\fviewerUserId\x12\x1b\n" +
+	"\tfamily_id\x18\x02 \x01(\tR\bfamilyId\"\xf1\x01\n" +
+	"\x12IncomeHistoryEntry\x12\x1b\n" +
+	"\tperson_id\x18\x01 \x01(\tR\bpersonId\x12\x1f\n" +
+	"\vperson_name\x18\x02 \x01(\tR\n" +
+	"personName\x12;\n" +
+	"\x1agross_monthly_income_cents\x18\x03 \x01(\x03R\x17grossMonthlyIncomeCents\x12?\n" +
+	"\x1cexpected_future_income_cents\x18\x04 \x01(\x03R\x19expectedFutureIncomeCents\x12\x1f\n" +
+	"\vrecorded_at\x18\x05 \x01(\tR\n" +
+	"recordedAt\"]\n" +
+	"!ListIncomeHistoryByFamilyResponse\x128\n" +
+	"\aentries\x18\x01 \x03(\v2\x1e.ournezt.v1.IncomeHistoryEntryR\aentries\"]\n" +
 	"\x1aDeletePersonProfileRequest\x12\"\n" +
 	"\ractor_user_id\x18\x01 \x01(\tR\vactorUserId\x12\x1b\n" +
 	"\tperson_id\x18\x02 \x01(\tR\bpersonId\"\x1d\n" +
-	"\x1bDeletePersonProfileResponse2\xe2\x03\n" +
+	"\x1bDeletePersonProfileResponse2\xdc\x04\n" +
 	"\rPersonService\x12K\n" +
 	"\x13CreatePersonProfile\x12\x19.ournezt.v1.PersonProfile\x1a\x19.ournezt.v1.PersonProfile\x12R\n" +
 	"\x10GetPersonProfile\x12#.ournezt.v1.GetPersonProfileRequest\x1a\x19.ournezt.v1.PersonProfile\x12{\n" +
-	"\x1aListPersonProfilesByFamily\x12-.ournezt.v1.ListPersonProfilesByFamilyRequest\x1a..ournezt.v1.ListPersonProfilesByFamilyResponse\x12K\n" +
+	"\x1aListPersonProfilesByFamily\x12-.ournezt.v1.ListPersonProfilesByFamilyRequest\x1a..ournezt.v1.ListPersonProfilesByFamilyResponse\x12x\n" +
+	"\x19ListIncomeHistoryByFamily\x12,.ournezt.v1.ListIncomeHistoryByFamilyRequest\x1a-.ournezt.v1.ListIncomeHistoryByFamilyResponse\x12K\n" +
 	"\x13UpdatePersonProfile\x12\x19.ournezt.v1.PersonProfile\x1a\x19.ournezt.v1.PersonProfile\x12f\n" +
 	"\x13DeletePersonProfile\x12&.ournezt.v1.DeletePersonProfileRequest\x1a'.ournezt.v1.DeletePersonProfileResponseBIZGgithub.com/OurNeZt/ournezt-core/internal/gen/proto/ournezt/v1;ourneztv1b\x06proto3"
 
@@ -479,32 +665,38 @@ func file_ournezt_v1_person_proto_rawDescGZIP() []byte {
 	return file_ournezt_v1_person_proto_rawDescData
 }
 
-var file_ournezt_v1_person_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_ournezt_v1_person_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_ournezt_v1_person_proto_goTypes = []any{
 	(*PersonProfile)(nil),                      // 0: ournezt.v1.PersonProfile
 	(*GetPersonProfileRequest)(nil),            // 1: ournezt.v1.GetPersonProfileRequest
 	(*ListPersonProfilesByFamilyRequest)(nil),  // 2: ournezt.v1.ListPersonProfilesByFamilyRequest
 	(*ListPersonProfilesByFamilyResponse)(nil), // 3: ournezt.v1.ListPersonProfilesByFamilyResponse
-	(*DeletePersonProfileRequest)(nil),         // 4: ournezt.v1.DeletePersonProfileRequest
-	(*DeletePersonProfileResponse)(nil),        // 5: ournezt.v1.DeletePersonProfileResponse
+	(*ListIncomeHistoryByFamilyRequest)(nil),   // 4: ournezt.v1.ListIncomeHistoryByFamilyRequest
+	(*IncomeHistoryEntry)(nil),                 // 5: ournezt.v1.IncomeHistoryEntry
+	(*ListIncomeHistoryByFamilyResponse)(nil),  // 6: ournezt.v1.ListIncomeHistoryByFamilyResponse
+	(*DeletePersonProfileRequest)(nil),         // 7: ournezt.v1.DeletePersonProfileRequest
+	(*DeletePersonProfileResponse)(nil),        // 8: ournezt.v1.DeletePersonProfileResponse
 }
 var file_ournezt_v1_person_proto_depIdxs = []int32{
 	0, // 0: ournezt.v1.ListPersonProfilesByFamilyResponse.people:type_name -> ournezt.v1.PersonProfile
-	0, // 1: ournezt.v1.PersonService.CreatePersonProfile:input_type -> ournezt.v1.PersonProfile
-	1, // 2: ournezt.v1.PersonService.GetPersonProfile:input_type -> ournezt.v1.GetPersonProfileRequest
-	2, // 3: ournezt.v1.PersonService.ListPersonProfilesByFamily:input_type -> ournezt.v1.ListPersonProfilesByFamilyRequest
-	0, // 4: ournezt.v1.PersonService.UpdatePersonProfile:input_type -> ournezt.v1.PersonProfile
-	4, // 5: ournezt.v1.PersonService.DeletePersonProfile:input_type -> ournezt.v1.DeletePersonProfileRequest
-	0, // 6: ournezt.v1.PersonService.CreatePersonProfile:output_type -> ournezt.v1.PersonProfile
-	0, // 7: ournezt.v1.PersonService.GetPersonProfile:output_type -> ournezt.v1.PersonProfile
-	3, // 8: ournezt.v1.PersonService.ListPersonProfilesByFamily:output_type -> ournezt.v1.ListPersonProfilesByFamilyResponse
-	0, // 9: ournezt.v1.PersonService.UpdatePersonProfile:output_type -> ournezt.v1.PersonProfile
-	5, // 10: ournezt.v1.PersonService.DeletePersonProfile:output_type -> ournezt.v1.DeletePersonProfileResponse
-	6, // [6:11] is the sub-list for method output_type
-	1, // [1:6] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	5, // 1: ournezt.v1.ListIncomeHistoryByFamilyResponse.entries:type_name -> ournezt.v1.IncomeHistoryEntry
+	0, // 2: ournezt.v1.PersonService.CreatePersonProfile:input_type -> ournezt.v1.PersonProfile
+	1, // 3: ournezt.v1.PersonService.GetPersonProfile:input_type -> ournezt.v1.GetPersonProfileRequest
+	2, // 4: ournezt.v1.PersonService.ListPersonProfilesByFamily:input_type -> ournezt.v1.ListPersonProfilesByFamilyRequest
+	4, // 5: ournezt.v1.PersonService.ListIncomeHistoryByFamily:input_type -> ournezt.v1.ListIncomeHistoryByFamilyRequest
+	0, // 6: ournezt.v1.PersonService.UpdatePersonProfile:input_type -> ournezt.v1.PersonProfile
+	7, // 7: ournezt.v1.PersonService.DeletePersonProfile:input_type -> ournezt.v1.DeletePersonProfileRequest
+	0, // 8: ournezt.v1.PersonService.CreatePersonProfile:output_type -> ournezt.v1.PersonProfile
+	0, // 9: ournezt.v1.PersonService.GetPersonProfile:output_type -> ournezt.v1.PersonProfile
+	3, // 10: ournezt.v1.PersonService.ListPersonProfilesByFamily:output_type -> ournezt.v1.ListPersonProfilesByFamilyResponse
+	6, // 11: ournezt.v1.PersonService.ListIncomeHistoryByFamily:output_type -> ournezt.v1.ListIncomeHistoryByFamilyResponse
+	0, // 12: ournezt.v1.PersonService.UpdatePersonProfile:output_type -> ournezt.v1.PersonProfile
+	8, // 13: ournezt.v1.PersonService.DeletePersonProfile:output_type -> ournezt.v1.DeletePersonProfileResponse
+	8, // [8:14] is the sub-list for method output_type
+	2, // [2:8] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_ournezt_v1_person_proto_init() }
@@ -518,7 +710,7 @@ func file_ournezt_v1_person_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_ournezt_v1_person_proto_rawDesc), len(file_ournezt_v1_person_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   6,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

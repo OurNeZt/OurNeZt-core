@@ -91,6 +91,33 @@ func (s PersonServer) ListPersonProfilesByFamily(ctx context.Context, req *ourne
 	return response, nil
 }
 
+func (s PersonServer) ListIncomeHistoryByFamily(ctx context.Context, req *ourneztv1.ListIncomeHistoryByFamilyRequest) (*ourneztv1.ListIncomeHistoryByFamilyResponse, error) {
+	if req == nil {
+		return nil, toStatusError(apperror.ErrInvalidArgument)
+	}
+	viewerID, err := requestActorID(ctx, s.auth, req.GetViewerUserId())
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+	familyID, err := requireID(req.GetFamilyId())
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+
+	entries, err := s.people.ListPersonIncomeHistoryByFamily(ctx, familyID, viewerID)
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+
+	response := &ourneztv1.ListIncomeHistoryByFamilyResponse{
+		Entries: make([]*ourneztv1.IncomeHistoryEntry, 0, len(entries)),
+	}
+	for _, entry := range entries {
+		response.Entries = append(response.Entries, personIncomeHistoryEntryToProto(entry))
+	}
+	return response, nil
+}
+
 func (s PersonServer) UpdatePersonProfile(ctx context.Context, req *ourneztv1.PersonProfile) (*ourneztv1.PersonProfile, error) {
 	profile, err := personFromProto(req)
 	if err != nil {

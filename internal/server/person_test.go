@@ -11,12 +11,13 @@ import (
 )
 
 type fakePeopleRepository struct {
-	createInput domain.PersonProfile
-	created     domain.PersonProfile
-	got         domain.PersonProfile
-	list        []domain.PersonProfile
-	updated     domain.PersonProfile
-	deletedID   domain.ID
+	createInput   domain.PersonProfile
+	created       domain.PersonProfile
+	got           domain.PersonProfile
+	list          []domain.PersonProfile
+	incomeHistory []domain.PersonIncomeHistoryEntry
+	updated       domain.PersonProfile
+	deletedID     domain.ID
 }
 
 func (r *fakePeopleRepository) CreatePersonProfile(_ context.Context, profile domain.PersonProfile, _ domain.ID) (domain.PersonProfile, error) {
@@ -30,6 +31,10 @@ func (r *fakePeopleRepository) GetPersonProfile(_ context.Context, _ domain.ID, 
 
 func (r *fakePeopleRepository) ListPersonProfilesByFamily(_ context.Context, _ domain.ID, _ domain.ID) ([]domain.PersonProfile, error) {
 	return r.list, nil
+}
+
+func (r *fakePeopleRepository) ListPersonIncomeHistoryByFamily(_ context.Context, _ domain.ID, _ domain.ID) ([]domain.PersonIncomeHistoryEntry, error) {
+	return r.incomeHistory, nil
 }
 
 func (r *fakePeopleRepository) UpdatePersonProfile(_ context.Context, profile domain.PersonProfile, _ domain.ID) (domain.PersonProfile, error) {

@@ -90,6 +90,14 @@ type PersonProfile struct {
 	UpdatedAt                 time.Time
 }
 
+type PersonIncomeHistoryEntry struct {
+	PersonID                  ID
+	PersonName                string
+	GrossMonthlyIncomeCents   int64
+	ExpectedFutureIncomeCents int64
+	RecordedAt                time.Time
+}
+
 type HousingType string
 
 const (

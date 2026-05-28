@@ -114,6 +114,16 @@ func personToProto(person domain.PersonProfile) *ourneztv1.PersonProfile {
 	}
 }
 
+func personIncomeHistoryEntryToProto(entry domain.PersonIncomeHistoryEntry) *ourneztv1.IncomeHistoryEntry {
+	return &ourneztv1.IncomeHistoryEntry{
+		PersonId:                  string(entry.PersonID),
+		PersonName:                entry.PersonName,
+		GrossMonthlyIncomeCents:   entry.GrossMonthlyIncomeCents,
+		ExpectedFutureIncomeCents: entry.ExpectedFutureIncomeCents,
+		RecordedAt:                entry.RecordedAt.UTC().Format(time.RFC3339),
+	}
+}
+
 func housingFromProto(in *ourneztv1.HousingOption) (domain.HousingOption, error) {
 	if in == nil {
 		return domain.HousingOption{}, apperror.ErrInvalidArgument

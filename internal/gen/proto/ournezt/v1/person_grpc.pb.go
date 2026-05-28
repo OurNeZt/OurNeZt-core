@@ -22,6 +22,7 @@ const (
 	PersonService_CreatePersonProfile_FullMethodName        = "/ournezt.v1.PersonService/CreatePersonProfile"
 	PersonService_GetPersonProfile_FullMethodName           = "/ournezt.v1.PersonService/GetPersonProfile"
 	PersonService_ListPersonProfilesByFamily_FullMethodName = "/ournezt.v1.PersonService/ListPersonProfilesByFamily"
+	PersonService_ListIncomeHistoryByFamily_FullMethodName  = "/ournezt.v1.PersonService/ListIncomeHistoryByFamily"
 	PersonService_UpdatePersonProfile_FullMethodName        = "/ournezt.v1.PersonService/UpdatePersonProfile"
 	PersonService_DeletePersonProfile_FullMethodName        = "/ournezt.v1.PersonService/DeletePersonProfile"
 )
@@ -33,6 +34,7 @@ type PersonServiceClient interface {
 	CreatePersonProfile(ctx context.Context, in *PersonProfile, opts ...grpc.CallOption) (*PersonProfile, error)
 	GetPersonProfile(ctx context.Context, in *GetPersonProfileRequest, opts ...grpc.CallOption) (*PersonProfile, error)
 	ListPersonProfilesByFamily(ctx context.Context, in *ListPersonProfilesByFamilyRequest, opts ...grpc.CallOption) (*ListPersonProfilesByFamilyResponse, error)
+	ListIncomeHistoryByFamily(ctx context.Context, in *ListIncomeHistoryByFamilyRequest, opts ...grpc.CallOption) (*ListIncomeHistoryByFamilyResponse, error)
 	UpdatePersonProfile(ctx context.Context, in *PersonProfile, opts ...grpc.CallOption) (*PersonProfile, error)
 	DeletePersonProfile(ctx context.Context, in *DeletePersonProfileRequest, opts ...grpc.CallOption) (*DeletePersonProfileResponse, error)
 }
@@ -75,6 +77,16 @@ func (c *personServiceClient) ListPersonProfilesByFamily(ctx context.Context, in
 	return out, nil
 }
 
+func (c *personServiceClient) ListIncomeHistoryByFamily(ctx context.Context, in *ListIncomeHistoryByFamilyRequest, opts ...grpc.CallOption) (*ListIncomeHistoryByFamilyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListIncomeHistoryByFamilyResponse)
+	err := c.cc.Invoke(ctx, PersonService_ListIncomeHistoryByFamily_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *personServiceClient) UpdatePersonProfile(ctx context.Context, in *PersonProfile, opts ...grpc.CallOption) (*PersonProfile, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(PersonProfile)
@@ -102,6 +114,7 @@ type PersonServiceServer interface {
 	CreatePersonProfile(context.Context, *PersonProfile) (*PersonProfile, error)
 	GetPersonProfile(context.Context, *GetPersonProfileRequest) (*PersonProfile, error)
 	ListPersonProfilesByFamily(context.Context, *ListPersonProfilesByFamilyRequest) (*ListPersonProfilesByFamilyResponse, error)
+	ListIncomeHistoryByFamily(context.Context, *ListIncomeHistoryByFamilyRequest) (*ListIncomeHistoryByFamilyResponse, error)
 	UpdatePersonProfile(context.Context, *PersonProfile) (*PersonProfile, error)
 	DeletePersonProfile(context.Context, *DeletePersonProfileRequest) (*DeletePersonProfileResponse, error)
 	mustEmbedUnimplementedPersonServiceServer()
@@ -122,6 +135,9 @@ func (UnimplementedPersonServiceServer) GetPersonProfile(context.Context, *GetPe
 }
 func (UnimplementedPersonServiceServer) ListPersonProfilesByFamily(context.Context, *ListPersonProfilesByFamilyRequest) (*ListPersonProfilesByFamilyResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListPersonProfilesByFamily not implemented")
+}
+func (UnimplementedPersonServiceServer) ListIncomeHistoryByFamily(context.Context, *ListIncomeHistoryByFamilyRequest) (*ListIncomeHistoryByFamilyResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListIncomeHistoryByFamily not implemented")
 }
 func (UnimplementedPersonServiceServer) UpdatePersonProfile(context.Context, *PersonProfile) (*PersonProfile, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdatePersonProfile not implemented")
@@ -204,6 +220,24 @@ func _PersonService_ListPersonProfilesByFamily_Handler(srv interface{}, ctx cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _PersonService_ListIncomeHistoryByFamily_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListIncomeHistoryByFamilyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PersonServiceServer).ListIncomeHistoryByFamily(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PersonService_ListIncomeHistoryByFamily_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PersonServiceServer).ListIncomeHistoryByFamily(ctx, req.(*ListIncomeHistoryByFamilyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _PersonService_UpdatePersonProfile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(PersonProfile)
 	if err := dec(in); err != nil {
@@ -258,6 +292,10 @@ var PersonService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListPersonProfilesByFamily",
 			Handler:    _PersonService_ListPersonProfilesByFamily_Handler,
+		},
+		{
+			MethodName: "ListIncomeHistoryByFamily",
+			Handler:    _PersonService_ListIncomeHistoryByFamily_Handler,
 		},
 		{
 			MethodName: "UpdatePersonProfile",

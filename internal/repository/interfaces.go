@@ -27,6 +27,7 @@ type People interface {
 	CreatePersonProfile(ctx context.Context, profile domain.PersonProfile, actorID domain.ID) (domain.PersonProfile, error)
 	GetPersonProfile(ctx context.Context, personID domain.ID, viewerID domain.ID) (domain.PersonProfile, error)
 	ListPersonProfilesByFamily(ctx context.Context, familyID domain.ID, viewerID domain.ID) ([]domain.PersonProfile, error)
+	ListPersonIncomeHistoryByFamily(ctx context.Context, familyID domain.ID, viewerID domain.ID) ([]domain.PersonIncomeHistoryEntry, error)
 	UpdatePersonProfile(ctx context.Context, profile domain.PersonProfile, actorID domain.ID) (domain.PersonProfile, error)
 	DeletePersonProfile(ctx context.Context, personID domain.ID, actorID domain.ID) error
 }

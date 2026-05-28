@@ -8,6 +8,7 @@ service PersonService {
   rpc CreatePersonProfile(PersonProfile) returns (PersonProfile);
   rpc GetPersonProfile(GetPersonProfileRequest) returns (PersonProfile);
   rpc ListPersonProfilesByFamily(ListPersonProfilesByFamilyRequest) returns (ListPersonProfilesByFamilyResponse);
+  rpc ListIncomeHistoryByFamily(ListIncomeHistoryByFamilyRequest) returns (ListIncomeHistoryByFamilyResponse);
   rpc UpdatePersonProfile(PersonProfile) returns (PersonProfile);
   rpc DeletePersonProfile(DeletePersonProfileRequest) returns (DeletePersonProfileResponse);
 }
@@ -43,6 +44,23 @@ message ListPersonProfilesByFamilyRequest {
 
 message ListPersonProfilesByFamilyResponse {
   repeated PersonProfile people = 1;
+}
+
+message ListIncomeHistoryByFamilyRequest {
+  string viewer_user_id = 1;
+  string family_id = 2;
+}
+
+message IncomeHistoryEntry {
+  string person_id = 1;
+  string person_name = 2;
+  int64 gross_monthly_income_cents = 3;
+  int64 expected_future_income_cents = 4;
+  string recorded_at = 5;
+}
+
+message ListIncomeHistoryByFamilyResponse {
+  repeated IncomeHistoryEntry entries = 1;
 }
 
 message DeletePersonProfileRequest {
