@@ -24,6 +24,7 @@ const (
 	AuthService_ChangePassword_FullMethodName         = "/ournezt.v1.AuthService/ChangePassword"
 	AuthService_GenerateAdminAccessKey_FullMethodName = "/ournezt.v1.AuthService/GenerateAdminAccessKey"
 	AuthService_ConsumeAdminAccessKey_FullMethodName  = "/ournezt.v1.AuthService/ConsumeAdminAccessKey"
+	AuthService_ListUsers_FullMethodName              = "/ournezt.v1.AuthService/ListUsers"
 	AuthService_CreateUser_FullMethodName             = "/ournezt.v1.AuthService/CreateUser"
 	AuthService_DisableUser_FullMethodName            = "/ournezt.v1.AuthService/DisableUser"
 )
@@ -37,6 +38,7 @@ type AuthServiceClient interface {
 	ChangePassword(ctx context.Context, in *ChangePasswordRequest, opts ...grpc.CallOption) (*ChangePasswordResponse, error)
 	GenerateAdminAccessKey(ctx context.Context, in *GenerateAdminAccessKeyRequest, opts ...grpc.CallOption) (*GenerateAdminAccessKeyResponse, error)
 	ConsumeAdminAccessKey(ctx context.Context, in *ConsumeAdminAccessKeyRequest, opts ...grpc.CallOption) (*ConsumeAdminAccessKeyResponse, error)
+	ListUsers(ctx context.Context, in *ListUsersRequest, opts ...grpc.CallOption) (*ListUsersResponse, error)
 	CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*User, error)
 	DisableUser(ctx context.Context, in *DisableUserRequest, opts ...grpc.CallOption) (*DisableUserResponse, error)
 }
@@ -99,6 +101,16 @@ func (c *authServiceClient) ConsumeAdminAccessKey(ctx context.Context, in *Consu
 	return out, nil
 }
 
+func (c *authServiceClient) ListUsers(ctx context.Context, in *ListUsersRequest, opts ...grpc.CallOption) (*ListUsersResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListUsersResponse)
+	err := c.cc.Invoke(ctx, AuthService_ListUsers_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *authServiceClient) CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*User, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(User)
@@ -128,6 +140,7 @@ type AuthServiceServer interface {
 	ChangePassword(context.Context, *ChangePasswordRequest) (*ChangePasswordResponse, error)
 	GenerateAdminAccessKey(context.Context, *GenerateAdminAccessKeyRequest) (*GenerateAdminAccessKeyResponse, error)
 	ConsumeAdminAccessKey(context.Context, *ConsumeAdminAccessKeyRequest) (*ConsumeAdminAccessKeyResponse, error)
+	ListUsers(context.Context, *ListUsersRequest) (*ListUsersResponse, error)
 	CreateUser(context.Context, *CreateUserRequest) (*User, error)
 	DisableUser(context.Context, *DisableUserRequest) (*DisableUserResponse, error)
 	mustEmbedUnimplementedAuthServiceServer()
@@ -154,6 +167,9 @@ func (UnimplementedAuthServiceServer) GenerateAdminAccessKey(context.Context, *G
 }
 func (UnimplementedAuthServiceServer) ConsumeAdminAccessKey(context.Context, *ConsumeAdminAccessKeyRequest) (*ConsumeAdminAccessKeyResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ConsumeAdminAccessKey not implemented")
+}
+func (UnimplementedAuthServiceServer) ListUsers(context.Context, *ListUsersRequest) (*ListUsersResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListUsers not implemented")
 }
 func (UnimplementedAuthServiceServer) CreateUser(context.Context, *CreateUserRequest) (*User, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateUser not implemented")
@@ -272,6 +288,24 @@ func _AuthService_ConsumeAdminAccessKey_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AuthService_ListUsers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListUsersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).ListUsers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_ListUsers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).ListUsers(ctx, req.(*ListUsersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AuthService_CreateUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateUserRequest)
 	if err := dec(in); err != nil {
@@ -334,6 +368,10 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ConsumeAdminAccessKey",
 			Handler:    _AuthService_ConsumeAdminAccessKey_Handler,
+		},
+		{
+			MethodName: "ListUsers",
+			Handler:    _AuthService_ListUsers_Handler,
 		},
 		{
 			MethodName: "CreateUser",

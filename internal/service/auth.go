@@ -12,6 +12,7 @@ import (
 
 type UserRepository interface {
 	CreateUser(ctx context.Context, user domain.User) (domain.User, error)
+	ListUsers(ctx context.Context) ([]domain.User, error)
 	HasActiveAdmin(ctx context.Context) (bool, error)
 	GetUserByID(ctx context.Context, userID domain.ID) (domain.User, error)
 	GetUserByEmail(ctx context.Context, email string) (domain.User, error)
@@ -55,6 +56,10 @@ func (s AuthService) CreateUser(ctx context.Context, email, displayName, passwor
 		PasswordHash:       hash,
 		MustChangePassword: role == domain.UserRoleAdmin,
 	})
+}
+
+func (s AuthService) ListUsers(ctx context.Context) ([]domain.User, error) {
+	return s.users.ListUsers(ctx)
 }
 
 func (s AuthService) Login(ctx context.Context, email, password string) (domain.User, error) {
