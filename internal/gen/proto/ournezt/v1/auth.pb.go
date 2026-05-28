@@ -561,6 +561,86 @@ func (x *ConsumeAdminAccessKeyResponse) GetAccessGranted() bool {
 	return false
 }
 
+type ListUsersRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListUsersRequest) Reset() {
+	*x = ListUsersRequest{}
+	mi := &file_ournezt_v1_auth_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListUsersRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListUsersRequest) ProtoMessage() {}
+
+func (x *ListUsersRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ournezt_v1_auth_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListUsersRequest.ProtoReflect.Descriptor instead.
+func (*ListUsersRequest) Descriptor() ([]byte, []int) {
+	return file_ournezt_v1_auth_proto_rawDescGZIP(), []int{11}
+}
+
+type ListUsersResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Users         []*User                `protobuf:"bytes,1,rep,name=users,proto3" json:"users,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListUsersResponse) Reset() {
+	*x = ListUsersResponse{}
+	mi := &file_ournezt_v1_auth_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListUsersResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListUsersResponse) ProtoMessage() {}
+
+func (x *ListUsersResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ournezt_v1_auth_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListUsersResponse.ProtoReflect.Descriptor instead.
+func (*ListUsersResponse) Descriptor() ([]byte, []int) {
+	return file_ournezt_v1_auth_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *ListUsersResponse) GetUsers() []*User {
+	if x != nil {
+		return x.Users
+	}
+	return nil
+}
+
 type CreateUserRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
@@ -573,7 +653,7 @@ type CreateUserRequest struct {
 
 func (x *CreateUserRequest) Reset() {
 	*x = CreateUserRequest{}
-	mi := &file_ournezt_v1_auth_proto_msgTypes[11]
+	mi := &file_ournezt_v1_auth_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -585,7 +665,7 @@ func (x *CreateUserRequest) String() string {
 func (*CreateUserRequest) ProtoMessage() {}
 
 func (x *CreateUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ournezt_v1_auth_proto_msgTypes[11]
+	mi := &file_ournezt_v1_auth_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -598,7 +678,7 @@ func (x *CreateUserRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateUserRequest.ProtoReflect.Descriptor instead.
 func (*CreateUserRequest) Descriptor() ([]byte, []int) {
-	return file_ournezt_v1_auth_proto_rawDescGZIP(), []int{11}
+	return file_ournezt_v1_auth_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *CreateUserRequest) GetEmail() string {
@@ -638,7 +718,7 @@ type DisableUserRequest struct {
 
 func (x *DisableUserRequest) Reset() {
 	*x = DisableUserRequest{}
-	mi := &file_ournezt_v1_auth_proto_msgTypes[12]
+	mi := &file_ournezt_v1_auth_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -650,7 +730,7 @@ func (x *DisableUserRequest) String() string {
 func (*DisableUserRequest) ProtoMessage() {}
 
 func (x *DisableUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ournezt_v1_auth_proto_msgTypes[12]
+	mi := &file_ournezt_v1_auth_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -663,7 +743,7 @@ func (x *DisableUserRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DisableUserRequest.ProtoReflect.Descriptor instead.
 func (*DisableUserRequest) Descriptor() ([]byte, []int) {
-	return file_ournezt_v1_auth_proto_rawDescGZIP(), []int{12}
+	return file_ournezt_v1_auth_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *DisableUserRequest) GetUserId() string {
@@ -681,7 +761,7 @@ type DisableUserResponse struct {
 
 func (x *DisableUserResponse) Reset() {
 	*x = DisableUserResponse{}
-	mi := &file_ournezt_v1_auth_proto_msgTypes[13]
+	mi := &file_ournezt_v1_auth_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -693,7 +773,7 @@ func (x *DisableUserResponse) String() string {
 func (*DisableUserResponse) ProtoMessage() {}
 
 func (x *DisableUserResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ournezt_v1_auth_proto_msgTypes[13]
+	mi := &file_ournezt_v1_auth_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -706,7 +786,7 @@ func (x *DisableUserResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DisableUserResponse.ProtoReflect.Descriptor instead.
 func (*DisableUserResponse) Descriptor() ([]byte, []int) {
-	return file_ournezt_v1_auth_proto_rawDescGZIP(), []int{13}
+	return file_ournezt_v1_auth_proto_rawDescGZIP(), []int{15}
 }
 
 var File_ournezt_v1_auth_proto protoreflect.FileDescriptor
@@ -746,7 +826,10 @@ const file_ournezt_v1_auth_proto_rawDesc = "" +
 	"\n" +
 	"access_key\x18\x01 \x01(\tR\taccessKey\"F\n" +
 	"\x1dConsumeAdminAccessKeyResponse\x12%\n" +
-	"\x0eaccess_granted\x18\x01 \x01(\bR\raccessGranted\"|\n" +
+	"\x0eaccess_granted\x18\x01 \x01(\bR\raccessGranted\"\x12\n" +
+	"\x10ListUsersRequest\";\n" +
+	"\x11ListUsersResponse\x12&\n" +
+	"\x05users\x18\x01 \x03(\v2\x10.ournezt.v1.UserR\x05users\"|\n" +
 	"\x11CreateUserRequest\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12!\n" +
 	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x12\x1a\n" +
@@ -754,13 +837,14 @@ const file_ournezt_v1_auth_proto_rawDesc = "" +
 	"\x04role\x18\x04 \x01(\tR\x04role\"-\n" +
 	"\x12DisableUserRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\"\x15\n" +
-	"\x13DisableUserResponse2\xee\x04\n" +
+	"\x13DisableUserResponse2\xb8\x05\n" +
 	"\vAuthService\x12<\n" +
 	"\x05Login\x12\x18.ournezt.v1.LoginRequest\x1a\x19.ournezt.v1.LoginResponse\x12Z\n" +
 	"\x0fValidateSession\x12\".ournezt.v1.ValidateSessionRequest\x1a#.ournezt.v1.ValidateSessionResponse\x12W\n" +
 	"\x0eChangePassword\x12!.ournezt.v1.ChangePasswordRequest\x1a\".ournezt.v1.ChangePasswordResponse\x12o\n" +
 	"\x16GenerateAdminAccessKey\x12).ournezt.v1.GenerateAdminAccessKeyRequest\x1a*.ournezt.v1.GenerateAdminAccessKeyResponse\x12l\n" +
-	"\x15ConsumeAdminAccessKey\x12(.ournezt.v1.ConsumeAdminAccessKeyRequest\x1a).ournezt.v1.ConsumeAdminAccessKeyResponse\x12=\n" +
+	"\x15ConsumeAdminAccessKey\x12(.ournezt.v1.ConsumeAdminAccessKeyRequest\x1a).ournezt.v1.ConsumeAdminAccessKeyResponse\x12H\n" +
+	"\tListUsers\x12\x1c.ournezt.v1.ListUsersRequest\x1a\x1d.ournezt.v1.ListUsersResponse\x12=\n" +
 	"\n" +
 	"CreateUser\x12\x1d.ournezt.v1.CreateUserRequest\x1a\x10.ournezt.v1.User\x12N\n" +
 	"\vDisableUser\x12\x1e.ournezt.v1.DisableUserRequest\x1a\x1f.ournezt.v1.DisableUserResponseBIZGgithub.com/OurNeZt/ournezt-core/internal/gen/proto/ournezt/v1;ourneztv1b\x06proto3"
@@ -777,7 +861,7 @@ func file_ournezt_v1_auth_proto_rawDescGZIP() []byte {
 	return file_ournezt_v1_auth_proto_rawDescData
 }
 
-var file_ournezt_v1_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
+var file_ournezt_v1_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_ournezt_v1_auth_proto_goTypes = []any{
 	(*User)(nil),                           // 0: ournezt.v1.User
 	(*LoginRequest)(nil),                   // 1: ournezt.v1.LoginRequest
@@ -790,32 +874,37 @@ var file_ournezt_v1_auth_proto_goTypes = []any{
 	(*GenerateAdminAccessKeyResponse)(nil), // 8: ournezt.v1.GenerateAdminAccessKeyResponse
 	(*ConsumeAdminAccessKeyRequest)(nil),   // 9: ournezt.v1.ConsumeAdminAccessKeyRequest
 	(*ConsumeAdminAccessKeyResponse)(nil),  // 10: ournezt.v1.ConsumeAdminAccessKeyResponse
-	(*CreateUserRequest)(nil),              // 11: ournezt.v1.CreateUserRequest
-	(*DisableUserRequest)(nil),             // 12: ournezt.v1.DisableUserRequest
-	(*DisableUserResponse)(nil),            // 13: ournezt.v1.DisableUserResponse
+	(*ListUsersRequest)(nil),               // 11: ournezt.v1.ListUsersRequest
+	(*ListUsersResponse)(nil),              // 12: ournezt.v1.ListUsersResponse
+	(*CreateUserRequest)(nil),              // 13: ournezt.v1.CreateUserRequest
+	(*DisableUserRequest)(nil),             // 14: ournezt.v1.DisableUserRequest
+	(*DisableUserResponse)(nil),            // 15: ournezt.v1.DisableUserResponse
 }
 var file_ournezt_v1_auth_proto_depIdxs = []int32{
 	0,  // 0: ournezt.v1.LoginResponse.user:type_name -> ournezt.v1.User
 	0,  // 1: ournezt.v1.ValidateSessionResponse.user:type_name -> ournezt.v1.User
-	1,  // 2: ournezt.v1.AuthService.Login:input_type -> ournezt.v1.LoginRequest
-	3,  // 3: ournezt.v1.AuthService.ValidateSession:input_type -> ournezt.v1.ValidateSessionRequest
-	5,  // 4: ournezt.v1.AuthService.ChangePassword:input_type -> ournezt.v1.ChangePasswordRequest
-	7,  // 5: ournezt.v1.AuthService.GenerateAdminAccessKey:input_type -> ournezt.v1.GenerateAdminAccessKeyRequest
-	9,  // 6: ournezt.v1.AuthService.ConsumeAdminAccessKey:input_type -> ournezt.v1.ConsumeAdminAccessKeyRequest
-	11, // 7: ournezt.v1.AuthService.CreateUser:input_type -> ournezt.v1.CreateUserRequest
-	12, // 8: ournezt.v1.AuthService.DisableUser:input_type -> ournezt.v1.DisableUserRequest
-	2,  // 9: ournezt.v1.AuthService.Login:output_type -> ournezt.v1.LoginResponse
-	4,  // 10: ournezt.v1.AuthService.ValidateSession:output_type -> ournezt.v1.ValidateSessionResponse
-	6,  // 11: ournezt.v1.AuthService.ChangePassword:output_type -> ournezt.v1.ChangePasswordResponse
-	8,  // 12: ournezt.v1.AuthService.GenerateAdminAccessKey:output_type -> ournezt.v1.GenerateAdminAccessKeyResponse
-	10, // 13: ournezt.v1.AuthService.ConsumeAdminAccessKey:output_type -> ournezt.v1.ConsumeAdminAccessKeyResponse
-	0,  // 14: ournezt.v1.AuthService.CreateUser:output_type -> ournezt.v1.User
-	13, // 15: ournezt.v1.AuthService.DisableUser:output_type -> ournezt.v1.DisableUserResponse
-	9,  // [9:16] is the sub-list for method output_type
-	2,  // [2:9] is the sub-list for method input_type
-	2,  // [2:2] is the sub-list for extension type_name
-	2,  // [2:2] is the sub-list for extension extendee
-	0,  // [0:2] is the sub-list for field type_name
+	0,  // 2: ournezt.v1.ListUsersResponse.users:type_name -> ournezt.v1.User
+	1,  // 3: ournezt.v1.AuthService.Login:input_type -> ournezt.v1.LoginRequest
+	3,  // 4: ournezt.v1.AuthService.ValidateSession:input_type -> ournezt.v1.ValidateSessionRequest
+	5,  // 5: ournezt.v1.AuthService.ChangePassword:input_type -> ournezt.v1.ChangePasswordRequest
+	7,  // 6: ournezt.v1.AuthService.GenerateAdminAccessKey:input_type -> ournezt.v1.GenerateAdminAccessKeyRequest
+	9,  // 7: ournezt.v1.AuthService.ConsumeAdminAccessKey:input_type -> ournezt.v1.ConsumeAdminAccessKeyRequest
+	11, // 8: ournezt.v1.AuthService.ListUsers:input_type -> ournezt.v1.ListUsersRequest
+	13, // 9: ournezt.v1.AuthService.CreateUser:input_type -> ournezt.v1.CreateUserRequest
+	14, // 10: ournezt.v1.AuthService.DisableUser:input_type -> ournezt.v1.DisableUserRequest
+	2,  // 11: ournezt.v1.AuthService.Login:output_type -> ournezt.v1.LoginResponse
+	4,  // 12: ournezt.v1.AuthService.ValidateSession:output_type -> ournezt.v1.ValidateSessionResponse
+	6,  // 13: ournezt.v1.AuthService.ChangePassword:output_type -> ournezt.v1.ChangePasswordResponse
+	8,  // 14: ournezt.v1.AuthService.GenerateAdminAccessKey:output_type -> ournezt.v1.GenerateAdminAccessKeyResponse
+	10, // 15: ournezt.v1.AuthService.ConsumeAdminAccessKey:output_type -> ournezt.v1.ConsumeAdminAccessKeyResponse
+	12, // 16: ournezt.v1.AuthService.ListUsers:output_type -> ournezt.v1.ListUsersResponse
+	0,  // 17: ournezt.v1.AuthService.CreateUser:output_type -> ournezt.v1.User
+	15, // 18: ournezt.v1.AuthService.DisableUser:output_type -> ournezt.v1.DisableUserResponse
+	11, // [11:19] is the sub-list for method output_type
+	3,  // [3:11] is the sub-list for method input_type
+	3,  // [3:3] is the sub-list for extension type_name
+	3,  // [3:3] is the sub-list for extension extendee
+	0,  // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_ournezt_v1_auth_proto_init() }
@@ -829,7 +918,7 @@ func file_ournezt_v1_auth_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_ournezt_v1_auth_proto_rawDesc), len(file_ournezt_v1_auth_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   14,
+			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
