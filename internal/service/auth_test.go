@@ -13,6 +13,7 @@ import (
 
 type fakeUserRepository struct {
 	created         domain.User
+	listed          []domain.User
 	users           map[string]domain.User
 	disabled        []domain.ID
 	hasActiveAdmin  bool
@@ -34,6 +35,17 @@ func (r *fakeUserRepository) CreateUser(_ context.Context, user domain.User) (do
 	r.created = user
 	r.users[user.Email] = user
 	return user, nil
+}
+
+func (r *fakeUserRepository) ListUsers(_ context.Context) ([]domain.User, error) {
+	if r.listed != nil {
+		return r.listed, nil
+	}
+	users := make([]domain.User, 0, len(r.users))
+	for _, user := range r.users {
+		users = append(users, user)
+	}
+	return users, nil
 }
 
 func (r *fakeUserRepository) GetUserByEmail(_ context.Context, email string) (domain.User, error) {
@@ -176,6 +188,31 @@ func TestCreateUserRejectsMissingEmailOrPassword(t *testing.T) {
 	_, err = service.CreateUser(context.Background(), "person@example.com", "Alex", " ", domain.UserRoleUser)
 	if !errors.Is(err, apperror.ErrInvalidArgument) {
 		t.Fatalf("missing password error = %v, want ErrInvalidArgument", err)
+	}
+}
+
+func TestListUsersReturnsRepositoryResults(t *testing.T) {
+	expected := []domain.User{
+		{ID: "admin_1", Email: "admin@example.com", Role: domain.UserRoleAdmin},
+		{ID: "user_1", Email: "user@example.com", Role: domain.UserRoleUser},
+	}
+	repo := &fakeUserRepository{listed: expected}
+	service := NewAuthService(repo, fastServiceArgon2Params())
+
+	got, err := service.ListUsers(context.Background())
+	if err != nil {
+		t.Fatalf("ListUsers returned error: %v", err)
+	}
+	if len(got) != len(expected) {
+		t.Fatalf("len(users) = %d, want %d", len(got), len(expected))
+	}
+	for i := range expected {
+		if got[i].ID != expected[i].ID {
+			t.Fatalf("users[%d].ID = %q, want %q", i, got[i].ID, expected[i].ID)
+		}
+		if got[i].Email != expected[i].Email {
+			t.Fatalf("users[%d].Email = %q, want %q", i, got[i].Email, expected[i].Email)
+		}
 	}
 }
 

@@ -28,6 +28,7 @@ type fakeAuthSessionStore struct {
 
 type fakeServerUserRepository struct {
 	created         domain.User
+	listed          []domain.User
 	users           map[string]domain.User
 	disabled        []domain.ID
 	adminAccessKeys map[string]time.Time
@@ -66,6 +67,17 @@ func (r *fakeServerUserRepository) CreateUser(_ context.Context, user domain.Use
 	r.created = user
 	r.users[user.Email] = user
 	return user, nil
+}
+
+func (r *fakeServerUserRepository) ListUsers(_ context.Context) ([]domain.User, error) {
+	if r.listed != nil {
+		return r.listed, nil
+	}
+	users := make([]domain.User, 0, len(r.users))
+	for _, user := range r.users {
+		users = append(users, user)
+	}
+	return users, nil
 }
 
 func (r *fakeServerUserRepository) GetUserByEmail(_ context.Context, email string) (domain.User, error) {
@@ -250,6 +262,59 @@ func TestAuthServerDisableUserDisablesAndRevokes(t *testing.T) {
 	}
 	if len(sessions.revokedUsers) != 1 || sessions.revokedUsers[0] != "user_9" {
 		t.Fatalf("revoked users = %#v, want [user_9]", sessions.revokedUsers)
+	}
+}
+
+func TestAuthServerListUsersReturnsRowsForAdmin(t *testing.T) {
+	repo := &fakeServerUserRepository{
+		listed: []domain.User{
+			{ID: "admin_1", Email: "admin@example.com", Role: domain.UserRoleAdmin},
+			{ID: "user_9", Email: "user9@example.com", Role: domain.UserRoleUser},
+		},
+	}
+	authService := service.NewAuthService(repo, fastServerArgon2Params())
+	sessions := &fakeAuthSessionStore{
+		usersByToken: map[string]domain.User{
+			security.HashToken("admin-token"): {
+				ID:    "admin_1",
+				Email: "admin@example.com",
+				Role:  domain.UserRoleAdmin,
+			},
+		},
+	}
+	server := NewAuthServer(authService, sessions, 32, time.Hour, time.Now)
+
+	ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs("x-session-token", "admin-token"))
+	response, err := server.ListUsers(ctx, &ourneztv1.ListUsersRequest{})
+	if err != nil {
+		t.Fatalf("ListUsers returned error: %v", err)
+	}
+	if len(response.GetUsers()) != 2 {
+		t.Fatalf("len(users) = %d, want 2", len(response.GetUsers()))
+	}
+	if response.GetUsers()[1].GetId() != "user_9" {
+		t.Fatalf("users[1].id = %q, want user_9", response.GetUsers()[1].GetId())
+	}
+}
+
+func TestAuthServerListUsersRejectsNonAdmin(t *testing.T) {
+	repo := &fakeServerUserRepository{}
+	authService := service.NewAuthService(repo, fastServerArgon2Params())
+	sessions := &fakeAuthSessionStore{
+		usersByToken: map[string]domain.User{
+			security.HashToken("user-token"): {
+				ID:    "user_1",
+				Email: "user@example.com",
+				Role:  domain.UserRoleUser,
+			},
+		},
+	}
+	server := NewAuthServer(authService, sessions, 32, time.Hour, time.Now)
+
+	ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs("x-session-token", "user-token"))
+	_, err := server.ListUsers(ctx, &ourneztv1.ListUsersRequest{})
+	if status.Code(err) != codes.PermissionDenied {
+		t.Fatalf("status code = %v, want PermissionDenied", status.Code(err))
 	}
 }
 

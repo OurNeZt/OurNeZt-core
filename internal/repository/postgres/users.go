@@ -33,6 +33,32 @@ func (r UserRepository) CreateUser(ctx context.Context, user domain.User) (domai
 	return created, nil
 }
 
+func (r UserRepository) ListUsers(ctx context.Context) ([]domain.User, error) {
+	rows, err := r.pool.Query(ctx, `
+		SELECT id::text, email, display_name, role, password_hash, must_change_password, disabled_at, created_at, updated_at
+		FROM users
+		ORDER BY created_at DESC, email ASC
+	`)
+	if err != nil {
+		return nil, normalizeError(err)
+	}
+	defer rows.Close()
+
+	users := make([]domain.User, 0)
+	for rows.Next() {
+		user, scanErr := scanUserRow(rows)
+		if scanErr != nil {
+			return nil, normalizeError(scanErr)
+		}
+		users = append(users, user)
+	}
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, normalizeError(rowsErr)
+	}
+
+	return users, nil
+}
+
 func (r UserRepository) GetUserByEmail(ctx context.Context, email string) (domain.User, error) {
 	row := r.pool.QueryRow(ctx, `
 		SELECT id::text, email, display_name, role, password_hash, must_change_password, disabled_at, created_at, updated_at

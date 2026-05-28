@@ -10,6 +10,7 @@ service AuthService {
   rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordResponse);
   rpc GenerateAdminAccessKey(GenerateAdminAccessKeyRequest) returns (GenerateAdminAccessKeyResponse);
   rpc ConsumeAdminAccessKey(ConsumeAdminAccessKeyRequest) returns (ConsumeAdminAccessKeyResponse);
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
   rpc CreateUser(CreateUserRequest) returns (User);
   rpc DisableUser(DisableUserRequest) returns (DisableUserResponse);
 }
@@ -61,6 +62,12 @@ message ConsumeAdminAccessKeyRequest {
 
 message ConsumeAdminAccessKeyResponse {
   bool access_granted = 1;
+}
+
+message ListUsersRequest {}
+
+message ListUsersResponse {
+  repeated User users = 1;
 }
 
 message CreateUserRequest {
