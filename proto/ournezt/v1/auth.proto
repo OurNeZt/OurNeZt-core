@@ -8,6 +8,7 @@ service AuthService {
   rpc Login(LoginRequest) returns (LoginResponse);
   rpc ValidateSession(ValidateSessionRequest) returns (ValidateSessionResponse);
   rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordResponse);
+  rpc UpdateMyAccount(UpdateMyAccountRequest) returns (User);
   rpc GenerateAdminAccessKey(GenerateAdminAccessKeyRequest) returns (GenerateAdminAccessKeyResponse);
   rpc ConsumeAdminAccessKey(ConsumeAdminAccessKeyRequest) returns (ConsumeAdminAccessKeyResponse);
   rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
@@ -48,6 +49,11 @@ message ChangePasswordRequest {
 }
 
 message ChangePasswordResponse {}
+
+message UpdateMyAccountRequest {
+  string email = 1;
+  string display_name = 2;
+}
 
 message GenerateAdminAccessKeyRequest {}
 

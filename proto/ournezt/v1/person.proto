@@ -16,6 +16,7 @@ service PersonService {
 message PersonProfile {
   string id = 1;
   string family_id = 2;
+  string linked_user_id = 17;
   string name = 3;
   int32 age = 4;
   string relationship_label = 5;

@@ -25,6 +25,7 @@ type PersonProfile struct {
 	state                     protoimpl.MessageState `protogen:"open.v1"`
 	Id                        string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	FamilyId                  string                 `protobuf:"bytes,2,opt,name=family_id,json=familyId,proto3" json:"family_id,omitempty"`
+	LinkedUserId              string                 `protobuf:"bytes,17,opt,name=linked_user_id,json=linkedUserId,proto3" json:"linked_user_id,omitempty"`
 	Name                      string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
 	Age                       int32                  `protobuf:"varint,4,opt,name=age,proto3" json:"age,omitempty"`
 	RelationshipLabel         string                 `protobuf:"bytes,5,opt,name=relationship_label,json=relationshipLabel,proto3" json:"relationship_label,omitempty"`
@@ -83,6 +84,13 @@ func (x *PersonProfile) GetId() string {
 func (x *PersonProfile) GetFamilyId() string {
 	if x != nil {
 		return x.FamilyId
+	}
+	return ""
+}
+
+func (x *PersonProfile) GetLinkedUserId() string {
+	if x != nil {
+		return x.LinkedUserId
 	}
 	return ""
 }
@@ -598,10 +606,11 @@ var File_ournezt_v1_person_proto protoreflect.FileDescriptor
 const file_ournezt_v1_person_proto_rawDesc = "" +
 	"\n" +
 	"\x17ournezt/v1/person.proto\x12\n" +
-	"ournezt.v1\"\x87\x05\n" +
+	"ournezt.v1\"\xad\x05\n" +
 	"\rPersonProfile\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
-	"\tfamily_id\x18\x02 \x01(\tR\bfamilyId\x12\x12\n" +
+	"\tfamily_id\x18\x02 \x01(\tR\bfamilyId\x12$\n" +
+	"\x0elinked_user_id\x18\x11 \x01(\tR\flinkedUserId\x12\x12\n" +
 	"\x04name\x18\x03 \x01(\tR\x04name\x12\x10\n" +
 	"\x03age\x18\x04 \x01(\x05R\x03age\x12-\n" +
 	"\x12relationship_label\x18\x05 \x01(\tR\x11relationshipLabel\x12+\n" +

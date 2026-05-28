@@ -22,6 +22,7 @@ const (
 	AuthService_Login_FullMethodName                  = "/ournezt.v1.AuthService/Login"
 	AuthService_ValidateSession_FullMethodName        = "/ournezt.v1.AuthService/ValidateSession"
 	AuthService_ChangePassword_FullMethodName         = "/ournezt.v1.AuthService/ChangePassword"
+	AuthService_UpdateMyAccount_FullMethodName        = "/ournezt.v1.AuthService/UpdateMyAccount"
 	AuthService_GenerateAdminAccessKey_FullMethodName = "/ournezt.v1.AuthService/GenerateAdminAccessKey"
 	AuthService_ConsumeAdminAccessKey_FullMethodName  = "/ournezt.v1.AuthService/ConsumeAdminAccessKey"
 	AuthService_ListUsers_FullMethodName              = "/ournezt.v1.AuthService/ListUsers"
@@ -36,6 +37,7 @@ type AuthServiceClient interface {
 	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
 	ValidateSession(ctx context.Context, in *ValidateSessionRequest, opts ...grpc.CallOption) (*ValidateSessionResponse, error)
 	ChangePassword(ctx context.Context, in *ChangePasswordRequest, opts ...grpc.CallOption) (*ChangePasswordResponse, error)
+	UpdateMyAccount(ctx context.Context, in *UpdateMyAccountRequest, opts ...grpc.CallOption) (*User, error)
 	GenerateAdminAccessKey(ctx context.Context, in *GenerateAdminAccessKeyRequest, opts ...grpc.CallOption) (*GenerateAdminAccessKeyResponse, error)
 	ConsumeAdminAccessKey(ctx context.Context, in *ConsumeAdminAccessKeyRequest, opts ...grpc.CallOption) (*ConsumeAdminAccessKeyResponse, error)
 	ListUsers(ctx context.Context, in *ListUsersRequest, opts ...grpc.CallOption) (*ListUsersResponse, error)
@@ -75,6 +77,16 @@ func (c *authServiceClient) ChangePassword(ctx context.Context, in *ChangePasswo
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ChangePasswordResponse)
 	err := c.cc.Invoke(ctx, AuthService_ChangePassword_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) UpdateMyAccount(ctx context.Context, in *UpdateMyAccountRequest, opts ...grpc.CallOption) (*User, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(User)
+	err := c.cc.Invoke(ctx, AuthService_UpdateMyAccount_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -138,6 +150,7 @@ type AuthServiceServer interface {
 	Login(context.Context, *LoginRequest) (*LoginResponse, error)
 	ValidateSession(context.Context, *ValidateSessionRequest) (*ValidateSessionResponse, error)
 	ChangePassword(context.Context, *ChangePasswordRequest) (*ChangePasswordResponse, error)
+	UpdateMyAccount(context.Context, *UpdateMyAccountRequest) (*User, error)
 	GenerateAdminAccessKey(context.Context, *GenerateAdminAccessKeyRequest) (*GenerateAdminAccessKeyResponse, error)
 	ConsumeAdminAccessKey(context.Context, *ConsumeAdminAccessKeyRequest) (*ConsumeAdminAccessKeyResponse, error)
 	ListUsers(context.Context, *ListUsersRequest) (*ListUsersResponse, error)
@@ -161,6 +174,9 @@ func (UnimplementedAuthServiceServer) ValidateSession(context.Context, *Validate
 }
 func (UnimplementedAuthServiceServer) ChangePassword(context.Context, *ChangePasswordRequest) (*ChangePasswordResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ChangePassword not implemented")
+}
+func (UnimplementedAuthServiceServer) UpdateMyAccount(context.Context, *UpdateMyAccountRequest) (*User, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateMyAccount not implemented")
 }
 func (UnimplementedAuthServiceServer) GenerateAdminAccessKey(context.Context, *GenerateAdminAccessKeyRequest) (*GenerateAdminAccessKeyResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GenerateAdminAccessKey not implemented")
@@ -248,6 +264,24 @@ func _AuthService_ChangePassword_Handler(srv interface{}, ctx context.Context, d
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AuthServiceServer).ChangePassword(ctx, req.(*ChangePasswordRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_UpdateMyAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateMyAccountRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).UpdateMyAccount(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_UpdateMyAccount_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).UpdateMyAccount(ctx, req.(*UpdateMyAccountRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -360,6 +394,10 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ChangePassword",
 			Handler:    _AuthService_ChangePassword_Handler,
+		},
+		{
+			MethodName: "UpdateMyAccount",
+			Handler:    _AuthService_UpdateMyAccount_Handler,
 		},
 		{
 			MethodName: "GenerateAdminAccessKey",
