@@ -72,6 +72,7 @@ const (
 type PersonProfile struct {
 	ID                        ID
 	FamilyID                  ID
+	LinkedUserID              ID
 	Name                      string
 	Age                       int
 	RelationshipLabel         string
