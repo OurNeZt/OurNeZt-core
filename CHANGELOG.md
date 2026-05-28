@@ -9,16 +9,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [v1.1.2] - 2026-05-28
 
 ### Added
-- (fill)
+- Add protobuf function for users details
 
 ### Changed
-- (fill)
+- Refactor server to return user details
 
 ### Fixed
-- (fill)
+- No fixes in this release.
 
 ### Removed
-- (fill)
+- No removals in this release.
 
 ## [v1.1.1] - 2026-05-26
 
