@@ -56,8 +56,10 @@ func TestPersonServerCreateProfileParsesDates(t *testing.T) {
 	response, err := server.CreatePersonProfile(context.Background(), &ourneztv1.PersonProfile{
 		FamilyId:                "family_1",
 		Name:                    "Alex",
+		RelationshipLabel:       "occupant",
 		EmploymentStatus:        "student",
 		ExpectedIncomeStartDate: "2026-09-01",
+		GraduationDate:          "2027-05-01",
 	})
 	if err != nil {
 		t.Fatalf("CreatePersonProfile returned error: %v", err)

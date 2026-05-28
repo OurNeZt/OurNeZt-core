@@ -69,6 +69,20 @@ func (r *fakeUserRepository) GetUserByID(_ context.Context, userID domain.ID) (d
 	return domain.User{}, apperror.ErrNotFound
 }
 
+func (r *fakeUserRepository) UpdateUserAccount(_ context.Context, userID domain.ID, email string, displayName string) (domain.User, error) {
+	for existingEmail, user := range r.users {
+		if user.ID != userID {
+			continue
+		}
+		delete(r.users, existingEmail)
+		user.Email = email
+		user.DisplayName = displayName
+		r.users[email] = user
+		return user, nil
+	}
+	return domain.User{}, apperror.ErrNotFound
+}
+
 func (r *fakeUserRepository) PromoteToBootstrapAdmin(_ context.Context, userID domain.ID, displayName string, passwordHash string) (domain.User, error) {
 	for email, user := range r.users {
 		if user.ID == userID {
@@ -338,6 +352,39 @@ func TestChangePasswordUpdatesHashAndClearsFlag(t *testing.T) {
 	}
 	if !ok {
 		t.Fatal("updated hash did not verify")
+	}
+}
+
+func TestUpdateMyAccountNormalizesAndUpdates(t *testing.T) {
+	repo := &fakeUserRepository{
+		users: map[string]domain.User{
+			"user@example.com": {
+				ID:          "user_1",
+				Email:       "user@example.com",
+				DisplayName: "Old Name",
+				Role:        domain.UserRoleUser,
+			},
+		},
+	}
+	service := NewAuthService(repo, fastServiceArgon2Params())
+
+	updated, err := service.UpdateMyAccount(context.Background(), "user_1", " NEW@Example.COM ", "  New Name  ")
+	if err != nil {
+		t.Fatalf("UpdateMyAccount returned error: %v", err)
+	}
+	if updated.Email != "new@example.com" {
+		t.Fatalf("Email = %q, want new@example.com", updated.Email)
+	}
+	if updated.DisplayName != "New Name" {
+		t.Fatalf("DisplayName = %q, want New Name", updated.DisplayName)
+	}
+}
+
+func TestUpdateMyAccountRejectsEmptyFields(t *testing.T) {
+	service := NewAuthService(&fakeUserRepository{}, fastServiceArgon2Params())
+	_, err := service.UpdateMyAccount(context.Background(), "user_1", "", "Name")
+	if !errors.Is(err, apperror.ErrInvalidArgument) {
+		t.Fatalf("missing email error = %v, want ErrInvalidArgument", err)
 	}
 }
 
