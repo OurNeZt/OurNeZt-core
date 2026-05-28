@@ -162,6 +162,25 @@ func (s AuthServer) ConsumeAdminAccessKey(ctx context.Context, req *ourneztv1.Co
 	return &ourneztv1.ConsumeAdminAccessKeyResponse{AccessGranted: true}, nil
 }
 
+func (s AuthServer) ListUsers(ctx context.Context, _ *ourneztv1.ListUsersRequest) (*ourneztv1.ListUsersResponse, error) {
+	if _, err := authenticatedAdmin(ctx, s); err != nil {
+		return nil, toStatusError(err)
+	}
+
+	users, err := s.auth.ListUsers(ctx)
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+
+	response := &ourneztv1.ListUsersResponse{
+		Users: make([]*ourneztv1.User, 0, len(users)),
+	}
+	for _, user := range users {
+		response.Users = append(response.Users, userToProto(user))
+	}
+	return response, nil
+}
+
 func (s AuthServer) DisableUser(ctx context.Context, req *ourneztv1.DisableUserRequest) (*ourneztv1.DisableUserResponse, error) {
 	if req == nil {
 		return nil, toStatusError(apperror.ErrInvalidArgument)
