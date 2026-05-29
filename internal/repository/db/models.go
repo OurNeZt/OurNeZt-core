@@ -74,6 +74,16 @@ type HousingOption struct {
 	UpdatedAt                 pgtype.Timestamptz `json:"updated_at"`
 }
 
+type PersonIncomeHistory struct {
+	ID                        pgtype.UUID        `json:"id"`
+	PersonProfileID           pgtype.UUID        `json:"person_profile_id"`
+	FamilyID                  pgtype.UUID        `json:"family_id"`
+	PersonName                string             `json:"person_name"`
+	GrossMonthlyIncomeCents   int64              `json:"gross_monthly_income_cents"`
+	ExpectedFutureIncomeCents int64              `json:"expected_future_income_cents"`
+	RecordedAt                pgtype.Timestamptz `json:"recorded_at"`
+}
+
 type PersonProfile struct {
 	ID                        pgtype.UUID        `json:"id"`
 	FamilyID                  pgtype.UUID        `json:"family_id"`
@@ -93,6 +103,7 @@ type PersonProfile struct {
 	MonthlyExpensesCents      int64              `json:"monthly_expenses_cents"`
 	CreatedAt                 pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt                 pgtype.Timestamptz `json:"updated_at"`
+	LinkedUserID              pgtype.UUID        `json:"linked_user_id"`
 }
 
 type Session struct {

@@ -170,7 +170,7 @@ func (q *Queries) ListHousingOptionsByFamily(ctx context.Context, familyID pgtyp
 }
 
 const listPersonProfilesByFamily = `-- name: ListPersonProfilesByFamily :many
-SELECT id, family_id, name, age, relationship_label, employment_status, gross_monthly_income_cents, expected_future_income_cents, expected_income_start_date, graduation_date, ord_date, cash_savings_cents, cpf_oa_cents, cpf_sa_cents, cpf_ma_cents, monthly_expenses_cents, created_at, updated_at FROM person_profiles
+SELECT id, family_id, name, age, relationship_label, employment_status, gross_monthly_income_cents, expected_future_income_cents, expected_income_start_date, graduation_date, ord_date, cash_savings_cents, cpf_oa_cents, cpf_sa_cents, cpf_ma_cents, monthly_expenses_cents, created_at, updated_at, linked_user_id FROM person_profiles
 WHERE family_id = $1
 ORDER BY created_at DESC
 `
@@ -203,6 +203,7 @@ func (q *Queries) ListPersonProfilesByFamily(ctx context.Context, familyID pgtyp
 			&i.MonthlyExpensesCents,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.LinkedUserID,
 		); err != nil {
 			return nil, err
 		}
