@@ -16,6 +16,7 @@ type UserRepository interface {
 	HasActiveAdmin(ctx context.Context) (bool, error)
 	GetUserByID(ctx context.Context, userID domain.ID) (domain.User, error)
 	GetUserByEmail(ctx context.Context, email string) (domain.User, error)
+	UpdateUserAccount(ctx context.Context, userID domain.ID, email string, displayName string) (domain.User, error)
 	PromoteToBootstrapAdmin(ctx context.Context, userID domain.ID, displayName string, passwordHash string) (domain.User, error)
 	UpdateUserPassword(ctx context.Context, userID domain.ID, passwordHash string, mustChangePassword bool) error
 	DisableUser(ctx context.Context, userID domain.ID) error
@@ -109,6 +110,18 @@ func (s AuthService) ChangePassword(ctx context.Context, userID domain.ID, curre
 	}
 
 	return s.users.UpdateUserPassword(ctx, userID, newHash, false)
+}
+
+func (s AuthService) UpdateMyAccount(ctx context.Context, userID domain.ID, email, displayName string) (domain.User, error) {
+	if strings.TrimSpace(string(userID)) == "" {
+		return domain.User{}, apperror.ErrInvalidArgument
+	}
+	normalizedEmail := strings.ToLower(strings.TrimSpace(email))
+	normalizedName := strings.TrimSpace(displayName)
+	if normalizedEmail == "" || normalizedName == "" {
+		return domain.User{}, apperror.ErrInvalidArgument
+	}
+	return s.users.UpdateUserAccount(ctx, userID, normalizedEmail, normalizedName)
 }
 
 func (s AuthService) GenerateAdminAccessKey(ctx context.Context, adminUserID domain.ID, keyBytes int, ttl time.Duration, now time.Time) (string, time.Time, error) {

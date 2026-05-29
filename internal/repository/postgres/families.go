@@ -28,7 +28,9 @@ func (r FamilyRepository) CreateFamily(ctx context.Context, family domain.Family
 	if err != nil {
 		return domain.Family{}, normalizeError(err)
 	}
-	defer tx.Rollback(ctx)
+	defer func() {
+		_ = tx.Rollback(ctx)
+	}()
 
 	row := tx.QueryRow(ctx, `
 		INSERT INTO families (name, family_type)

@@ -160,6 +160,24 @@ func (r UserRepository) UpdateUserPassword(ctx context.Context, userID domain.ID
 	return nil
 }
 
+func (r UserRepository) UpdateUserAccount(ctx context.Context, userID domain.ID, email string, displayName string) (domain.User, error) {
+	row := r.pool.QueryRow(ctx, `
+		UPDATE users
+		SET
+			email = $2,
+			display_name = $3,
+			updated_at = now()
+		WHERE id = $1::uuid
+		RETURNING id::text, email, display_name, role, password_hash, must_change_password, disabled_at, created_at, updated_at
+	`, string(userID), strings.ToLower(strings.TrimSpace(email)), strings.TrimSpace(displayName))
+
+	user, err := scanUserRow(row)
+	if err != nil {
+		return domain.User{}, normalizeError(err)
+	}
+	return user, nil
+}
+
 func (r UserRepository) CreateAdminAccessKey(ctx context.Context, userID domain.ID, tokenHash string, expiresAt time.Time) error {
 	_, err := r.pool.Exec(ctx, `
 		INSERT INTO admin_access_keys (user_id, token_hash, expires_at)
