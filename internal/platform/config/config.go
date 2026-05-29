@@ -17,6 +17,7 @@ type Config struct {
 	BootstrapAdminDisplayName string
 	ShutdownTimeout           time.Duration
 	SessionTokenBytes         int
+	SessionTTL                time.Duration
 	PasswordMemoryKB          uint32
 	PasswordIterations        uint32
 	PasswordParallelism       uint8
@@ -32,6 +33,7 @@ func Load() Config {
 		BootstrapAdminDisplayName: env("BOOTSTRAP_ADMIN_DISPLAY_NAME", "Bootstrap Admin"),
 		ShutdownTimeout:           envDuration("SHUTDOWN_TIMEOUT", 10*time.Second),
 		SessionTokenBytes:         envInt("SESSION_TOKEN_BYTES", 32),
+		SessionTTL:                envDuration("SESSION_TTL", 24*time.Hour),
 		PasswordMemoryKB:          uint32(envInt("PASSWORD_MEMORY_KB", 64*1024)),
 		PasswordIterations:        uint32(envInt("PASSWORD_ITERATIONS", 3)),
 		PasswordParallelism:       uint8(envInt("PASSWORD_PARALLELISM", 2)),

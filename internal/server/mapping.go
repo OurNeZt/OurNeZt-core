@@ -76,6 +76,7 @@ func personFromProto(in *ourneztv1.PersonProfile) (domain.PersonProfile, error) 
 	return domain.PersonProfile{
 		ID:                        domain.ID(strings.TrimSpace(in.GetId())),
 		FamilyID:                  domain.ID(strings.TrimSpace(in.GetFamilyId())),
+		LinkedUserID:              domain.ID(strings.TrimSpace(in.GetLinkedUserId())),
 		Name:                      strings.TrimSpace(in.GetName()),
 		Age:                       int(in.GetAge()),
 		RelationshipLabel:         strings.TrimSpace(in.GetRelationshipLabel()),
@@ -97,6 +98,7 @@ func personToProto(person domain.PersonProfile) *ourneztv1.PersonProfile {
 	return &ourneztv1.PersonProfile{
 		Id:                        string(person.ID),
 		FamilyId:                  string(person.FamilyID),
+		LinkedUserId:              string(person.LinkedUserID),
 		Name:                      person.Name,
 		Age:                       int32(person.Age),
 		RelationshipLabel:         person.RelationshipLabel,
@@ -111,6 +113,16 @@ func personToProto(person domain.PersonProfile) *ourneztv1.PersonProfile {
 		CpfSaCents:                person.CPFSACents,
 		CpfMaCents:                person.CPFMACents,
 		MonthlyExpensesCents:      person.MonthlyExpensesCents,
+	}
+}
+
+func personIncomeHistoryEntryToProto(entry domain.PersonIncomeHistoryEntry) *ourneztv1.IncomeHistoryEntry {
+	return &ourneztv1.IncomeHistoryEntry{
+		PersonId:                  string(entry.PersonID),
+		PersonName:                entry.PersonName,
+		GrossMonthlyIncomeCents:   entry.GrossMonthlyIncomeCents,
+		ExpectedFutureIncomeCents: entry.ExpectedFutureIncomeCents,
+		RecordedAt:                entry.RecordedAt.UTC().Format(time.RFC3339),
 	}
 }
 

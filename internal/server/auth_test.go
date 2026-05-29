@@ -106,6 +106,20 @@ func (r *fakeServerUserRepository) GetUserByID(_ context.Context, userID domain.
 	return domain.User{}, apperror.ErrNotFound
 }
 
+func (r *fakeServerUserRepository) UpdateUserAccount(_ context.Context, userID domain.ID, email string, displayName string) (domain.User, error) {
+	for existingEmail, user := range r.users {
+		if user.ID != userID {
+			continue
+		}
+		delete(r.users, existingEmail)
+		user.Email = email
+		user.DisplayName = displayName
+		r.users[email] = user
+		return user, nil
+	}
+	return domain.User{}, apperror.ErrNotFound
+}
+
 func (r *fakeServerUserRepository) PromoteToBootstrapAdmin(_ context.Context, userID domain.ID, displayName string, passwordHash string) (domain.User, error) {
 	for email, user := range r.users {
 		if user.ID == userID {
@@ -380,6 +394,52 @@ func TestAuthServerChangePassword(t *testing.T) {
 	updated := repo.users["admin@example.com"]
 	if updated.MustChangePassword {
 		t.Fatal("MustChangePassword = true after change, want false")
+	}
+}
+
+func TestAuthServerUpdateMyAccount(t *testing.T) {
+	hash, err := security.HashPassword("temporary-pass", fastServerArgon2Params())
+	if err != nil {
+		t.Fatalf("HashPassword returned error: %v", err)
+	}
+	repo := &fakeServerUserRepository{
+		users: map[string]domain.User{
+			"user@example.com": {
+				ID:           "user_1",
+				Email:        "user@example.com",
+				DisplayName:  "Old Name",
+				Role:         domain.UserRoleUser,
+				PasswordHash: hash,
+			},
+		},
+	}
+	authService := service.NewAuthService(repo, fastServerArgon2Params())
+	sessions := &fakeAuthSessionStore{
+		usersByToken: map[string]domain.User{
+			security.HashToken("user-token"): {
+				ID:           "user_1",
+				Email:        "user@example.com",
+				DisplayName:  "Old Name",
+				Role:         domain.UserRoleUser,
+				PasswordHash: hash,
+			},
+		},
+	}
+	server := NewAuthServer(authService, sessions, 32, time.Hour, time.Now)
+	ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs("x-session-token", "user-token"))
+
+	resp, err := server.UpdateMyAccount(ctx, &ourneztv1.UpdateMyAccountRequest{
+		Email:       "new@example.com",
+		DisplayName: "New Name",
+	})
+	if err != nil {
+		t.Fatalf("UpdateMyAccount returned error: %v", err)
+	}
+	if resp.GetEmail() != "new@example.com" {
+		t.Fatalf("email = %q, want new@example.com", resp.GetEmail())
+	}
+	if resp.GetDisplayName() != "New Name" {
+		t.Fatalf("display name = %q, want New Name", resp.GetDisplayName())
 	}
 }
 

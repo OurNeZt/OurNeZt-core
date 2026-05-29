@@ -11,12 +11,13 @@ import (
 )
 
 type fakePeopleRepository struct {
-	createInput domain.PersonProfile
-	created     domain.PersonProfile
-	got         domain.PersonProfile
-	list        []domain.PersonProfile
-	updated     domain.PersonProfile
-	deletedID   domain.ID
+	createInput   domain.PersonProfile
+	created       domain.PersonProfile
+	got           domain.PersonProfile
+	list          []domain.PersonProfile
+	incomeHistory []domain.PersonIncomeHistoryEntry
+	updated       domain.PersonProfile
+	deletedID     domain.ID
 }
 
 func (r *fakePeopleRepository) CreatePersonProfile(_ context.Context, profile domain.PersonProfile, _ domain.ID) (domain.PersonProfile, error) {
@@ -30,6 +31,10 @@ func (r *fakePeopleRepository) GetPersonProfile(_ context.Context, _ domain.ID, 
 
 func (r *fakePeopleRepository) ListPersonProfilesByFamily(_ context.Context, _ domain.ID, _ domain.ID) ([]domain.PersonProfile, error) {
 	return r.list, nil
+}
+
+func (r *fakePeopleRepository) ListPersonIncomeHistoryByFamily(_ context.Context, _ domain.ID, _ domain.ID) ([]domain.PersonIncomeHistoryEntry, error) {
+	return r.incomeHistory, nil
 }
 
 func (r *fakePeopleRepository) UpdatePersonProfile(_ context.Context, profile domain.PersonProfile, _ domain.ID) (domain.PersonProfile, error) {
@@ -51,8 +56,10 @@ func TestPersonServerCreateProfileParsesDates(t *testing.T) {
 	response, err := server.CreatePersonProfile(context.Background(), &ourneztv1.PersonProfile{
 		FamilyId:                "family_1",
 		Name:                    "Alex",
+		RelationshipLabel:       "occupant",
 		EmploymentStatus:        "student",
 		ExpectedIncomeStartDate: "2026-09-01",
+		GraduationDate:          "2027-05-01",
 	})
 	if err != nil {
 		t.Fatalf("CreatePersonProfile returned error: %v", err)

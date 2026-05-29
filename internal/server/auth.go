@@ -128,6 +128,22 @@ func (s AuthServer) ChangePassword(ctx context.Context, req *ourneztv1.ChangePas
 	return &ourneztv1.ChangePasswordResponse{}, nil
 }
 
+func (s AuthServer) UpdateMyAccount(ctx context.Context, req *ourneztv1.UpdateMyAccountRequest) (*ourneztv1.User, error) {
+	if req == nil {
+		return nil, toStatusError(apperror.ErrInvalidArgument)
+	}
+	userID, err := authenticateUserID(ctx, s)
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+
+	updated, err := s.auth.UpdateMyAccount(ctx, userID, req.GetEmail(), req.GetDisplayName())
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+	return userToProto(updated), nil
+}
+
 func (s AuthServer) GenerateAdminAccessKey(ctx context.Context, _ *ourneztv1.GenerateAdminAccessKeyRequest) (*ourneztv1.GenerateAdminAccessKeyResponse, error) {
 	admin, err := authenticatedAdmin(ctx, s)
 	if err != nil {

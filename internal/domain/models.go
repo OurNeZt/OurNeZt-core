@@ -72,6 +72,7 @@ const (
 type PersonProfile struct {
 	ID                        ID
 	FamilyID                  ID
+	LinkedUserID              ID
 	Name                      string
 	Age                       int
 	RelationshipLabel         string
@@ -88,6 +89,14 @@ type PersonProfile struct {
 	MonthlyExpensesCents      int64
 	CreatedAt                 time.Time
 	UpdatedAt                 time.Time
+}
+
+type PersonIncomeHistoryEntry struct {
+	PersonID                  ID
+	PersonName                string
+	GrossMonthlyIncomeCents   int64
+	ExpectedFutureIncomeCents int64
+	RecordedAt                time.Time
 }
 
 type HousingType string
