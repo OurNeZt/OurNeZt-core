@@ -29,6 +29,8 @@ func (r PersonRepository) CreatePersonProfile(ctx context.Context, profile domai
 		return domain.PersonProfile{}, err
 	}
 
+	linkedUserID := normalizeOptionalUUID(string(profile.LinkedUserID))
+
 	row := r.pool.QueryRow(ctx, `
 		WITH created AS (
 			INSERT INTO person_profiles (
@@ -61,14 +63,14 @@ func (r PersonRepository) CreatePersonProfile(ctx context.Context, profile domai
 			graduation_date::text, ord_date::text, cash_savings_cents, cpf_oa_cents, cpf_sa_cents,
 			cpf_ma_cents, monthly_expenses_cents, created_at, updated_at
 		FROM created
-	`, string(profile.FamilyID), string(profile.LinkedUserID), profile.Name, profile.Age, profile.RelationshipLabel, string(profile.EmploymentStatus),
+	`, string(profile.FamilyID), linkedUserID, profile.Name, profile.Age, profile.RelationshipLabel, string(profile.EmploymentStatus),
 		profile.GrossMonthlyIncomeCents, profile.ExpectedFutureIncomeCents,
 		optionalDateString(profile.ExpectedIncomeStartDate), optionalDateString(profile.GraduationDate), optionalDateString(profile.ORDDate),
 		profile.CashSavingsCents, profile.CPFOACents, profile.CPFSACents, profile.CPFMACents, profile.MonthlyExpensesCents)
 
 	created, err := scanPersonRow(row)
 	if err != nil {
-		if isMissingIncomeHistoryRelationError(err) || isMissingLinkedUserColumnError(err) {
+		if isMissingIncomeHistoryRelationError(err) || isLinkedUserCompatibilityError(err) {
 			legacyRow := r.pool.QueryRow(ctx, `
 				INSERT INTO person_profiles (
 					family_id, name, age, relationship_label, employment_status, gross_monthly_income_cents,
@@ -113,7 +115,7 @@ func (r PersonRepository) GetPersonProfile(ctx context.Context, personID domain.
 
 	profile, err := scanPersonRow(row)
 	if err != nil {
-		if isMissingLinkedUserColumnError(err) {
+		if isLinkedUserCompatibilityError(err) {
 			legacyRow := r.pool.QueryRow(ctx, `
 				SELECT
 					p.id::text, p.family_id::text, p.name, p.age, p.relationship_label, p.employment_status,
@@ -154,7 +156,7 @@ func (r PersonRepository) ListPersonProfilesByFamily(ctx context.Context, family
 		ORDER BY created_at DESC
 	`, string(familyID))
 	if err != nil {
-		if isMissingLinkedUserColumnError(err) {
+		if isLinkedUserCompatibilityError(err) {
 			legacyRows, legacyErr := r.pool.Query(ctx, `
 				SELECT
 					id::text, family_id::text, name, age, relationship_label, employment_status,
@@ -254,6 +256,8 @@ func (r PersonRepository) UpdatePersonProfile(ctx context.Context, profile domai
 		return domain.PersonProfile{}, apperror.ErrInvalidArgument
 	}
 
+	linkedUserID := normalizeOptionalUUID(string(profile.LinkedUserID))
+
 	row := r.pool.QueryRow(ctx, `
 		WITH updated AS (
 			UPDATE person_profiles p
@@ -272,12 +276,12 @@ func (r PersonRepository) UpdatePersonProfile(ctx context.Context, profile domai
 				cpf_sa_cents = $13,
 				cpf_ma_cents = $14,
 				monthly_expenses_cents = $15,
-				linked_user_id = COALESCE(NULLIF($17, '')::uuid, p.linked_user_id),
+				linked_user_id = COALESCE(NULLIF($16, '')::uuid, p.linked_user_id),
 				updated_at = now()
 			FROM family_members fm
 			WHERE p.id = $1::uuid
 				AND fm.family_id = p.family_id
-				AND fm.user_id = $18::uuid
+				AND fm.user_id = $17::uuid
 				AND fm.role IN ('owner', 'admin', 'member')
 			RETURNING
 				p.id, p.family_id, p.linked_user_id, p.name, p.age, p.relationship_label, p.employment_status,
@@ -303,12 +307,12 @@ func (r PersonRepository) UpdatePersonProfile(ctx context.Context, profile domai
 		profile.GrossMonthlyIncomeCents, profile.ExpectedFutureIncomeCents,
 		optionalDateString(profile.ExpectedIncomeStartDate), optionalDateString(profile.GraduationDate), optionalDateString(profile.ORDDate),
 		profile.CashSavingsCents, profile.CPFOACents, profile.CPFSACents, profile.CPFMACents, profile.MonthlyExpensesCents,
-		string(profile.LinkedUserID),
+		linkedUserID,
 		string(actorID))
 
 	updated, err := scanPersonRow(row)
 	if err != nil {
-		if isMissingLinkedUserColumnError(err) {
+		if isLinkedUserCompatibilityError(err) {
 			legacyRow := r.pool.QueryRow(ctx, `
 				UPDATE person_profiles p
 				SET
@@ -364,12 +368,12 @@ func (r PersonRepository) UpdatePersonProfile(ctx context.Context, profile domai
 					cpf_sa_cents = $13,
 					cpf_ma_cents = $14,
 					monthly_expenses_cents = $15,
-					linked_user_id = COALESCE(NULLIF($17, '')::uuid, p.linked_user_id),
+					linked_user_id = COALESCE(NULLIF($16, '')::uuid, p.linked_user_id),
 					updated_at = now()
 				FROM family_members fm
 				WHERE p.id = $1::uuid
 					AND fm.family_id = p.family_id
-					AND fm.user_id = $18::uuid
+					AND fm.user_id = $17::uuid
 					AND fm.role IN ('owner', 'admin', 'member')
 				RETURNING
 					p.id::text, p.family_id::text, p.linked_user_id::text, p.name, p.age, p.relationship_label, p.employment_status,
@@ -380,11 +384,50 @@ func (r PersonRepository) UpdatePersonProfile(ctx context.Context, profile domai
 				profile.GrossMonthlyIncomeCents, profile.ExpectedFutureIncomeCents,
 				optionalDateString(profile.ExpectedIncomeStartDate), optionalDateString(profile.GraduationDate), optionalDateString(profile.ORDDate),
 				profile.CashSavingsCents, profile.CPFOACents, profile.CPFSACents, profile.CPFMACents, profile.MonthlyExpensesCents,
-				string(profile.LinkedUserID),
+				linkedUserID,
 				string(actorID))
 			updated, err = scanPersonRow(legacyRow)
 			if err == nil {
 				return updated, nil
+			}
+			if isLinkedUserCompatibilityError(err) {
+				legacyLinkedlessRow := r.pool.QueryRow(ctx, `
+					UPDATE person_profiles p
+					SET
+						name = $2,
+						age = $3,
+						relationship_label = $4,
+						employment_status = $5,
+						gross_monthly_income_cents = $6,
+						expected_future_income_cents = $7,
+						expected_income_start_date = $8::date,
+						graduation_date = $9::date,
+						ord_date = $10::date,
+						cash_savings_cents = $11,
+						cpf_oa_cents = $12,
+						cpf_sa_cents = $13,
+						cpf_ma_cents = $14,
+						monthly_expenses_cents = $15,
+						updated_at = now()
+					FROM family_members fm
+					WHERE p.id = $1::uuid
+						AND fm.family_id = p.family_id
+						AND fm.user_id = $16::uuid
+						AND fm.role IN ('owner', 'admin', 'member')
+					RETURNING
+						p.id::text, p.family_id::text, p.name, p.age, p.relationship_label, p.employment_status,
+						p.gross_monthly_income_cents, p.expected_future_income_cents, p.expected_income_start_date::text,
+						p.graduation_date::text, p.ord_date::text, p.cash_savings_cents, p.cpf_oa_cents, p.cpf_sa_cents,
+						p.cpf_ma_cents, p.monthly_expenses_cents, p.created_at, p.updated_at
+				`, string(profile.ID), profile.Name, profile.Age, profile.RelationshipLabel, string(profile.EmploymentStatus),
+					profile.GrossMonthlyIncomeCents, profile.ExpectedFutureIncomeCents,
+					optionalDateString(profile.ExpectedIncomeStartDate), optionalDateString(profile.GraduationDate), optionalDateString(profile.ORDDate),
+					profile.CashSavingsCents, profile.CPFOACents, profile.CPFSACents, profile.CPFMACents, profile.MonthlyExpensesCents,
+					string(actorID))
+				updated, err = scanLegacyPersonRow(legacyLinkedlessRow)
+				if err == nil {
+					return updated, nil
+				}
 			}
 		}
 		return domain.PersonProfile{}, normalizeError(err)
@@ -516,11 +559,66 @@ func isMissingIncomeHistoryRelationError(err error) bool {
 	return strings.Contains(lowerErr, "person_income_history") && strings.Contains(lowerErr, "does not exist")
 }
 
-func isMissingLinkedUserColumnError(err error) bool {
+func isLinkedUserCompatibilityError(err error) bool {
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) {
-		return pgErr.Code == "42703" && strings.Contains(strings.ToLower(pgErr.Message), "linked_user_id")
+		lowerMsg := strings.ToLower(pgErr.Message)
+		if pgErr.Code == "22P02" && strings.Contains(lowerMsg, "invalid input syntax for type uuid") {
+			return true
+		}
+		if !strings.Contains(lowerMsg, "linked_user_id") {
+			return false
+		}
+		switch pgErr.Code {
+		case "42703", // undefined_column
+			"42804", // datatype_mismatch
+			"42883", // undefined_function/operator
+			"22P02": // invalid_text_representation (e.g. uuid cast failures)
+			return true
+		}
+		return false
 	}
 	lowerErr := strings.ToLower(err.Error())
-	return strings.Contains(lowerErr, "linked_user_id") && strings.Contains(lowerErr, "does not exist")
+	return strings.Contains(lowerErr, "linked_user_id") &&
+		(strings.Contains(lowerErr, "does not exist") ||
+			strings.Contains(lowerErr, "datatype mismatch") ||
+			strings.Contains(lowerErr, "operator does not exist") ||
+			strings.Contains(lowerErr, "cannot be matched") ||
+			strings.Contains(lowerErr, "invalid input syntax for type uuid"))
+}
+
+func normalizeOptionalUUID(value string) string {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return ""
+	}
+	if isCanonicalUUID(trimmed) {
+		return strings.ToLower(trimmed)
+	}
+	return ""
+}
+
+func isCanonicalUUID(value string) bool {
+	if len(value) != 36 {
+		return false
+	}
+	for i, ch := range value {
+		switch i {
+		case 8, 13, 18, 23:
+			if ch != '-' {
+				return false
+			}
+		default:
+			if !isHexRune(ch) {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func isHexRune(ch rune) bool {
+	return (ch >= '0' && ch <= '9') ||
+		(ch >= 'a' && ch <= 'f') ||
+		(ch >= 'A' && ch <= 'F')
 }
