@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"strings"
 
 	"github.com/OurNeZt/ournezt-core/internal/domain"
@@ -27,28 +28,33 @@ func (r HousingRepository) CreateHousingOption(ctx context.Context, option domai
 		return domain.HousingOption{}, err
 	}
 
+	diaOverridesJSON, marshalErr := marshalDIAIncomeOverrides(option.DIAIncomeOverrides)
+	if marshalErr != nil {
+		return domain.HousingOption{}, apperror.ErrInvalidArgument
+	}
+
 	row := r.pool.QueryRow(ctx, `
 		INSERT INTO housing_options (
 			family_id, name, housing_type, location, unit_type, purchase_price_cents, grant_amount_cents,
 			loan_type, loan_amount_cents, interest_rate_bps, loan_tenure_months, downpayment_percent_bps,
 			renovation_budget_cents, furniture_budget_cents, legal_fees_cents, buyer_stamp_duty_cents,
-			monthly_maintenance_cents, expected_key_collection_date
+			monthly_maintenance_cents, dia_income_overrides, expected_key_collection_date
 		)
 		VALUES (
 			$1::uuid, $2, $3, $4, $5, $6, $7,
 			$8, $9, $10, $11, $12,
 			$13, $14, $15, $16,
-			$17, $18::date
+			$17, $18::jsonb, $19::date
 		)
 		RETURNING
 			id::text, family_id::text, name, housing_type, location, unit_type, purchase_price_cents,
 			grant_amount_cents, loan_type, loan_amount_cents, interest_rate_bps, loan_tenure_months,
 			downpayment_percent_bps, renovation_budget_cents, furniture_budget_cents, legal_fees_cents,
-			buyer_stamp_duty_cents, monthly_maintenance_cents, expected_key_collection_date::text, created_at, updated_at
+			buyer_stamp_duty_cents, monthly_maintenance_cents, dia_income_overrides, expected_key_collection_date::text, created_at, updated_at
 	`, string(option.FamilyID), option.Name, string(option.Type), option.Location, option.UnitType, option.PurchasePriceCents,
 		option.GrantAmountCents, string(option.LoanType), option.LoanAmountCents, option.InterestRateBps, option.LoanTenureMonths,
 		option.DownpaymentPercentBps, option.RenovationBudgetCents, option.FurnitureBudgetCents, option.LegalFeesCents,
-		option.BuyerStampDutyCents, option.MonthlyMaintenanceCents, optionalDateString(option.ExpectedKeyCollectionDate))
+		option.BuyerStampDutyCents, option.MonthlyMaintenanceCents, diaOverridesJSON, optionalDateString(option.ExpectedKeyCollectionDate))
 
 	created, err := scanHousingRow(row)
 	if err != nil {
@@ -63,7 +69,7 @@ func (r HousingRepository) GetHousingOption(ctx context.Context, housingID domai
 			h.id::text, h.family_id::text, h.name, h.housing_type, h.location, h.unit_type, h.purchase_price_cents,
 			h.grant_amount_cents, h.loan_type, h.loan_amount_cents, h.interest_rate_bps, h.loan_tenure_months,
 			h.downpayment_percent_bps, h.renovation_budget_cents, h.furniture_budget_cents, h.legal_fees_cents,
-			h.buyer_stamp_duty_cents, h.monthly_maintenance_cents, h.expected_key_collection_date::text, h.created_at, h.updated_at
+			h.buyer_stamp_duty_cents, h.monthly_maintenance_cents, h.dia_income_overrides, h.expected_key_collection_date::text, h.created_at, h.updated_at
 		FROM housing_options h
 		JOIN family_members fm ON fm.family_id = h.family_id
 		WHERE h.id = $1::uuid AND fm.user_id = $2::uuid
@@ -90,7 +96,7 @@ func (r HousingRepository) ListHousingOptions(ctx context.Context, familyID doma
 			id::text, family_id::text, name, housing_type, location, unit_type, purchase_price_cents,
 			grant_amount_cents, loan_type, loan_amount_cents, interest_rate_bps, loan_tenure_months,
 			downpayment_percent_bps, renovation_budget_cents, furniture_budget_cents, legal_fees_cents,
-			buyer_stamp_duty_cents, monthly_maintenance_cents, expected_key_collection_date::text, created_at, updated_at
+			buyer_stamp_duty_cents, monthly_maintenance_cents, dia_income_overrides, expected_key_collection_date::text, created_at, updated_at
 		FROM housing_options
 		WHERE family_id = $1::uuid
 		ORDER BY created_at DESC
@@ -119,6 +125,11 @@ func (r HousingRepository) UpdateHousingOption(ctx context.Context, option domai
 		return domain.HousingOption{}, apperror.ErrInvalidArgument
 	}
 
+	diaOverridesJSON, marshalErr := marshalDIAIncomeOverrides(option.DIAIncomeOverrides)
+	if marshalErr != nil {
+		return domain.HousingOption{}, apperror.ErrInvalidArgument
+	}
+
 	row := r.pool.QueryRow(ctx, `
 		UPDATE housing_options h
 		SET
@@ -138,22 +149,23 @@ func (r HousingRepository) UpdateHousingOption(ctx context.Context, option domai
 			legal_fees_cents = $15,
 			buyer_stamp_duty_cents = $16,
 			monthly_maintenance_cents = $17,
-			expected_key_collection_date = $18::date,
+			dia_income_overrides = $18::jsonb,
+			expected_key_collection_date = $19::date,
 			updated_at = now()
 		FROM family_members fm
 		WHERE h.id = $1::uuid
 			AND fm.family_id = h.family_id
-			AND fm.user_id = $19::uuid
+			AND fm.user_id = $20::uuid
 			AND fm.role IN ('owner', 'admin', 'member')
 		RETURNING
 			h.id::text, h.family_id::text, h.name, h.housing_type, h.location, h.unit_type, h.purchase_price_cents,
 			h.grant_amount_cents, h.loan_type, h.loan_amount_cents, h.interest_rate_bps, h.loan_tenure_months,
 			h.downpayment_percent_bps, h.renovation_budget_cents, h.furniture_budget_cents, h.legal_fees_cents,
-			h.buyer_stamp_duty_cents, h.monthly_maintenance_cents, h.expected_key_collection_date::text, h.created_at, h.updated_at
+			h.buyer_stamp_duty_cents, h.monthly_maintenance_cents, h.dia_income_overrides, h.expected_key_collection_date::text, h.created_at, h.updated_at
 	`, string(option.ID), option.Name, string(option.Type), option.Location, option.UnitType, option.PurchasePriceCents,
 		option.GrantAmountCents, string(option.LoanType), option.LoanAmountCents, option.InterestRateBps,
 		option.LoanTenureMonths, option.DownpaymentPercentBps, option.RenovationBudgetCents, option.FurnitureBudgetCents,
-		option.LegalFeesCents, option.BuyerStampDutyCents, option.MonthlyMaintenanceCents, optionalDateString(option.ExpectedKeyCollectionDate),
+		option.LegalFeesCents, option.BuyerStampDutyCents, option.MonthlyMaintenanceCents, diaOverridesJSON, optionalDateString(option.ExpectedKeyCollectionDate),
 		string(actorID))
 
 	updated, err := scanHousingRow(row)
@@ -192,6 +204,7 @@ func scanHousingRow(scanner interface{ Scan(dest ...any) error }) (domain.Housin
 		interestRateBps  int32
 		loanTenureMonths int32
 		downpaymentBps   int32
+		diaOverridesRaw  []byte
 	)
 
 	err := scanner.Scan(
@@ -213,6 +226,7 @@ func scanHousingRow(scanner interface{ Scan(dest ...any) error }) (domain.Housin
 		&option.LegalFeesCents,
 		&option.BuyerStampDutyCents,
 		&option.MonthlyMaintenanceCents,
+		&diaOverridesRaw,
 		&expectedKeyDate,
 		&option.CreatedAt,
 		&option.UpdatedAt,
@@ -229,5 +243,54 @@ func scanHousingRow(scanner interface{ Scan(dest ...any) error }) (domain.Housin
 	option.LoanTenureMonths = int(loanTenureMonths)
 	option.DownpaymentPercentBps = int64(downpaymentBps)
 	option.ExpectedKeyCollectionDate = parseOptionalDate(expectedKeyDate)
+	option.DIAIncomeOverrides = unmarshalDIAIncomeOverrides(diaOverridesRaw)
 	return option, nil
+}
+
+func marshalDIAIncomeOverrides(overrides []domain.HousingDIAIncomeOverride) ([]byte, error) {
+	clean := make([]domain.HousingDIAIncomeOverride, 0, len(overrides))
+	for _, override := range overrides {
+		personID := strings.TrimSpace(string(override.PersonID))
+		if personID == "" {
+			continue
+		}
+		projected := override.ProjectedIncomeCents
+		if projected < 0 {
+			projected = 0
+		}
+		clean = append(clean, domain.HousingDIAIncomeOverride{
+			PersonID:             domain.ID(personID),
+			ProjectedIncomeCents: projected,
+		})
+	}
+	if len(clean) == 0 {
+		return []byte("[]"), nil
+	}
+	return json.Marshal(clean)
+}
+
+func unmarshalDIAIncomeOverrides(raw []byte) []domain.HousingDIAIncomeOverride {
+	if len(raw) == 0 {
+		return nil
+	}
+	var parsed []domain.HousingDIAIncomeOverride
+	if err := json.Unmarshal(raw, &parsed); err != nil {
+		return nil
+	}
+	clean := make([]domain.HousingDIAIncomeOverride, 0, len(parsed))
+	for _, override := range parsed {
+		personID := strings.TrimSpace(string(override.PersonID))
+		if personID == "" {
+			continue
+		}
+		projected := override.ProjectedIncomeCents
+		if projected < 0 {
+			projected = 0
+		}
+		clean = append(clean, domain.HousingDIAIncomeOverride{
+			PersonID:             domain.ID(personID),
+			ProjectedIncomeCents: projected,
+		})
+	}
+	return clean
 }

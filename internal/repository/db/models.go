@@ -72,6 +72,7 @@ type HousingOption struct {
 	ExpectedKeyCollectionDate pgtype.Date        `json:"expected_key_collection_date"`
 	CreatedAt                 pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt                 pgtype.Timestamptz `json:"updated_at"`
+	DiaIncomeOverrides        []byte             `json:"dia_income_overrides"`
 }
 
 type PersonIncomeHistory struct {

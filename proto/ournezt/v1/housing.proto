@@ -13,6 +13,11 @@ service HousingService {
   rpc CalculateHousingAffordability(CalculateHousingAffordabilityRequest) returns (HousingAffordability);
 }
 
+message HousingDIAIncomeOverride {
+  string person_id = 1;
+  int64 projected_income_cents = 2;
+}
+
 message HousingOption {
   string id = 1;
   string family_id = 2;
@@ -33,6 +38,7 @@ message HousingOption {
   int64 buyer_stamp_duty_cents = 17;
   int64 monthly_maintenance_cents = 18;
   string expected_key_collection_date = 19;
+  repeated HousingDIAIncomeOverride dia_income_overrides = 20;
 }
 
 message GetHousingOptionRequest {
