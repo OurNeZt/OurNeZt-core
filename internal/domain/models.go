@@ -138,8 +138,14 @@ type HousingOption struct {
 	BuyerStampDutyCents       int64
 	MonthlyMaintenanceCents   int64
 	ExpectedKeyCollectionDate *time.Time
+	DIAIncomeOverrides        []HousingDIAIncomeOverride
 	CreatedAt                 time.Time
 	UpdatedAt                 time.Time
+}
+
+type HousingDIAIncomeOverride struct {
+	PersonID             ID
+	ProjectedIncomeCents int64
 }
 
 type AffordabilityRating string

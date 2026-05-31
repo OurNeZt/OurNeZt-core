@@ -136,6 +136,17 @@ func housingFromProto(in *ourneztv1.HousingOption) (domain.HousingOption, error)
 		return domain.HousingOption{}, err
 	}
 
+	overrides := make([]domain.HousingDIAIncomeOverride, 0, len(in.GetDiaIncomeOverrides()))
+	for _, override := range in.GetDiaIncomeOverrides() {
+		if override == nil || strings.TrimSpace(override.GetPersonId()) == "" {
+			continue
+		}
+		overrides = append(overrides, domain.HousingDIAIncomeOverride{
+			PersonID:             domain.ID(strings.TrimSpace(override.GetPersonId())),
+			ProjectedIncomeCents: override.GetProjectedIncomeCents(),
+		})
+	}
+
 	return domain.HousingOption{
 		ID:                        domain.ID(strings.TrimSpace(in.GetId())),
 		FamilyID:                  domain.ID(strings.TrimSpace(in.GetFamilyId())),
@@ -156,10 +167,22 @@ func housingFromProto(in *ourneztv1.HousingOption) (domain.HousingOption, error)
 		BuyerStampDutyCents:       in.GetBuyerStampDutyCents(),
 		MonthlyMaintenanceCents:   in.GetMonthlyMaintenanceCents(),
 		ExpectedKeyCollectionDate: keyDate,
+		DIAIncomeOverrides:        overrides,
 	}, nil
 }
 
 func housingToProto(option domain.HousingOption) *ourneztv1.HousingOption {
+	overrides := make([]*ourneztv1.HousingDIAIncomeOverride, 0, len(option.DIAIncomeOverrides))
+	for _, override := range option.DIAIncomeOverrides {
+		if strings.TrimSpace(string(override.PersonID)) == "" {
+			continue
+		}
+		overrides = append(overrides, &ourneztv1.HousingDIAIncomeOverride{
+			PersonId:             string(override.PersonID),
+			ProjectedIncomeCents: override.ProjectedIncomeCents,
+		})
+	}
+
 	return &ourneztv1.HousingOption{
 		Id:                        string(option.ID),
 		FamilyId:                  string(option.FamilyID),
@@ -180,6 +203,7 @@ func housingToProto(option domain.HousingOption) *ourneztv1.HousingOption {
 		BuyerStampDutyCents:       option.BuyerStampDutyCents,
 		MonthlyMaintenanceCents:   option.MonthlyMaintenanceCents,
 		ExpectedKeyCollectionDate: formatDate(option.ExpectedKeyCollectionDate),
+		DiaIncomeOverrides:        overrides,
 	}
 }
 
