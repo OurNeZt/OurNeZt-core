@@ -21,6 +21,7 @@ func TestHouseholdSummarySeparatesCurrentAndProjectedIncome(t *testing.T) {
 			ID:                        "person_2",
 			Age:                       24,
 			EmploymentStatus:          domain.EmploymentStudent,
+			GrossMonthlyIncomeCents:   90000,
 			ExpectedFutureIncomeCents: 380000,
 			MonthlyExpensesCents:      80000,
 		},
@@ -28,8 +29,8 @@ func TestHouseholdSummarySeparatesCurrentAndProjectedIncome(t *testing.T) {
 
 	got := CalculateHouseholdIncomeSummary(people)
 
-	if got.CurrentGrossIncomeCents != 400000 {
-		t.Fatalf("CurrentGrossIncomeCents = %d, want 400000", got.CurrentGrossIncomeCents)
+	if got.CurrentGrossIncomeCents != 490000 {
+		t.Fatalf("CurrentGrossIncomeCents = %d, want 490000", got.CurrentGrossIncomeCents)
 	}
 	if got.ProjectedGrossIncomeCents != 830000 {
 		t.Fatalf("ProjectedGrossIncomeCents = %d, want 830000", got.ProjectedGrossIncomeCents)

@@ -71,12 +71,9 @@ func CalculateHouseholdIncomeSummary(people []domain.PersonProfile) HouseholdInc
 }
 
 func currentIncomeFor(person domain.PersonProfile) int64 {
-	switch person.EmploymentStatus {
-	case domain.EmploymentFullTime, domain.EmploymentPartTime, domain.EmploymentSelfEmployed, domain.EmploymentFullTimeNSF, domain.EmploymentOther:
-		return maxInt64(person.GrossMonthlyIncomeCents, 0)
-	default:
-		return 0
-	}
+	// Gross income should reflect what is stored on each profile regardless of
+	// status label (including legacy labels from older UI versions).
+	return maxInt64(person.GrossMonthlyIncomeCents, 0)
 }
 
 func projectedIncomeFor(person domain.PersonProfile) int64 {
