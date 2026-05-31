@@ -91,7 +91,7 @@ func cpfPlanningNote(status domain.EmploymentStatus) string {
 	switch status {
 	case domain.EmploymentSelfEmployed:
 		return "Self-employed CPF handling differs; treat this as a placeholder until MediSave rules are modelled."
-	case domain.EmploymentStudent, domain.EmploymentFullTimeNSF, domain.EmploymentUnemployed, domain.EmploymentFutureEmployee:
+	case domain.EmploymentPartTime, domain.EmploymentStudent, domain.EmploymentFullTimeNSF, domain.EmploymentUnemployed, domain.EmploymentFutureEmployee:
 		return "Normal employee CPF is not applied to this profile by default."
 	default:
 		return "CPF is estimated for ordinary wages using the configured planning rates."

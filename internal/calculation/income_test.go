@@ -39,3 +39,38 @@ func TestHouseholdSummarySeparatesCurrentAndProjectedIncome(t *testing.T) {
 		t.Fatal("MayNeedDeferredAssessment = false, want true")
 	}
 }
+
+func TestHouseholdSummaryIncludesStudentAndNsfGrossWithoutCPFDeduction(t *testing.T) {
+	people := []domain.PersonProfile{
+		{
+			ID:                      "person_student",
+			Age:                     22,
+			EmploymentStatus:        domain.EmploymentStudent,
+			GrossMonthlyIncomeCents: 120000,
+		},
+		{
+			ID:                      "person_nsf",
+			Age:                     20,
+			EmploymentStatus:        domain.EmploymentFullTimeNSF,
+			GrossMonthlyIncomeCents: 90000,
+		},
+		{
+			ID:                      "person_part_time",
+			Age:                     26,
+			EmploymentStatus:        domain.EmploymentPartTime,
+			GrossMonthlyIncomeCents: 140000,
+		},
+	}
+
+	got := CalculateHouseholdIncomeSummary(people)
+
+	if got.CurrentGrossIncomeCents != 350000 {
+		t.Fatalf("CurrentGrossIncomeCents = %d, want 350000", got.CurrentGrossIncomeCents)
+	}
+	if got.EmployeeCPFCents != 0 {
+		t.Fatalf("EmployeeCPFCents = %d, want 0", got.EmployeeCPFCents)
+	}
+	if got.TakeHomeIncomeCents != 350000 {
+		t.Fatalf("TakeHomeIncomeCents = %d, want 350000", got.TakeHomeIncomeCents)
+	}
+}
