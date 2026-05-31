@@ -122,7 +122,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 }
 
 const listHousingOptionsByFamily = `-- name: ListHousingOptionsByFamily :many
-SELECT id, family_id, name, housing_type, location, unit_type, purchase_price_cents, grant_amount_cents, loan_type, loan_amount_cents, interest_rate_bps, loan_tenure_months, downpayment_percent_bps, renovation_budget_cents, furniture_budget_cents, legal_fees_cents, buyer_stamp_duty_cents, monthly_maintenance_cents, expected_key_collection_date, created_at, updated_at FROM housing_options
+SELECT id, family_id, name, housing_type, location, unit_type, purchase_price_cents, grant_amount_cents, loan_type, loan_amount_cents, interest_rate_bps, loan_tenure_months, downpayment_percent_bps, renovation_budget_cents, furniture_budget_cents, legal_fees_cents, buyer_stamp_duty_cents, monthly_maintenance_cents, expected_key_collection_date, created_at, updated_at, dia_income_overrides FROM housing_options
 WHERE family_id = $1
 ORDER BY created_at DESC
 `
@@ -158,6 +158,7 @@ func (q *Queries) ListHousingOptionsByFamily(ctx context.Context, familyID pgtyp
 			&i.ExpectedKeyCollectionDate,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.DiaIncomeOverrides,
 		); err != nil {
 			return nil, err
 		}
