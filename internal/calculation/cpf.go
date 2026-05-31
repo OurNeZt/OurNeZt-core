@@ -57,7 +57,7 @@ func CalculateCPFContribution(age int, monthlyWageCents int64, status domain.Emp
 }
 
 func normalEmployeeCPFApplies(status domain.EmploymentStatus) bool {
-	return status == domain.EmploymentFullTime || status == domain.EmploymentPartTime
+	return status == domain.EmploymentFullTime
 }
 
 func cpfRateForAge(age int) cpfRate {

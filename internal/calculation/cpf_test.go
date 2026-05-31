@@ -31,6 +31,22 @@ func TestCalculateCPFContributionSkipsStudent(t *testing.T) {
 	}
 }
 
+func TestCalculateCPFContributionSkipsNSF(t *testing.T) {
+	got := CalculateCPFContribution(20, 120000, domain.EmploymentFullTimeNSF)
+
+	if got.TotalCents != 0 {
+		t.Fatalf("TotalCents = %d, want 0", got.TotalCents)
+	}
+}
+
+func TestCalculateCPFContributionSkipsPartTime(t *testing.T) {
+	got := CalculateCPFContribution(27, 260000, domain.EmploymentPartTime)
+
+	if got.TotalCents != 0 {
+		t.Fatalf("TotalCents = %d, want 0", got.TotalCents)
+	}
+}
+
 func TestCalculateCPFContributionSkipsLowWage(t *testing.T) {
 	got := CalculateCPFContribution(30, 5000, domain.EmploymentFullTime)
 

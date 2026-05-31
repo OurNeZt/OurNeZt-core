@@ -49,8 +49,12 @@ func (s FamilyServer) CreateFamily(ctx context.Context, req *ourneztv1.CreateFam
 	if err != nil {
 		return nil, toStatusError(err)
 	}
+	familyType, typeErr := normalizeCreateFamilyType(req.GetFamilyType())
+	if typeErr != nil {
+		return nil, toStatusError(typeErr)
+	}
 
-	family, err := s.families.CreateFamily(ctx, domainFamilyFromCreateRequest(req), ownerID)
+	family, err := s.families.CreateFamily(ctx, domainFamilyFromCreateRequest(req, familyType), ownerID)
 	if err != nil {
 		return nil, toStatusError(err)
 	}
@@ -177,10 +181,25 @@ func (s FamilyServer) ListFamilyMembers(ctx context.Context, req *ourneztv1.List
 	return response, nil
 }
 
-func domainFamilyFromCreateRequest(req *ourneztv1.CreateFamilyRequest) domain.Family {
+func domainFamilyFromCreateRequest(req *ourneztv1.CreateFamilyRequest, familyType domain.FamilyType) domain.Family {
 	return domain.Family{
 		Name: strings.TrimSpace(req.GetName()),
-		Type: domain.FamilyType(strings.TrimSpace(req.GetFamilyType())),
+		Type: familyType,
+	}
+}
+
+func normalizeCreateFamilyType(raw string) (domain.FamilyType, error) {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case string(domain.FamilyTypeSingle):
+		return domain.FamilyTypeSingle, nil
+	case string(domain.FamilyTypeCouple):
+		return domain.FamilyTypeCouple, nil
+	case string(domain.FamilyTypeFamily):
+		return domain.FamilyTypeFamily, nil
+	case string(domain.FamilyTypeSharedHousehold):
+		return domain.FamilyTypeSharedHousehold, nil
+	default:
+		return "", apperror.ErrInvalidArgument
 	}
 }
 
