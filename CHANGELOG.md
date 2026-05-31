@@ -6,6 +6,23 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ---
 
+## [v1.3.0] - 2026-05-31
+
+### Added
+- Per-housing DIA income override support so each user can set projected future income specific to a housing option.
+- Storage/model support for housing-scoped DIA income inputs (`dia_income_overrides`) in backend data layer.
+
+### Changed
+- DIA affordability calculations now read housing-specific projected income values instead of using one shared value across all housing options.
+- User-edit flow now correctly persists profile updates through to the database layer.
+
+### Fixed
+- Fixed issue where user profile edits appeared to save but were not properly written to the database.
+- Fixed cross-housing projection sync issue where editing future income for one housing option unintentionally affected other housing options.
+
+### Removed
+- No removals in this release.
+
 ## [v1.2.0] - 2026-05-29
 
 ### Added
@@ -25,7 +42,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Transaction rollback lint issue fixed (`errcheck` on deferred rollback).
 
 ### Removed
-- None.
+- No removals in this release.
 
 ## [v1.1.2] - 2026-05-28
 
