@@ -6,6 +6,22 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ---
 
+## [v1.3.1] - 2026-06-01
+
+### Added
+- Explicit CPF exclusion handling for `student` and `full_time_nsf` employment statuses in income processing rules.
+
+### Changed
+- Gross income calculation flow was corrected to use the proper values/order of operations before affordability and CPF computations.
+- CPF contribution logic now applies only to CPF-eligible employment categories.
+
+### Fixed
+- Fixed gross income calculation issue that caused inaccurate totals in financial outputs.
+- Fixed CPF computation behavior so student and NSF gross income are excluded from CPF calculations.
+
+### Removed
+- No removals in this release.
+
 ## [v1.3.0] - 2026-05-31
 
 ### Added
