@@ -6,6 +6,44 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ---
 
+## [v1.3.0] - 2026-05-31
+
+### Added
+- Per-housing DIA income override support so each user can set projected future income specific to a housing option.
+- Storage/model support for housing-scoped DIA income inputs (`dia_income_overrides`) in backend data layer.
+
+### Changed
+- DIA affordability calculations now read housing-specific projected income values instead of using one shared value across all housing options.
+- User-edit flow now correctly persists profile updates through to the database layer.
+
+### Fixed
+- Fixed issue where user profile edits appeared to save but were not properly written to the database.
+- Fixed cross-housing projection sync issue where editing future income for one housing option unintentionally affected other housing options.
+
+### Removed
+- No removals in this release.
+
+## [v1.2.0] - 2026-05-29
+
+### Added
+- Admin bootstrap via environment variables (`BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_PASSWORD`, `BOOTSTRAP_ADMIN_DISPLAY_NAME`) for first-deploy setup.
+- One-time admin access key flow for gated admin dashboard access.
+- Admin-only user listing endpoint to support dashboard user tables (including user IDs and account status).
+- `must_change_password` enforcement for bootstrap/admin first login hardening.
+
+### Changed
+- Bootstrap behavior now auto-creates or promotes the first admin account when no active admin exists.
+- User/session admin flows updated so disabling a user also revokes active sessions.
+- Person profile data model expanded to support linked/editable user relationships (`linked_user_id`).
+
+### Fixed
+- Docker startup failure fixed (`exec /app/docker-entrypoint.sh: no such file or directory`) by normalizing entrypoint script to LF and enforcing line endings with `.gitattributes`.
+- SQLC generated files synchronized with schema/query updates to prevent CI drift failures.
+- Transaction rollback lint issue fixed (`errcheck` on deferred rollback).
+
+### Removed
+- No removals in this release.
+
 ## [v1.1.2] - 2026-05-28
 
 ### Added
