@@ -11,6 +11,8 @@ import (
 type Config struct {
 	AppEnv                    string
 	GRPCAddr                  string
+	GRPCTLSCertFile           string
+	GRPCTLSKeyFile            string
 	DatabaseURL               string
 	BootstrapAdminEmail       string
 	BootstrapAdminPassword    string
@@ -27,6 +29,8 @@ func Load() Config {
 	return Config{
 		AppEnv:                    env("APP_ENV", "development"),
 		GRPCAddr:                  env("GRPC_ADDR", ":50051"),
+		GRPCTLSCertFile:           env("GRPC_TLS_CERT_FILE", ""),
+		GRPCTLSKeyFile:            env("GRPC_TLS_KEY_FILE", ""),
 		DatabaseURL:               env("DATABASE_URL", ""),
 		BootstrapAdminEmail:       env("BOOTSTRAP_ADMIN_EMAIL", ""),
 		BootstrapAdminPassword:    env("BOOTSTRAP_ADMIN_PASSWORD", ""),
