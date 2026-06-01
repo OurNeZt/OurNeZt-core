@@ -18,6 +18,7 @@ import (
 	"github.com/OurNeZt/ournezt-core/internal/server"
 	"github.com/OurNeZt/ournezt-core/internal/service"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
 )
@@ -44,7 +45,18 @@ func main() {
 		os.Exit(1)
 	}
 
-	grpcServer := grpc.NewServer()
+	grpcOptions := make([]grpc.ServerOption, 0, 1)
+	grpcTLS := cfg.GRPCTLSCertFile != "" && cfg.GRPCTLSKeyFile != ""
+	if grpcTLS {
+		tlsCreds, tlsErr := credentials.NewServerTLSFromFile(cfg.GRPCTLSCertFile, cfg.GRPCTLSKeyFile)
+		if tlsErr != nil {
+			logger.Error("load grpc tls cert/key", "error", tlsErr)
+			os.Exit(1)
+		}
+		grpcOptions = append(grpcOptions, grpc.Creds(tlsCreds))
+	}
+
+	grpcServer := grpc.NewServer(grpcOptions...)
 	healthServer := health.NewServer()
 	healthServer.SetServingStatus("", grpc_health_v1.HealthCheckResponse_SERVING)
 	grpc_health_v1.RegisterHealthServer(grpcServer, healthServer)
@@ -100,7 +112,7 @@ func main() {
 	ourneztv1.RegisterDashboardServiceServer(grpcServer, dashboardServer)
 
 	go func() {
-		logger.Info("ournezt core started", "grpc_addr", cfg.GRPCAddr, "env", cfg.AppEnv)
+		logger.Info("ournezt core started", "grpc_addr", cfg.GRPCAddr, "grpc_tls", grpcTLS, "env", cfg.AppEnv)
 		if serveErr := grpcServer.Serve(listener); serveErr != nil && !errors.Is(serveErr, grpc.ErrServerStopped) {
 			logger.Error("grpc server stopped unexpectedly", "error", serveErr)
 			stop()
