@@ -6,6 +6,25 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ---
 
+## [v1.3.2] - 2026-06-01
+
+### Added
+- Optional gRPC server TLS support via:
+    - `GRPC_TLS_CERT_FILE`
+    - `GRPC_TLS_KEY_FILE`
+- Startup logging now indicates whether gRPC TLS is enabled.
+
+### Changed
+- gRPC server bootstrap now conditionally applies TLS server credentials when cert/key are configured.
+
+### Fixed
+- Household gross income aggregation now consistently includes stored gross values across profile statuses.
+- CPF handling aligned to planning rules for selected statuses (student/NSF/part-time no employee CPF deduction in summary flow).
+
+### Removed
+- No removals in this release.
+
+
 ## [v1.3.1] - 2026-06-01
 
 ### Added
