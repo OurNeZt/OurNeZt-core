@@ -254,6 +254,8 @@ func housingAffordabilityToProto(in calculation.HousingAffordability) *ourneztv1
 		HousingOptionId:                 string(in.HousingOptionID),
 		NetPurchasePriceCents:           in.NetPurchasePriceCents,
 		RequiredDownpaymentCents:        in.RequiredDownpaymentCents,
+		InitialDownpaymentCents:         in.InitialDownpaymentCents,
+		FinalDownpaymentCents:           in.FinalDownpaymentCents,
 		UpfrontCostCents:                in.UpfrontCostCents,
 		EstimatedLoanAmountCents:        in.EstimatedLoanAmountCents,
 		MonthlyMortgageCents:            in.MonthlyMortgageCents,

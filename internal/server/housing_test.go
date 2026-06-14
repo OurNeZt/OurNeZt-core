@@ -97,6 +97,12 @@ func TestHousingServerCalculateAffordability(t *testing.T) {
 	if response.GetMonthlyMortgageCents() <= 0 {
 		t.Fatalf("monthly mortgage = %d, want > 0", response.GetMonthlyMortgageCents())
 	}
+	if response.GetInitialDownpaymentCents() != 2250000 {
+		t.Fatalf("initial downpayment = %d, want 2250000", response.GetInitialDownpaymentCents())
+	}
+	if response.GetFinalDownpaymentCents() != 6750000 {
+		t.Fatalf("final downpayment = %d, want 6750000", response.GetFinalDownpaymentCents())
+	}
 }
 
 func TestHousingServerDeleteOption(t *testing.T) {
