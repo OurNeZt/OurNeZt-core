@@ -78,7 +78,7 @@ func initialDownpaymentCents(option domain.HousingOption, netPriceCents, require
 	}
 
 	initialBps := int64(500)
-	if isDeferredHousingOption(option) {
+	if IsDeferredHousingOption(option) {
 		initialBps = 250
 	}
 
@@ -87,26 +87,6 @@ func initialDownpaymentCents(option domain.HousingOption, netPriceCents, require
 		return requiredDownpaymentCents
 	}
 	return minInt64(initial, requiredDownpaymentCents)
-}
-
-func isDeferredHousingOption(option domain.HousingOption) bool {
-	if option.LoanType == domain.LoanTypeCash {
-		return false
-	}
-
-	hasValidKeyDate := option.ExpectedKeyCollectionDate != nil && !option.ExpectedKeyCollectionDate.IsZero()
-	looksDeferredByLegacyShape := option.LoanAmountCents == 0 && option.DownpaymentPercentBps == 2500
-	looksDeferredByKeyDate := hasValidKeyDate &&
-		option.LoanAmountCents == 0 &&
-		option.GrantAmountCents == 0 &&
-		(option.LoanType == "" || option.LoanType == domain.LoanTypeBank || option.LoanType == domain.LoanTypeHDB)
-	looksDeferredByDefaultedLoan := hasValidKeyDate &&
-		option.LoanType == domain.LoanTypeBank &&
-		option.LoanAmountCents == 0 &&
-		option.LoanTenureMonths == 300
-	looksDeferredByOverrides := hasValidKeyDate && len(option.DIAIncomeOverrides) > 0
-
-	return looksDeferredByLegacyShape || looksDeferredByKeyDate || looksDeferredByDefaultedLoan || looksDeferredByOverrides
 }
 
 func monthlyPayment(principalCents, annualRateBps int64, months int) int64 {

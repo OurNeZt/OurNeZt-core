@@ -133,3 +133,38 @@ func TestCalculateHousingAffordabilityRejectsNoIncomeByRating(t *testing.T) {
 		t.Fatalf("Rating = %q, want not_recommended", got.Rating)
 	}
 }
+
+func TestEstimateHousingGrantAmountUsesHouseholdGrossIncomeChart(t *testing.T) {
+	people := []domain.PersonProfile{
+		{ID: "person_1", GrossMonthlyIncomeCents: 320000},
+		{ID: "person_2", GrossMonthlyIncomeCents: 180000},
+	}
+
+	got := EstimateHousingGrantAmount(domain.HousingTypeBTO, people)
+
+	if got.HouseholdGrossMonthlyIncomeCents != 500000 {
+		t.Fatalf("HouseholdGrossMonthlyIncomeCents = %d, want 500000", got.HouseholdGrossMonthlyIncomeCents)
+	}
+	if !got.Eligible {
+		t.Fatalf("Eligible = false, want true")
+	}
+	if got.GrantAmountCents != 4500000 {
+		t.Fatalf("GrantAmountCents = %d, want 4500000", got.GrantAmountCents)
+	}
+}
+
+func TestEstimateHousingGrantAmountReturnsZeroForIneligibleHousingType(t *testing.T) {
+	people := []domain.PersonProfile{
+		{ID: "person_1", GrossMonthlyIncomeCents: 250000},
+		{ID: "person_2", GrossMonthlyIncomeCents: 250000},
+	}
+
+	got := EstimateHousingGrantAmount(domain.HousingTypePrivate, people)
+
+	if got.Eligible {
+		t.Fatalf("Eligible = true, want false")
+	}
+	if got.GrantAmountCents != 0 {
+		t.Fatalf("GrantAmountCents = %d, want 0", got.GrantAmountCents)
+	}
+}
