@@ -25,6 +25,7 @@ const (
 	HousingService_UpdateHousingOption_FullMethodName           = "/ournezt.v1.HousingService/UpdateHousingOption"
 	HousingService_DeleteHousingOption_FullMethodName           = "/ournezt.v1.HousingService/DeleteHousingOption"
 	HousingService_CalculateHousingAffordability_FullMethodName = "/ournezt.v1.HousingService/CalculateHousingAffordability"
+	HousingService_EstimateHousingGrant_FullMethodName          = "/ournezt.v1.HousingService/EstimateHousingGrant"
 )
 
 // HousingServiceClient is the client API for HousingService service.
@@ -37,6 +38,7 @@ type HousingServiceClient interface {
 	UpdateHousingOption(ctx context.Context, in *HousingOption, opts ...grpc.CallOption) (*HousingOption, error)
 	DeleteHousingOption(ctx context.Context, in *DeleteHousingOptionRequest, opts ...grpc.CallOption) (*DeleteHousingOptionResponse, error)
 	CalculateHousingAffordability(ctx context.Context, in *CalculateHousingAffordabilityRequest, opts ...grpc.CallOption) (*HousingAffordability, error)
+	EstimateHousingGrant(ctx context.Context, in *EstimateHousingGrantRequest, opts ...grpc.CallOption) (*EstimateHousingGrantResponse, error)
 }
 
 type housingServiceClient struct {
@@ -107,6 +109,16 @@ func (c *housingServiceClient) CalculateHousingAffordability(ctx context.Context
 	return out, nil
 }
 
+func (c *housingServiceClient) EstimateHousingGrant(ctx context.Context, in *EstimateHousingGrantRequest, opts ...grpc.CallOption) (*EstimateHousingGrantResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EstimateHousingGrantResponse)
+	err := c.cc.Invoke(ctx, HousingService_EstimateHousingGrant_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // HousingServiceServer is the server API for HousingService service.
 // All implementations must embed UnimplementedHousingServiceServer
 // for forward compatibility.
@@ -117,6 +129,7 @@ type HousingServiceServer interface {
 	UpdateHousingOption(context.Context, *HousingOption) (*HousingOption, error)
 	DeleteHousingOption(context.Context, *DeleteHousingOptionRequest) (*DeleteHousingOptionResponse, error)
 	CalculateHousingAffordability(context.Context, *CalculateHousingAffordabilityRequest) (*HousingAffordability, error)
+	EstimateHousingGrant(context.Context, *EstimateHousingGrantRequest) (*EstimateHousingGrantResponse, error)
 	mustEmbedUnimplementedHousingServiceServer()
 }
 
@@ -144,6 +157,9 @@ func (UnimplementedHousingServiceServer) DeleteHousingOption(context.Context, *D
 }
 func (UnimplementedHousingServiceServer) CalculateHousingAffordability(context.Context, *CalculateHousingAffordabilityRequest) (*HousingAffordability, error) {
 	return nil, status.Error(codes.Unimplemented, "method CalculateHousingAffordability not implemented")
+}
+func (UnimplementedHousingServiceServer) EstimateHousingGrant(context.Context, *EstimateHousingGrantRequest) (*EstimateHousingGrantResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method EstimateHousingGrant not implemented")
 }
 func (UnimplementedHousingServiceServer) mustEmbedUnimplementedHousingServiceServer() {}
 func (UnimplementedHousingServiceServer) testEmbeddedByValue()                        {}
@@ -274,6 +290,24 @@ func _HousingService_CalculateHousingAffordability_Handler(srv interface{}, ctx 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _HousingService_EstimateHousingGrant_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EstimateHousingGrantRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HousingServiceServer).EstimateHousingGrant(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HousingService_EstimateHousingGrant_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HousingServiceServer).EstimateHousingGrant(ctx, req.(*EstimateHousingGrantRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // HousingService_ServiceDesc is the grpc.ServiceDesc for HousingService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -304,6 +338,10 @@ var HousingService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CalculateHousingAffordability",
 			Handler:    _HousingService_CalculateHousingAffordability_Handler,
+		},
+		{
+			MethodName: "EstimateHousingGrant",
+			Handler:    _HousingService_EstimateHousingGrant_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
