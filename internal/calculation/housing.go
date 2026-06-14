@@ -34,7 +34,7 @@ type HouseholdAssets struct {
 func CalculateHousingAffordability(option domain.HousingOption, assets HouseholdAssets) HousingAffordability {
 	netPrice := maxInt64(option.PurchasePriceCents-option.GrantAmountCents, 0)
 	downpayment := centsByBps(netPrice, option.DownpaymentPercentBps)
-	initialDownpayment := initialDownpaymentCents(option, netPrice, downpayment)
+	initialDownpayment := initialDownpaymentCents(option, downpayment)
 	finalDownpayment := maxInt64(downpayment-initialDownpayment, 0)
 	upfront := downpayment + option.LegalFeesCents + option.BuyerStampDutyCents
 
@@ -68,7 +68,7 @@ func CalculateHousingAffordability(option domain.HousingOption, assets Household
 	}
 }
 
-func initialDownpaymentCents(option domain.HousingOption, netPriceCents, requiredDownpaymentCents int64) int64 {
+func initialDownpaymentCents(option domain.HousingOption, requiredDownpaymentCents int64) int64 {
 	if requiredDownpaymentCents <= 0 {
 		return 0
 	}
@@ -82,7 +82,7 @@ func initialDownpaymentCents(option domain.HousingOption, netPriceCents, require
 		initialBps = 250
 	}
 
-	initial := centsByBps(netPriceCents, initialBps)
+	initial := centsByBps(maxInt64(option.PurchasePriceCents, 0), initialBps)
 	if initial <= 0 {
 		return requiredDownpaymentCents
 	}
