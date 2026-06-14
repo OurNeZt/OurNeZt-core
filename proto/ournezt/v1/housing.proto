@@ -84,5 +84,7 @@ message HousingAffordability {
   int64 monthly_housing_cost_cents = 11;
   int64 monthly_surplus_after_housing_cents = 12;
   string rating = 13;
+  int64 initial_downpayment_cents = 14;
+  int64 final_downpayment_cents = 15;
 }
 
