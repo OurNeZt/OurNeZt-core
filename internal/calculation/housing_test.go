@@ -33,11 +33,11 @@ func TestCalculateHousingAffordability(t *testing.T) {
 	if got.RequiredDownpaymentCents != 9000000 {
 		t.Fatalf("RequiredDownpaymentCents = %d, want 9000000", got.RequiredDownpaymentCents)
 	}
-	if got.InitialDownpaymentCents != 2250000 {
-		t.Fatalf("InitialDownpaymentCents = %d, want 2250000", got.InitialDownpaymentCents)
+	if got.InitialDownpaymentCents != 2500000 {
+		t.Fatalf("InitialDownpaymentCents = %d, want 2500000", got.InitialDownpaymentCents)
 	}
-	if got.FinalDownpaymentCents != 6750000 {
-		t.Fatalf("FinalDownpaymentCents = %d, want 6750000", got.FinalDownpaymentCents)
+	if got.FinalDownpaymentCents != 6500000 {
+		t.Fatalf("FinalDownpaymentCents = %d, want 6500000", got.FinalDownpaymentCents)
 	}
 	if got.MonthlyMortgageCents <= 0 {
 		t.Fatalf("MonthlyMortgageCents = %d, want > 0", got.MonthlyMortgageCents)
