@@ -596,6 +596,8 @@ type HousingAffordability struct {
 	MonthlyHousingCostCents         int64                  `protobuf:"varint,11,opt,name=monthly_housing_cost_cents,json=monthlyHousingCostCents,proto3" json:"monthly_housing_cost_cents,omitempty"`
 	MonthlySurplusAfterHousingCents int64                  `protobuf:"varint,12,opt,name=monthly_surplus_after_housing_cents,json=monthlySurplusAfterHousingCents,proto3" json:"monthly_surplus_after_housing_cents,omitempty"`
 	Rating                          string                 `protobuf:"bytes,13,opt,name=rating,proto3" json:"rating,omitempty"`
+	InitialDownpaymentCents         int64                  `protobuf:"varint,14,opt,name=initial_downpayment_cents,json=initialDownpaymentCents,proto3" json:"initial_downpayment_cents,omitempty"`
+	FinalDownpaymentCents           int64                  `protobuf:"varint,15,opt,name=final_downpayment_cents,json=finalDownpaymentCents,proto3" json:"final_downpayment_cents,omitempty"`
 	unknownFields                   protoimpl.UnknownFields
 	sizeCache                       protoimpl.SizeCache
 }
@@ -721,6 +723,20 @@ func (x *HousingAffordability) GetRating() string {
 	return ""
 }
 
+func (x *HousingAffordability) GetInitialDownpaymentCents() int64 {
+	if x != nil {
+		return x.InitialDownpaymentCents
+	}
+	return 0
+}
+
+func (x *HousingAffordability) GetFinalDownpaymentCents() int64 {
+	if x != nil {
+		return x.FinalDownpaymentCents
+	}
+	return 0
+}
+
 var File_ournezt_v1_housing_proto protoreflect.FileDescriptor
 
 const file_ournezt_v1_housing_proto_rawDesc = "" +
@@ -772,7 +788,7 @@ const file_ournezt_v1_housing_proto_rawDesc = "" +
 	"\fcpf_oa_cents\x18\x03 \x01(\x03R\n" +
 	"cpfOaCents\x12&\n" +
 	"\x0ftake_home_cents\x18\x04 \x01(\x03R\rtakeHomeCents\x124\n" +
-	"\x16monthly_expenses_cents\x18\x05 \x01(\x03R\x14monthlyExpensesCents\"\xc8\x05\n" +
+	"\x16monthly_expenses_cents\x18\x05 \x01(\x03R\x14monthlyExpensesCents\"\xbc\x06\n" +
 	"\x14HousingAffordability\x12*\n" +
 	"\x11housing_option_id\x18\x01 \x01(\tR\x0fhousingOptionId\x127\n" +
 	"\x18net_purchase_price_cents\x18\x02 \x01(\x03R\x15netPurchasePriceCents\x12<\n" +
@@ -787,7 +803,9 @@ const file_ournezt_v1_housing_proto_rawDesc = "" +
 	" \x01(\x03R\x13remainingCpfOaCents\x12;\n" +
 	"\x1amonthly_housing_cost_cents\x18\v \x01(\x03R\x17monthlyHousingCostCents\x12L\n" +
 	"#monthly_surplus_after_housing_cents\x18\f \x01(\x03R\x1fmonthlySurplusAfterHousingCents\x12\x16\n" +
-	"\x06rating\x18\r \x01(\tR\x06rating2\xc0\x04\n" +
+	"\x06rating\x18\r \x01(\tR\x06rating\x12:\n" +
+	"\x19initial_downpayment_cents\x18\x0e \x01(\x03R\x17initialDownpaymentCents\x126\n" +
+	"\x17final_downpayment_cents\x18\x0f \x01(\x03R\x15finalDownpaymentCents2\xc0\x04\n" +
 	"\x0eHousingService\x12K\n" +
 	"\x13CreateHousingOption\x12\x19.ournezt.v1.HousingOption\x1a\x19.ournezt.v1.HousingOption\x12R\n" +
 	"\x10GetHousingOption\x12#.ournezt.v1.GetHousingOptionRequest\x1a\x19.ournezt.v1.HousingOption\x12c\n" +

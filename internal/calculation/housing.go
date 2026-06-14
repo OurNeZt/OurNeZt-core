@@ -10,6 +10,8 @@ type HousingAffordability struct {
 	HousingOptionID                 domain.ID
 	NetPurchasePriceCents           int64
 	RequiredDownpaymentCents        int64
+	InitialDownpaymentCents         int64
+	FinalDownpaymentCents           int64
 	UpfrontCostCents                int64
 	EstimatedLoanAmountCents        int64
 	MonthlyMortgageCents            int64
@@ -32,7 +34,9 @@ type HouseholdAssets struct {
 func CalculateHousingAffordability(option domain.HousingOption, assets HouseholdAssets) HousingAffordability {
 	netPrice := maxInt64(option.PurchasePriceCents-option.GrantAmountCents, 0)
 	downpayment := centsByBps(netPrice, option.DownpaymentPercentBps)
-	upfront := downpayment + option.RenovationBudgetCents + option.FurnitureBudgetCents + option.LegalFeesCents + option.BuyerStampDutyCents
+	initialDownpayment := initialDownpaymentCents(option, netPrice, downpayment)
+	finalDownpayment := maxInt64(downpayment-initialDownpayment, 0)
+	upfront := downpayment + option.LegalFeesCents + option.BuyerStampDutyCents
 
 	loan := option.LoanAmountCents
 	if loan <= 0 {
@@ -49,6 +53,8 @@ func CalculateHousingAffordability(option domain.HousingOption, assets Household
 		HousingOptionID:                 option.ID,
 		NetPurchasePriceCents:           netPrice,
 		RequiredDownpaymentCents:        downpayment,
+		InitialDownpaymentCents:         initialDownpayment,
+		FinalDownpaymentCents:           finalDownpayment,
 		UpfrontCostCents:                upfront,
 		EstimatedLoanAmountCents:        loan,
 		MonthlyMortgageCents:            monthlyMortgage,
@@ -60,6 +66,47 @@ func CalculateHousingAffordability(option domain.HousingOption, assets Household
 		MonthlySurplusAfterHousingCents: monthlySurplus,
 		Rating:                          affordabilityRating(monthlyHousingCost, assets.TakeHomeCents, monthlySurplus),
 	}
+}
+
+func initialDownpaymentCents(option domain.HousingOption, netPriceCents, requiredDownpaymentCents int64) int64 {
+	if requiredDownpaymentCents <= 0 {
+		return 0
+	}
+
+	if option.LoanType == domain.LoanTypeCash {
+		return requiredDownpaymentCents
+	}
+
+	initialBps := int64(500)
+	if isDeferredHousingOption(option) {
+		initialBps = 250
+	}
+
+	initial := centsByBps(netPriceCents, initialBps)
+	if initial <= 0 {
+		return requiredDownpaymentCents
+	}
+	return minInt64(initial, requiredDownpaymentCents)
+}
+
+func isDeferredHousingOption(option domain.HousingOption) bool {
+	if option.LoanType == domain.LoanTypeCash {
+		return false
+	}
+
+	hasValidKeyDate := option.ExpectedKeyCollectionDate != nil && !option.ExpectedKeyCollectionDate.IsZero()
+	looksDeferredByLegacyShape := option.LoanAmountCents == 0 && option.DownpaymentPercentBps == 2500
+	looksDeferredByKeyDate := hasValidKeyDate &&
+		option.LoanAmountCents == 0 &&
+		option.GrantAmountCents == 0 &&
+		(option.LoanType == "" || option.LoanType == domain.LoanTypeBank || option.LoanType == domain.LoanTypeHDB)
+	looksDeferredByDefaultedLoan := hasValidKeyDate &&
+		option.LoanType == domain.LoanTypeBank &&
+		option.LoanAmountCents == 0 &&
+		option.LoanTenureMonths == 300
+	looksDeferredByOverrides := hasValidKeyDate && len(option.DIAIncomeOverrides) > 0
+
+	return looksDeferredByLegacyShape || looksDeferredByKeyDate || looksDeferredByDefaultedLoan || looksDeferredByOverrides
 }
 
 func monthlyPayment(principalCents, annualRateBps int64, months int) int64 {
