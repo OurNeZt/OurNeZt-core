@@ -581,6 +581,126 @@ func (x *CalculateHousingAffordabilityRequest) GetMonthlyExpensesCents() int64 {
 	return 0
 }
 
+type EstimateHousingGrantRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ViewerUserId  string                 `protobuf:"bytes,1,opt,name=viewer_user_id,json=viewerUserId,proto3" json:"viewer_user_id,omitempty"`
+	FamilyId      string                 `protobuf:"bytes,2,opt,name=family_id,json=familyId,proto3" json:"family_id,omitempty"`
+	HousingType   string                 `protobuf:"bytes,3,opt,name=housing_type,json=housingType,proto3" json:"housing_type,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *EstimateHousingGrantRequest) Reset() {
+	*x = EstimateHousingGrantRequest{}
+	mi := &file_ournezt_v1_housing_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EstimateHousingGrantRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EstimateHousingGrantRequest) ProtoMessage() {}
+
+func (x *EstimateHousingGrantRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ournezt_v1_housing_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EstimateHousingGrantRequest.ProtoReflect.Descriptor instead.
+func (*EstimateHousingGrantRequest) Descriptor() ([]byte, []int) {
+	return file_ournezt_v1_housing_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *EstimateHousingGrantRequest) GetViewerUserId() string {
+	if x != nil {
+		return x.ViewerUserId
+	}
+	return ""
+}
+
+func (x *EstimateHousingGrantRequest) GetFamilyId() string {
+	if x != nil {
+		return x.FamilyId
+	}
+	return ""
+}
+
+func (x *EstimateHousingGrantRequest) GetHousingType() string {
+	if x != nil {
+		return x.HousingType
+	}
+	return ""
+}
+
+type EstimateHousingGrantResponse struct {
+	state                            protoimpl.MessageState `protogen:"open.v1"`
+	GrantAmountCents                 int64                  `protobuf:"varint,1,opt,name=grant_amount_cents,json=grantAmountCents,proto3" json:"grant_amount_cents,omitempty"`
+	HouseholdGrossMonthlyIncomeCents int64                  `protobuf:"varint,2,opt,name=household_gross_monthly_income_cents,json=householdGrossMonthlyIncomeCents,proto3" json:"household_gross_monthly_income_cents,omitempty"`
+	Eligible                         bool                   `protobuf:"varint,3,opt,name=eligible,proto3" json:"eligible,omitempty"`
+	unknownFields                    protoimpl.UnknownFields
+	sizeCache                        protoimpl.SizeCache
+}
+
+func (x *EstimateHousingGrantResponse) Reset() {
+	*x = EstimateHousingGrantResponse{}
+	mi := &file_ournezt_v1_housing_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EstimateHousingGrantResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EstimateHousingGrantResponse) ProtoMessage() {}
+
+func (x *EstimateHousingGrantResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ournezt_v1_housing_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EstimateHousingGrantResponse.ProtoReflect.Descriptor instead.
+func (*EstimateHousingGrantResponse) Descriptor() ([]byte, []int) {
+	return file_ournezt_v1_housing_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *EstimateHousingGrantResponse) GetGrantAmountCents() int64 {
+	if x != nil {
+		return x.GrantAmountCents
+	}
+	return 0
+}
+
+func (x *EstimateHousingGrantResponse) GetHouseholdGrossMonthlyIncomeCents() int64 {
+	if x != nil {
+		return x.HouseholdGrossMonthlyIncomeCents
+	}
+	return 0
+}
+
+func (x *EstimateHousingGrantResponse) GetEligible() bool {
+	if x != nil {
+		return x.Eligible
+	}
+	return false
+}
+
 type HousingAffordability struct {
 	state                           protoimpl.MessageState `protogen:"open.v1"`
 	HousingOptionId                 string                 `protobuf:"bytes,1,opt,name=housing_option_id,json=housingOptionId,proto3" json:"housing_option_id,omitempty"`
@@ -604,7 +724,7 @@ type HousingAffordability struct {
 
 func (x *HousingAffordability) Reset() {
 	*x = HousingAffordability{}
-	mi := &file_ournezt_v1_housing_proto_msgTypes[8]
+	mi := &file_ournezt_v1_housing_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -616,7 +736,7 @@ func (x *HousingAffordability) String() string {
 func (*HousingAffordability) ProtoMessage() {}
 
 func (x *HousingAffordability) ProtoReflect() protoreflect.Message {
-	mi := &file_ournezt_v1_housing_proto_msgTypes[8]
+	mi := &file_ournezt_v1_housing_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -629,7 +749,7 @@ func (x *HousingAffordability) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HousingAffordability.ProtoReflect.Descriptor instead.
 func (*HousingAffordability) Descriptor() ([]byte, []int) {
-	return file_ournezt_v1_housing_proto_rawDescGZIP(), []int{8}
+	return file_ournezt_v1_housing_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *HousingAffordability) GetHousingOptionId() string {
@@ -788,7 +908,15 @@ const file_ournezt_v1_housing_proto_rawDesc = "" +
 	"\fcpf_oa_cents\x18\x03 \x01(\x03R\n" +
 	"cpfOaCents\x12&\n" +
 	"\x0ftake_home_cents\x18\x04 \x01(\x03R\rtakeHomeCents\x124\n" +
-	"\x16monthly_expenses_cents\x18\x05 \x01(\x03R\x14monthlyExpensesCents\"\xbc\x06\n" +
+	"\x16monthly_expenses_cents\x18\x05 \x01(\x03R\x14monthlyExpensesCents\"\x83\x01\n" +
+	"\x1bEstimateHousingGrantRequest\x12$\n" +
+	"\x0eviewer_user_id\x18\x01 \x01(\tR\fviewerUserId\x12\x1b\n" +
+	"\tfamily_id\x18\x02 \x01(\tR\bfamilyId\x12!\n" +
+	"\fhousing_type\x18\x03 \x01(\tR\vhousingType\"\xb8\x01\n" +
+	"\x1cEstimateHousingGrantResponse\x12,\n" +
+	"\x12grant_amount_cents\x18\x01 \x01(\x03R\x10grantAmountCents\x12N\n" +
+	"$household_gross_monthly_income_cents\x18\x02 \x01(\x03R householdGrossMonthlyIncomeCents\x12\x1a\n" +
+	"\beligible\x18\x03 \x01(\bR\beligible\"\xbc\x06\n" +
 	"\x14HousingAffordability\x12*\n" +
 	"\x11housing_option_id\x18\x01 \x01(\tR\x0fhousingOptionId\x127\n" +
 	"\x18net_purchase_price_cents\x18\x02 \x01(\x03R\x15netPurchasePriceCents\x12<\n" +
@@ -805,14 +933,15 @@ const file_ournezt_v1_housing_proto_rawDesc = "" +
 	"#monthly_surplus_after_housing_cents\x18\f \x01(\x03R\x1fmonthlySurplusAfterHousingCents\x12\x16\n" +
 	"\x06rating\x18\r \x01(\tR\x06rating\x12:\n" +
 	"\x19initial_downpayment_cents\x18\x0e \x01(\x03R\x17initialDownpaymentCents\x126\n" +
-	"\x17final_downpayment_cents\x18\x0f \x01(\x03R\x15finalDownpaymentCents2\xc0\x04\n" +
+	"\x17final_downpayment_cents\x18\x0f \x01(\x03R\x15finalDownpaymentCents2\xab\x05\n" +
 	"\x0eHousingService\x12K\n" +
 	"\x13CreateHousingOption\x12\x19.ournezt.v1.HousingOption\x1a\x19.ournezt.v1.HousingOption\x12R\n" +
 	"\x10GetHousingOption\x12#.ournezt.v1.GetHousingOptionRequest\x1a\x19.ournezt.v1.HousingOption\x12c\n" +
 	"\x12ListHousingOptions\x12%.ournezt.v1.ListHousingOptionsRequest\x1a&.ournezt.v1.ListHousingOptionsResponse\x12K\n" +
 	"\x13UpdateHousingOption\x12\x19.ournezt.v1.HousingOption\x1a\x19.ournezt.v1.HousingOption\x12f\n" +
 	"\x13DeleteHousingOption\x12&.ournezt.v1.DeleteHousingOptionRequest\x1a'.ournezt.v1.DeleteHousingOptionResponse\x12s\n" +
-	"\x1dCalculateHousingAffordability\x120.ournezt.v1.CalculateHousingAffordabilityRequest\x1a .ournezt.v1.HousingAffordabilityBIZGgithub.com/OurNeZt/ournezt-core/internal/gen/proto/ournezt/v1;ourneztv1b\x06proto3"
+	"\x1dCalculateHousingAffordability\x120.ournezt.v1.CalculateHousingAffordabilityRequest\x1a .ournezt.v1.HousingAffordability\x12i\n" +
+	"\x14EstimateHousingGrant\x12'.ournezt.v1.EstimateHousingGrantRequest\x1a(.ournezt.v1.EstimateHousingGrantResponseBIZGgithub.com/OurNeZt/ournezt-core/internal/gen/proto/ournezt/v1;ourneztv1b\x06proto3"
 
 var (
 	file_ournezt_v1_housing_proto_rawDescOnce sync.Once
@@ -826,7 +955,7 @@ func file_ournezt_v1_housing_proto_rawDescGZIP() []byte {
 	return file_ournezt_v1_housing_proto_rawDescData
 }
 
-var file_ournezt_v1_housing_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_ournezt_v1_housing_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_ournezt_v1_housing_proto_goTypes = []any{
 	(*HousingDIAIncomeOverride)(nil),             // 0: ournezt.v1.HousingDIAIncomeOverride
 	(*HousingOption)(nil),                        // 1: ournezt.v1.HousingOption
@@ -836,29 +965,33 @@ var file_ournezt_v1_housing_proto_goTypes = []any{
 	(*DeleteHousingOptionRequest)(nil),           // 5: ournezt.v1.DeleteHousingOptionRequest
 	(*DeleteHousingOptionResponse)(nil),          // 6: ournezt.v1.DeleteHousingOptionResponse
 	(*CalculateHousingAffordabilityRequest)(nil), // 7: ournezt.v1.CalculateHousingAffordabilityRequest
-	(*HousingAffordability)(nil),                 // 8: ournezt.v1.HousingAffordability
+	(*EstimateHousingGrantRequest)(nil),          // 8: ournezt.v1.EstimateHousingGrantRequest
+	(*EstimateHousingGrantResponse)(nil),         // 9: ournezt.v1.EstimateHousingGrantResponse
+	(*HousingAffordability)(nil),                 // 10: ournezt.v1.HousingAffordability
 }
 var file_ournezt_v1_housing_proto_depIdxs = []int32{
-	0, // 0: ournezt.v1.HousingOption.dia_income_overrides:type_name -> ournezt.v1.HousingDIAIncomeOverride
-	1, // 1: ournezt.v1.ListHousingOptionsResponse.housing_options:type_name -> ournezt.v1.HousingOption
-	1, // 2: ournezt.v1.CalculateHousingAffordabilityRequest.housing_option:type_name -> ournezt.v1.HousingOption
-	1, // 3: ournezt.v1.HousingService.CreateHousingOption:input_type -> ournezt.v1.HousingOption
-	2, // 4: ournezt.v1.HousingService.GetHousingOption:input_type -> ournezt.v1.GetHousingOptionRequest
-	3, // 5: ournezt.v1.HousingService.ListHousingOptions:input_type -> ournezt.v1.ListHousingOptionsRequest
-	1, // 6: ournezt.v1.HousingService.UpdateHousingOption:input_type -> ournezt.v1.HousingOption
-	5, // 7: ournezt.v1.HousingService.DeleteHousingOption:input_type -> ournezt.v1.DeleteHousingOptionRequest
-	7, // 8: ournezt.v1.HousingService.CalculateHousingAffordability:input_type -> ournezt.v1.CalculateHousingAffordabilityRequest
-	1, // 9: ournezt.v1.HousingService.CreateHousingOption:output_type -> ournezt.v1.HousingOption
-	1, // 10: ournezt.v1.HousingService.GetHousingOption:output_type -> ournezt.v1.HousingOption
-	4, // 11: ournezt.v1.HousingService.ListHousingOptions:output_type -> ournezt.v1.ListHousingOptionsResponse
-	1, // 12: ournezt.v1.HousingService.UpdateHousingOption:output_type -> ournezt.v1.HousingOption
-	6, // 13: ournezt.v1.HousingService.DeleteHousingOption:output_type -> ournezt.v1.DeleteHousingOptionResponse
-	8, // 14: ournezt.v1.HousingService.CalculateHousingAffordability:output_type -> ournezt.v1.HousingAffordability
-	9, // [9:15] is the sub-list for method output_type
-	3, // [3:9] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	0,  // 0: ournezt.v1.HousingOption.dia_income_overrides:type_name -> ournezt.v1.HousingDIAIncomeOverride
+	1,  // 1: ournezt.v1.ListHousingOptionsResponse.housing_options:type_name -> ournezt.v1.HousingOption
+	1,  // 2: ournezt.v1.CalculateHousingAffordabilityRequest.housing_option:type_name -> ournezt.v1.HousingOption
+	1,  // 3: ournezt.v1.HousingService.CreateHousingOption:input_type -> ournezt.v1.HousingOption
+	2,  // 4: ournezt.v1.HousingService.GetHousingOption:input_type -> ournezt.v1.GetHousingOptionRequest
+	3,  // 5: ournezt.v1.HousingService.ListHousingOptions:input_type -> ournezt.v1.ListHousingOptionsRequest
+	1,  // 6: ournezt.v1.HousingService.UpdateHousingOption:input_type -> ournezt.v1.HousingOption
+	5,  // 7: ournezt.v1.HousingService.DeleteHousingOption:input_type -> ournezt.v1.DeleteHousingOptionRequest
+	7,  // 8: ournezt.v1.HousingService.CalculateHousingAffordability:input_type -> ournezt.v1.CalculateHousingAffordabilityRequest
+	8,  // 9: ournezt.v1.HousingService.EstimateHousingGrant:input_type -> ournezt.v1.EstimateHousingGrantRequest
+	1,  // 10: ournezt.v1.HousingService.CreateHousingOption:output_type -> ournezt.v1.HousingOption
+	1,  // 11: ournezt.v1.HousingService.GetHousingOption:output_type -> ournezt.v1.HousingOption
+	4,  // 12: ournezt.v1.HousingService.ListHousingOptions:output_type -> ournezt.v1.ListHousingOptionsResponse
+	1,  // 13: ournezt.v1.HousingService.UpdateHousingOption:output_type -> ournezt.v1.HousingOption
+	6,  // 14: ournezt.v1.HousingService.DeleteHousingOption:output_type -> ournezt.v1.DeleteHousingOptionResponse
+	10, // 15: ournezt.v1.HousingService.CalculateHousingAffordability:output_type -> ournezt.v1.HousingAffordability
+	9,  // 16: ournezt.v1.HousingService.EstimateHousingGrant:output_type -> ournezt.v1.EstimateHousingGrantResponse
+	10, // [10:17] is the sub-list for method output_type
+	3,  // [3:10] is the sub-list for method input_type
+	3,  // [3:3] is the sub-list for extension type_name
+	3,  // [3:3] is the sub-list for extension extendee
+	0,  // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_ournezt_v1_housing_proto_init() }
@@ -872,7 +1005,7 @@ func file_ournezt_v1_housing_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_ournezt_v1_housing_proto_rawDesc), len(file_ournezt_v1_housing_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   9,
+			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
