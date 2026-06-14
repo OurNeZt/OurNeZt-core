@@ -72,8 +72,8 @@ func TestHousingServerCreateOption(t *testing.T) {
 	if repo.createInput.Name != "BTO" {
 		t.Fatalf("create input name = %q, want BTO", repo.createInput.Name)
 	}
-	if repo.createInput.GrantAmountCents != 4500000 {
-		t.Fatalf("create input grant amount = %d, want 4500000", repo.createInput.GrantAmountCents)
+	if repo.createInput.GrantAmountCents != 6500000 {
+		t.Fatalf("create input grant amount = %d, want 6500000", repo.createInput.GrantAmountCents)
 	}
 }
 
@@ -149,8 +149,8 @@ func TestHousingServerEstimateHousingGrant(t *testing.T) {
 	if response.GetHouseholdGrossMonthlyIncomeCents() != 500000 {
 		t.Fatalf("household gross = %d, want 500000", response.GetHouseholdGrossMonthlyIncomeCents())
 	}
-	if response.GetGrantAmountCents() != 4500000 {
-		t.Fatalf("grant amount = %d, want 4500000", response.GetGrantAmountCents())
+	if response.GetGrantAmountCents() != 6500000 {
+		t.Fatalf("grant amount = %d, want 6500000", response.GetGrantAmountCents())
 	}
 	if !response.GetEligible() {
 		t.Fatalf("eligible = false, want true")

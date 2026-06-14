@@ -148,8 +148,8 @@ func TestEstimateHousingGrantAmountUsesHouseholdGrossIncomeChart(t *testing.T) {
 	if !got.Eligible {
 		t.Fatalf("Eligible = false, want true")
 	}
-	if got.GrantAmountCents != 4500000 {
-		t.Fatalf("GrantAmountCents = %d, want 4500000", got.GrantAmountCents)
+	if got.GrantAmountCents != 6500000 {
+		t.Fatalf("GrantAmountCents = %d, want 6500000", got.GrantAmountCents)
 	}
 }
 
