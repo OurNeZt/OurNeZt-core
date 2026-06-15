@@ -11,6 +11,7 @@ service HousingService {
   rpc UpdateHousingOption(HousingOption) returns (HousingOption);
   rpc DeleteHousingOption(DeleteHousingOptionRequest) returns (DeleteHousingOptionResponse);
   rpc CalculateHousingAffordability(CalculateHousingAffordabilityRequest) returns (HousingAffordability);
+  rpc EstimateHousingGrant(EstimateHousingGrantRequest) returns (EstimateHousingGrantResponse);
 }
 
 message HousingDIAIncomeOverride {
@@ -70,6 +71,18 @@ message CalculateHousingAffordabilityRequest {
   int64 monthly_expenses_cents = 5;
 }
 
+message EstimateHousingGrantRequest {
+  string viewer_user_id = 1;
+  string family_id = 2;
+  string housing_type = 3;
+}
+
+message EstimateHousingGrantResponse {
+  int64 grant_amount_cents = 1;
+  int64 household_gross_monthly_income_cents = 2;
+  bool eligible = 3;
+}
+
 message HousingAffordability {
   string housing_option_id = 1;
   int64 net_purchase_price_cents = 2;
@@ -84,5 +97,7 @@ message HousingAffordability {
   int64 monthly_housing_cost_cents = 11;
   int64 monthly_surplus_after_housing_cents = 12;
   string rating = 13;
+  int64 initial_downpayment_cents = 14;
+  int64 final_downpayment_cents = 15;
 }
 

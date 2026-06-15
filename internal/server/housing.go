@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/OurNeZt/ournezt-core/internal/calculation"
+	"github.com/OurNeZt/ournezt-core/internal/domain"
 	ourneztv1 "github.com/OurNeZt/ournezt-core/internal/gen/proto/ournezt/v1"
 	"github.com/OurNeZt/ournezt-core/internal/platform/apperror"
 	"github.com/OurNeZt/ournezt-core/internal/repository"
@@ -12,10 +13,11 @@ import (
 type HousingServer struct {
 	ourneztv1.UnimplementedHousingServiceServer
 	housing repository.Housing
+	people  repository.People
 	auth    Authenticator
 }
 
-func NewHousingServer(housing repository.Housing, auth ...Authenticator) HousingServer {
+func NewHousingServer(housing repository.Housing, people repository.People, auth ...Authenticator) HousingServer {
 	var authenticator Authenticator
 	if len(auth) > 0 {
 		authenticator = auth[0]
@@ -23,6 +25,7 @@ func NewHousingServer(housing repository.Housing, auth ...Authenticator) Housing
 
 	return HousingServer{
 		housing: housing,
+		people:  people,
 		auth:    authenticator,
 	}
 }
@@ -35,6 +38,9 @@ func (s HousingServer) CreateHousingOption(ctx context.Context, req *ourneztv1.H
 
 	actorID, err := optionalAuthenticatedActorID(ctx, s.auth)
 	if err != nil {
+		return nil, toStatusError(err)
+	}
+	if option, err = s.applyGrantEstimate(ctx, option, actorID); err != nil {
 		return nil, toStatusError(err)
 	}
 
@@ -105,6 +111,9 @@ func (s HousingServer) UpdateHousingOption(ctx context.Context, req *ourneztv1.H
 	if err != nil {
 		return nil, toStatusError(err)
 	}
+	if option, err = s.applyGrantEstimate(ctx, option, actorID); err != nil {
+		return nil, toStatusError(err)
+	}
 
 	updated, err := s.housing.UpdateHousingOption(ctx, option, actorID)
 	if err != nil {
@@ -150,4 +159,46 @@ func (s HousingServer) CalculateHousingAffordability(_ context.Context, req *our
 
 	result := calculation.CalculateHousingAffordability(option, assets)
 	return housingAffordabilityToProto(result), nil
+}
+
+func (s HousingServer) EstimateHousingGrant(ctx context.Context, req *ourneztv1.EstimateHousingGrantRequest) (*ourneztv1.EstimateHousingGrantResponse, error) {
+	if req == nil {
+		return nil, toStatusError(apperror.ErrInvalidArgument)
+	}
+	viewerID, err := requestActorID(ctx, s.auth, req.GetViewerUserId())
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+	familyID, err := requireID(req.GetFamilyId())
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+
+	people, err := s.people.ListPersonProfilesByFamily(ctx, familyID, viewerID)
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+	estimate := calculation.EstimateHousingGrantAmount(domain.HousingType(req.GetHousingType()), people)
+	return &ourneztv1.EstimateHousingGrantResponse{
+		GrantAmountCents:                 estimate.GrantAmountCents,
+		HouseholdGrossMonthlyIncomeCents: estimate.HouseholdGrossMonthlyIncomeCents,
+		Eligible:                         estimate.Eligible,
+	}, nil
+}
+
+func (s HousingServer) applyGrantEstimate(ctx context.Context, option domain.HousingOption, viewerID domain.ID) (domain.HousingOption, error) {
+	if s.people == nil || option.FamilyID == "" {
+		return option, nil
+	}
+	if calculation.IsDeferredHousingOption(option) {
+		option.GrantAmountCents = 0
+		return option, nil
+	}
+	people, err := s.people.ListPersonProfilesByFamily(ctx, option.FamilyID, viewerID)
+	if err != nil {
+		return option, err
+	}
+	estimate := calculation.EstimateHousingGrantAmount(option.Type, people)
+	option.GrantAmountCents = estimate.GrantAmountCents
+	return option, nil
 }

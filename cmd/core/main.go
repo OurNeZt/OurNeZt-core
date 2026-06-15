@@ -99,7 +99,7 @@ func main() {
 	authServer := server.NewAuthServer(authService, userRepo, cfg.SessionTokenBytes, cfg.SessionTTL, nil)
 	familyServer := server.NewFamilyServer(familyRepo, 7*24*time.Hour, nil, authServer)
 	personServer := server.NewPersonServer(personRepo, authServer)
-	housingServer := server.NewHousingServer(housingRepo, authServer)
+	housingServer := server.NewHousingServer(housingRepo, personRepo, authServer)
 	financeServer := server.NewFinanceServer()
 	dashboardServer := server.NewDashboardServer(personRepo, housingRepo, authServer)
 

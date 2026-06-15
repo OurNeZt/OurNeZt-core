@@ -45,7 +45,13 @@ func TestHousingServerCreateOption(t *testing.T) {
 	repo := &fakeHousingRepository{
 		created: domain.HousingOption{ID: "housing_1", FamilyID: "family_1", Name: "BTO"},
 	}
-	server := NewHousingServer(repo)
+	peopleRepo := &fakePeopleRepository{
+		list: []domain.PersonProfile{
+			{ID: "person_1", FamilyID: "family_1", GrossMonthlyIncomeCents: 320000},
+			{ID: "person_2", FamilyID: "family_1", GrossMonthlyIncomeCents: 180000},
+		},
+	}
+	server := NewHousingServer(repo, peopleRepo)
 
 	response, err := server.CreateHousingOption(context.Background(), &ourneztv1.HousingOption{
 		FamilyId:              "family_1",
@@ -66,10 +72,13 @@ func TestHousingServerCreateOption(t *testing.T) {
 	if repo.createInput.Name != "BTO" {
 		t.Fatalf("create input name = %q, want BTO", repo.createInput.Name)
 	}
+	if repo.createInput.GrantAmountCents != 6500000 {
+		t.Fatalf("create input grant amount = %d, want 6500000", repo.createInput.GrantAmountCents)
+	}
 }
 
 func TestHousingServerCalculateAffordability(t *testing.T) {
-	server := NewHousingServer(&fakeHousingRepository{})
+	server := NewHousingServer(&fakeHousingRepository{}, &fakePeopleRepository{})
 
 	response, err := server.CalculateHousingAffordability(context.Background(), &ourneztv1.CalculateHousingAffordabilityRequest{
 		HousingOption: &ourneztv1.HousingOption{
@@ -97,11 +106,17 @@ func TestHousingServerCalculateAffordability(t *testing.T) {
 	if response.GetMonthlyMortgageCents() <= 0 {
 		t.Fatalf("monthly mortgage = %d, want > 0", response.GetMonthlyMortgageCents())
 	}
+	if response.GetInitialDownpaymentCents() != 2250000 {
+		t.Fatalf("initial downpayment = %d, want 2250000", response.GetInitialDownpaymentCents())
+	}
+	if response.GetFinalDownpaymentCents() != 6750000 {
+		t.Fatalf("final downpayment = %d, want 6750000", response.GetFinalDownpaymentCents())
+	}
 }
 
 func TestHousingServerDeleteOption(t *testing.T) {
 	repo := &fakeHousingRepository{}
-	server := NewHousingServer(repo)
+	server := NewHousingServer(repo, &fakePeopleRepository{})
 
 	_, err := server.DeleteHousingOption(context.Background(), &ourneztv1.DeleteHousingOptionRequest{
 		ActorUserId: "user_1",
@@ -112,6 +127,33 @@ func TestHousingServerDeleteOption(t *testing.T) {
 	}
 	if repo.deletedID != "housing_9" {
 		t.Fatalf("deleted id = %q, want housing_9", repo.deletedID)
+	}
+}
+
+func TestHousingServerEstimateHousingGrant(t *testing.T) {
+	server := NewHousingServer(&fakeHousingRepository{}, &fakePeopleRepository{
+		list: []domain.PersonProfile{
+			{ID: "person_1", FamilyID: "family_1", GrossMonthlyIncomeCents: 300000},
+			{ID: "person_2", FamilyID: "family_1", GrossMonthlyIncomeCents: 200000},
+		},
+	})
+
+	response, err := server.EstimateHousingGrant(context.Background(), &ourneztv1.EstimateHousingGrantRequest{
+		ViewerUserId: "user_1",
+		FamilyId:     "family_1",
+		HousingType:  "bto",
+	})
+	if err != nil {
+		t.Fatalf("EstimateHousingGrant returned error: %v", err)
+	}
+	if response.GetHouseholdGrossMonthlyIncomeCents() != 500000 {
+		t.Fatalf("household gross = %d, want 500000", response.GetHouseholdGrossMonthlyIncomeCents())
+	}
+	if response.GetGrantAmountCents() != 6500000 {
+		t.Fatalf("grant amount = %d, want 6500000", response.GetGrantAmountCents())
+	}
+	if !response.GetEligible() {
+		t.Fatalf("eligible = false, want true")
 	}
 }
 
