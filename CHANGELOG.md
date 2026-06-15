@@ -6,6 +6,35 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ---
 
+## [v1.3.3] - 2026-06-15
+
+### Added
+- Added contextual help tooltips across key housing inputs, calculated values, and planning views
+- Added centralized housing tooltip content management for easier updates and reuse
+- Added official reference links in selected tooltips for buyer stamp duty, HDB grant information, and HDB interest rate details
+- Added clearer upfront payment visibility in housing detail, comparison, and dashboard timeline views
+
+### Changed
+- Changed loan tenure input in the housing form from months to years
+- Changed `BTO + HDB loan` tenure handling to auto-assume 25 years as a system-derived value
+- Changed selected housing form fields to display system-derived values using placeholder/read-only behavior instead of looking user-entered
+- Changed the first housing payment checkpoint wording from `Initial Downpayment` to `Total Initial Payment`
+- Changed the Payment vs Income Timeline chart labels, legends, and stage naming for better readability
+- Changed tooltip styling and interaction behavior to be more minimal, consistent, and mobile-friendly
+
+### Fixed
+- Fixed tooltip positioning, clipping, visibility, and interaction issues across housing pages
+- Fixed “See more” tooltip links so they remain usable and clickable
+- Fixed housing grant display behavior to better reflect system-derived calculation handling
+- Fixed initial payment checkpoint calculation/display alignment for housing planning
+- Fixed the total initial payment display to include buyer stamp duty while keeping later downpayment stages separate
+- Fixed submission behavior for auto-derived `BTO + HDB loan` tenure values
+- Fixed housing inputs that were showing placeholder-like default values as actual entered values
+
+### Removed
+- Removed misleading prefilled-looking default values from selected housing inputs
+- Removed inconsistent tooltip presentation across different housing sections
+
 ## [v1.3.2] - 2026-06-01
 
 ### Added
