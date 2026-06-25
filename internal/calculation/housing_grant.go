@@ -74,7 +74,7 @@ func IsDeferredHousingOption(option domain.HousingOption) bool {
 	if option.LoanType == domain.LoanTypeCash {
 		return false
 	}
-	if IsCondoHousingType(option.Type) {
+	if IsNonHDBHousingType(option.Type) {
 		return false
 	}
 
@@ -93,9 +93,9 @@ func IsDeferredHousingOption(option domain.HousingOption) bool {
 	return looksDeferredByLegacyShape || looksDeferredByKeyDate || looksDeferredByDefaultedLoan || looksDeferredByOverrides
 }
 
-func IsCondoHousingType(housingType domain.HousingType) bool {
+func IsNonHDBHousingType(housingType domain.HousingType) bool {
 	switch housingType {
-	case domain.HousingTypeExecutive, domain.HousingTypePrivate:
+	case domain.HousingTypeExecutive, domain.HousingTypePrivate, domain.HousingTypeLanded, domain.HousingTypeOther:
 		return true
 	default:
 		return false

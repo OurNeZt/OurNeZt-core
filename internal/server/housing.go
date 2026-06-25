@@ -178,7 +178,7 @@ func validateHousingOption(option domain.HousingOption) error {
 }
 
 func validateHousingCondoCombination(option domain.HousingOption) error {
-	if !calculation.IsCondoHousingType(option.Type) {
+	if !calculation.IsNonHDBHousingType(option.Type) {
 		return nil
 	}
 	if option.LoanType == domain.LoanTypeHDB {
@@ -229,7 +229,7 @@ func (s HousingServer) applyGrantEstimate(ctx context.Context, option domain.Hou
 	if s.people == nil || option.FamilyID == "" {
 		return option, nil
 	}
-	if calculation.IsCondoHousingType(option.Type) {
+	if calculation.IsNonHDBHousingType(option.Type) {
 		option.GrantAmountCents = 0
 		return option, nil
 	}

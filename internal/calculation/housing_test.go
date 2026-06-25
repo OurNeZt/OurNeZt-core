@@ -159,7 +159,7 @@ func TestEstimateHousingGrantAmountReturnsZeroForIneligibleHousingType(t *testin
 		{ID: "person_2", GrossMonthlyIncomeCents: 250000},
 	}
 
-	for _, housingType := range []domain.HousingType{domain.HousingTypeExecutive, domain.HousingTypePrivate} {
+	for _, housingType := range []domain.HousingType{domain.HousingTypeExecutive, domain.HousingTypePrivate, domain.HousingTypeLanded, domain.HousingTypeOther} {
 		t.Run(string(housingType), func(t *testing.T) {
 			got := EstimateHousingGrantAmount(housingType, people)
 

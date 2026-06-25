@@ -173,21 +173,24 @@ func TestHousingServerRejectsLoanTenureAboveHousingTypeCap(t *testing.T) {
 	}
 }
 
-func TestHousingServerRejectsCondoHDBOnlyValues(t *testing.T) {
+func TestHousingServerRejectsNonHDBPropertyHDBOnlyValues(t *testing.T) {
 	server := NewHousingServer(&fakeHousingRepository{}, &fakePeopleRepository{})
 
 	tests := []struct {
-		name   string
-		mutate func(*ourneztv1.HousingOption)
+		name        string
+		housingType string
+		mutate      func(*ourneztv1.HousingOption)
 	}{
 		{
-			name: "HDB loan",
+			name:        "landed HDB loan",
+			housingType: "landed",
 			mutate: func(option *ourneztv1.HousingOption) {
 				option.LoanType = "hdb"
 			},
 		},
 		{
-			name: "grant amount",
+			name:        "other grant amount",
+			housingType: "other",
 			mutate: func(option *ourneztv1.HousingOption) {
 				option.GrantAmountCents = 1000000
 			},
@@ -199,8 +202,8 @@ func TestHousingServerRejectsCondoHDBOnlyValues(t *testing.T) {
 			option := &ourneztv1.HousingOption{
 				Id:                    "housing_1",
 				FamilyId:              "family_1",
-				Name:                  "EC",
-				HousingType:           "executive_condo",
+				Name:                  "Non-HDB Option",
+				HousingType:           tc.housingType,
 				LoanType:              "bank",
 				PurchasePriceCents:    120000000,
 				InterestRateBps:       360,
