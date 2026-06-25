@@ -77,6 +77,9 @@ func IsDeferredHousingOption(option domain.HousingOption) bool {
 	if IsNonHDBHousingType(option.Type) {
 		return false
 	}
+	if option.Type != domain.HousingTypeBTO {
+		return false
+	}
 
 	hasValidKeyDate := option.ExpectedKeyCollectionDate != nil && !option.ExpectedKeyCollectionDate.IsZero()
 	looksDeferredByLegacyShape := option.LoanAmountCents == 0 && option.DownpaymentPercentBps == 2500

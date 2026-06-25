@@ -89,6 +89,7 @@ func TestCalculateHousingAffordabilityUsesDeferredPlanningAssumptions(t *testing
 	keyDate := time.Date(2030, time.June, 1, 0, 0, 0, 0, time.UTC)
 	option := domain.HousingOption{
 		ID:                        "housing_1",
+		Type:                      domain.HousingTypeBTO,
 		PurchasePriceCents:        50000000,
 		LoanType:                  domain.LoanTypeBank,
 		LoanAmountCents:           0,
@@ -116,6 +117,27 @@ func TestCalculateHousingAffordabilityUsesDeferredPlanningAssumptions(t *testing
 	}
 	if got.EstimatedLoanAmountCents != 37500000 {
 		t.Fatalf("EstimatedLoanAmountCents = %d, want 37500000", got.EstimatedLoanAmountCents)
+	}
+}
+
+func TestCalculateHousingAffordabilityDoesNotUseDeferredAssumptionsForResaleHDB(t *testing.T) {
+	keyDate := time.Date(2030, time.June, 1, 0, 0, 0, 0, time.UTC)
+	option := domain.HousingOption{
+		ID:                        "housing_1",
+		Type:                      domain.HousingTypeResaleHDB,
+		PurchasePriceCents:        50000000,
+		LoanType:                  domain.LoanTypeBank,
+		LoanAmountCents:           0,
+		InterestRateBps:           260,
+		LoanTenureMonths:          300,
+		DownpaymentPercentBps:     2500,
+		ExpectedKeyCollectionDate: &keyDate,
+	}
+
+	got := CalculateHousingAffordability(option, HouseholdAssets{})
+
+	if got.InitialDownpaymentCents != 2500000 {
+		t.Fatalf("InitialDownpaymentCents = %d, want 2500000", got.InitialDownpaymentCents)
 	}
 }
 
