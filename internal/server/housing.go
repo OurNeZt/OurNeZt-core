@@ -35,6 +35,9 @@ func (s HousingServer) CreateHousingOption(ctx context.Context, req *ourneztv1.H
 	if err != nil {
 		return nil, toStatusError(err)
 	}
+	if err := validateHousingLoanTenure(option); err != nil {
+		return nil, toStatusError(err)
+	}
 
 	actorID, err := optionalAuthenticatedActorID(ctx, s.auth)
 	if err != nil {
@@ -106,6 +109,9 @@ func (s HousingServer) UpdateHousingOption(ctx context.Context, req *ourneztv1.H
 	if option.ID == "" {
 		return nil, toStatusError(apperror.ErrInvalidArgument)
 	}
+	if err := validateHousingLoanTenure(option); err != nil {
+		return nil, toStatusError(err)
+	}
 
 	actorID, err := optionalAuthenticatedActorID(ctx, s.auth)
 	if err != nil {
@@ -150,6 +156,9 @@ func (s HousingServer) CalculateHousingAffordability(_ context.Context, req *our
 	if err != nil {
 		return nil, toStatusError(err)
 	}
+	if err := validateHousingLoanTenure(option); err != nil {
+		return nil, toStatusError(err)
+	}
 	assets := calculation.HouseholdAssets{
 		CashSavingsCents:     req.GetCashSavingsCents(),
 		CPFOACents:           req.GetCpfOaCents(),
@@ -159,6 +168,16 @@ func (s HousingServer) CalculateHousingAffordability(_ context.Context, req *our
 
 	result := calculation.CalculateHousingAffordability(option, assets)
 	return housingAffordabilityToProto(result), nil
+}
+
+func validateHousingLoanTenure(option domain.HousingOption) error {
+	if option.LoanType == domain.LoanTypeCash || option.LoanTenureMonths <= 0 {
+		return nil
+	}
+	if option.LoanTenureMonths > calculation.MaxLoanTenureMonthsForHousingType(option.Type) {
+		return apperror.ErrInvalidArgument
+	}
+	return nil
 }
 
 func (s HousingServer) EstimateHousingGrant(ctx context.Context, req *ourneztv1.EstimateHousingGrantRequest) (*ourneztv1.EstimateHousingGrantResponse, error) {
