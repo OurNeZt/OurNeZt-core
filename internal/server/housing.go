@@ -35,7 +35,7 @@ func (s HousingServer) CreateHousingOption(ctx context.Context, req *ourneztv1.H
 	if err != nil {
 		return nil, toStatusError(err)
 	}
-	if err := validateHousingLoanTenure(option); err != nil {
+	if err := validateHousingOption(option); err != nil {
 		return nil, toStatusError(err)
 	}
 
@@ -109,7 +109,7 @@ func (s HousingServer) UpdateHousingOption(ctx context.Context, req *ourneztv1.H
 	if option.ID == "" {
 		return nil, toStatusError(apperror.ErrInvalidArgument)
 	}
-	if err := validateHousingLoanTenure(option); err != nil {
+	if err := validateHousingOption(option); err != nil {
 		return nil, toStatusError(err)
 	}
 
@@ -156,7 +156,7 @@ func (s HousingServer) CalculateHousingAffordability(_ context.Context, req *our
 	if err != nil {
 		return nil, toStatusError(err)
 	}
-	if err := validateHousingLoanTenure(option); err != nil {
+	if err := validateHousingOption(option); err != nil {
 		return nil, toStatusError(err)
 	}
 	assets := calculation.HouseholdAssets{
@@ -168,6 +168,26 @@ func (s HousingServer) CalculateHousingAffordability(_ context.Context, req *our
 
 	result := calculation.CalculateHousingAffordability(option, assets)
 	return housingAffordabilityToProto(result), nil
+}
+
+func validateHousingOption(option domain.HousingOption) error {
+	if err := validateHousingCondoCombination(option); err != nil {
+		return err
+	}
+	return validateHousingLoanTenure(option)
+}
+
+func validateHousingCondoCombination(option domain.HousingOption) error {
+	if !calculation.IsNonHDBHousingType(option.Type) {
+		return nil
+	}
+	if option.LoanType == domain.LoanTypeHDB {
+		return apperror.ErrInvalidArgument
+	}
+	if option.GrantAmountCents > 0 {
+		return apperror.ErrInvalidArgument
+	}
+	return nil
 }
 
 func validateHousingLoanTenure(option domain.HousingOption) error {
@@ -207,6 +227,10 @@ func (s HousingServer) EstimateHousingGrant(ctx context.Context, req *ourneztv1.
 
 func (s HousingServer) applyGrantEstimate(ctx context.Context, option domain.HousingOption, viewerID domain.ID) (domain.HousingOption, error) {
 	if s.people == nil || option.FamilyID == "" {
+		return option, nil
+	}
+	if calculation.IsNonHDBHousingType(option.Type) {
+		option.GrantAmountCents = 0
 		return option, nil
 	}
 	if calculation.IsDeferredHousingOption(option) {
