@@ -2,6 +2,12 @@ package calculation
 
 import "github.com/OurNeZt/ournezt-core/internal/domain"
 
+const (
+	hdbMaxLoanTenureYears    = 30
+	nonHDBMaxLoanTenureYears = 35
+	monthsPerYear            = 12
+)
+
 type HousingGrantEstimate struct {
 	GrantAmountCents                 int64
 	HouseholdGrossMonthlyIncomeCents int64
@@ -78,10 +84,23 @@ func IsDeferredHousingOption(option domain.HousingOption) bool {
 	looksDeferredByDefaultedLoan := hasValidKeyDate &&
 		option.LoanType == domain.LoanTypeBank &&
 		option.LoanAmountCents == 0 &&
-		option.LoanTenureMonths == 300
+		(option.LoanTenureMonths == 300 || option.LoanTenureMonths == MaxLoanTenureMonthsForHousingType(option.Type))
 	looksDeferredByOverrides := hasValidKeyDate && len(option.DIAIncomeOverrides) > 0
 
 	return looksDeferredByLegacyShape || looksDeferredByKeyDate || looksDeferredByDefaultedLoan || looksDeferredByOverrides
+}
+
+func MaxLoanTenureYearsForHousingType(housingType domain.HousingType) int {
+	switch housingType {
+	case domain.HousingTypeBTO, domain.HousingTypeResaleHDB:
+		return hdbMaxLoanTenureYears
+	default:
+		return nonHDBMaxLoanTenureYears
+	}
+}
+
+func MaxLoanTenureMonthsForHousingType(housingType domain.HousingType) int {
+	return MaxLoanTenureYearsForHousingType(housingType) * monthsPerYear
 }
 
 func isHousingGrantEligibleType(housingType domain.HousingType) bool {
