@@ -159,12 +159,16 @@ func TestEstimateHousingGrantAmountReturnsZeroForIneligibleHousingType(t *testin
 		{ID: "person_2", GrossMonthlyIncomeCents: 250000},
 	}
 
-	got := EstimateHousingGrantAmount(domain.HousingTypePrivate, people)
+	for _, housingType := range []domain.HousingType{domain.HousingTypeExecutive, domain.HousingTypePrivate} {
+		t.Run(string(housingType), func(t *testing.T) {
+			got := EstimateHousingGrantAmount(housingType, people)
 
-	if got.Eligible {
-		t.Fatalf("Eligible = true, want false")
-	}
-	if got.GrantAmountCents != 0 {
-		t.Fatalf("GrantAmountCents = %d, want 0", got.GrantAmountCents)
+			if got.Eligible {
+				t.Fatalf("Eligible = true, want false")
+			}
+			if got.GrantAmountCents != 0 {
+				t.Fatalf("GrantAmountCents = %d, want 0", got.GrantAmountCents)
+			}
+		})
 	}
 }

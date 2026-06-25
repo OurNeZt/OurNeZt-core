@@ -173,6 +173,53 @@ func TestHousingServerRejectsLoanTenureAboveHousingTypeCap(t *testing.T) {
 	}
 }
 
+func TestHousingServerRejectsCondoHDBOnlyValues(t *testing.T) {
+	server := NewHousingServer(&fakeHousingRepository{}, &fakePeopleRepository{})
+
+	tests := []struct {
+		name   string
+		mutate func(*ourneztv1.HousingOption)
+	}{
+		{
+			name: "HDB loan",
+			mutate: func(option *ourneztv1.HousingOption) {
+				option.LoanType = "hdb"
+			},
+		},
+		{
+			name: "grant amount",
+			mutate: func(option *ourneztv1.HousingOption) {
+				option.GrantAmountCents = 1000000
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			option := &ourneztv1.HousingOption{
+				Id:                    "housing_1",
+				FamilyId:              "family_1",
+				Name:                  "EC",
+				HousingType:           "executive_condo",
+				LoanType:              "bank",
+				PurchasePriceCents:    120000000,
+				InterestRateBps:       360,
+				LoanTenureMonths:      35 * 12,
+				DownpaymentPercentBps: 2500,
+			}
+			tc.mutate(option)
+
+			_, err := server.CalculateHousingAffordability(context.Background(), &ourneztv1.CalculateHousingAffordabilityRequest{
+				HousingOption: option,
+				TakeHomeCents: 1000000,
+			})
+			if status.Code(err) != codes.InvalidArgument {
+				t.Fatalf("status code = %v, want %v", status.Code(err), codes.InvalidArgument)
+			}
+		})
+	}
+}
+
 func TestHousingServerDeleteOption(t *testing.T) {
 	repo := &fakeHousingRepository{}
 	server := NewHousingServer(repo, &fakePeopleRepository{})

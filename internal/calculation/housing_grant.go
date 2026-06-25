@@ -74,6 +74,9 @@ func IsDeferredHousingOption(option domain.HousingOption) bool {
 	if option.LoanType == domain.LoanTypeCash {
 		return false
 	}
+	if IsCondoHousingType(option.Type) {
+		return false
+	}
 
 	hasValidKeyDate := option.ExpectedKeyCollectionDate != nil && !option.ExpectedKeyCollectionDate.IsZero()
 	looksDeferredByLegacyShape := option.LoanAmountCents == 0 && option.DownpaymentPercentBps == 2500
@@ -88,6 +91,15 @@ func IsDeferredHousingOption(option domain.HousingOption) bool {
 	looksDeferredByOverrides := hasValidKeyDate && len(option.DIAIncomeOverrides) > 0
 
 	return looksDeferredByLegacyShape || looksDeferredByKeyDate || looksDeferredByDefaultedLoan || looksDeferredByOverrides
+}
+
+func IsCondoHousingType(housingType domain.HousingType) bool {
+	switch housingType {
+	case domain.HousingTypeExecutive, domain.HousingTypePrivate:
+		return true
+	default:
+		return false
+	}
 }
 
 func MaxLoanTenureYearsForHousingType(housingType domain.HousingType) int {
@@ -105,7 +117,7 @@ func MaxLoanTenureMonthsForHousingType(housingType domain.HousingType) int {
 
 func isHousingGrantEligibleType(housingType domain.HousingType) bool {
 	switch housingType {
-	case domain.HousingTypeBTO, domain.HousingTypeResaleHDB, domain.HousingTypeExecutive:
+	case domain.HousingTypeBTO, domain.HousingTypeResaleHDB:
 		return true
 	default:
 		return false
