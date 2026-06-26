@@ -9,16 +9,27 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [v1.4.0] - 2026-06-26
 
 ### Added
-- (fill)
+- Added housing grant calculation support for HDB-related housing options.
+- Added staged downpayment support to housing affordability calculations.
+- Added backend validation for housing-type-specific calculation fields.
+- Added tests for updated housing grant, loan tenure, and housing validation logic.
 
 ### Changed
-- (fill)
+- Updated loan tenure calculations for HDB/BTO and private property rules.
+- Updated housing grant income calculation to use the correct monthly average income table.
+- Updated grant-to-average calculation logic.
+- Updated housing affordability calculation logic for staged downpayment scenarios.
+- Updated housing protobuf contracts and regenerated generated code for housing calculation changes.
+- Updated server housing mappings for the revised housing calculation flow.
+- Refactored housing calculation logic for resale HDB, EC, private condo, landed, and other property types.
 
 ### Fixed
-- (fill)
+- Fixed non-HDB housing options accepting HDB-only calculation fields.
+- Fixed condo, landed, and other non-HDB housing validation against HDB-only loan/grant fields.
+- Fixed unused housing calculation variables after housing-type-specific logic changes.
 
 ### Removed
-- (fill)
+- Removed unused housing calculation variables for property types where they no longer apply.
 
 ## [v1.3.3] - 2026-06-15
 
