@@ -7,6 +7,8 @@ import (
 	"github.com/OurNeZt/ournezt-core/internal/domain"
 	ourneztv1 "github.com/OurNeZt/ournezt-core/internal/gen/proto/ournezt/v1"
 	"github.com/OurNeZt/ournezt-core/internal/repository"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type fakeHousingRepository struct {
@@ -111,6 +113,113 @@ func TestHousingServerCalculateAffordability(t *testing.T) {
 	}
 	if response.GetFinalDownpaymentCents() != 6750000 {
 		t.Fatalf("final downpayment = %d, want 6750000", response.GetFinalDownpaymentCents())
+	}
+}
+
+func TestHousingServerRejectsLoanTenureAboveHousingTypeCap(t *testing.T) {
+	server := NewHousingServer(&fakeHousingRepository{}, &fakePeopleRepository{})
+
+	tests := []struct {
+		name          string
+		housingType   string
+		tenureMonths  int32
+		wantErrorCode codes.Code
+	}{
+		{
+			name:          "HDB above 30 years",
+			housingType:   "bto",
+			tenureMonths:  31 * 12,
+			wantErrorCode: codes.InvalidArgument,
+		},
+		{
+			name:          "non-HDB above 35 years",
+			housingType:   "private_condo",
+			tenureMonths:  36 * 12,
+			wantErrorCode: codes.InvalidArgument,
+		},
+		{
+			name:         "non-HDB at 35 years",
+			housingType:  "private_condo",
+			tenureMonths: 35 * 12,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := server.CalculateHousingAffordability(context.Background(), &ourneztv1.CalculateHousingAffordabilityRequest{
+				HousingOption: &ourneztv1.HousingOption{
+					Id:                    "housing_1",
+					FamilyId:              "family_1",
+					Name:                  "Option",
+					HousingType:           tc.housingType,
+					LoanType:              "bank",
+					PurchasePriceCents:    45000000,
+					InterestRateBps:       260,
+					LoanTenureMonths:      tc.tenureMonths,
+					DownpaymentPercentBps: 2500,
+				},
+				TakeHomeCents: 650000,
+			})
+			if tc.wantErrorCode == codes.OK {
+				if err != nil {
+					t.Fatalf("CalculateHousingAffordability returned error: %v", err)
+				}
+				return
+			}
+			if status.Code(err) != tc.wantErrorCode {
+				t.Fatalf("status code = %v, want %v", status.Code(err), tc.wantErrorCode)
+			}
+		})
+	}
+}
+
+func TestHousingServerRejectsNonHDBPropertyHDBOnlyValues(t *testing.T) {
+	server := NewHousingServer(&fakeHousingRepository{}, &fakePeopleRepository{})
+
+	tests := []struct {
+		name        string
+		housingType string
+		mutate      func(*ourneztv1.HousingOption)
+	}{
+		{
+			name:        "landed HDB loan",
+			housingType: "landed",
+			mutate: func(option *ourneztv1.HousingOption) {
+				option.LoanType = "hdb"
+			},
+		},
+		{
+			name:        "other grant amount",
+			housingType: "other",
+			mutate: func(option *ourneztv1.HousingOption) {
+				option.GrantAmountCents = 1000000
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			option := &ourneztv1.HousingOption{
+				Id:                    "housing_1",
+				FamilyId:              "family_1",
+				Name:                  "Non-HDB Option",
+				HousingType:           tc.housingType,
+				LoanType:              "bank",
+				PurchasePriceCents:    120000000,
+				InterestRateBps:       360,
+				LoanTenureMonths:      35 * 12,
+				DownpaymentPercentBps: 2500,
+			}
+			tc.mutate(option)
+
+			_, err := server.CalculateHousingAffordability(context.Background(), &ourneztv1.CalculateHousingAffordabilityRequest{
+				HousingOption: option,
+				TakeHomeCents: 1000000,
+			})
+			if status.Code(err) != codes.InvalidArgument {
+				t.Fatalf("status code = %v, want %v", status.Code(err), codes.InvalidArgument)
+			}
+		})
 	}
 }
 

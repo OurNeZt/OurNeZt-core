@@ -2,6 +2,12 @@ package calculation
 
 import "github.com/OurNeZt/ournezt-core/internal/domain"
 
+const (
+	hdbMaxLoanTenureYears    = 30
+	nonHDBMaxLoanTenureYears = 35
+	monthsPerYear            = 12
+)
+
 type HousingGrantEstimate struct {
 	GrantAmountCents                 int64
 	HouseholdGrossMonthlyIncomeCents int64
@@ -68,6 +74,12 @@ func IsDeferredHousingOption(option domain.HousingOption) bool {
 	if option.LoanType == domain.LoanTypeCash {
 		return false
 	}
+	if IsNonHDBHousingType(option.Type) {
+		return false
+	}
+	if option.Type != domain.HousingTypeBTO {
+		return false
+	}
 
 	hasValidKeyDate := option.ExpectedKeyCollectionDate != nil && !option.ExpectedKeyCollectionDate.IsZero()
 	looksDeferredByLegacyShape := option.LoanAmountCents == 0 && option.DownpaymentPercentBps == 2500
@@ -78,15 +90,37 @@ func IsDeferredHousingOption(option domain.HousingOption) bool {
 	looksDeferredByDefaultedLoan := hasValidKeyDate &&
 		option.LoanType == domain.LoanTypeBank &&
 		option.LoanAmountCents == 0 &&
-		option.LoanTenureMonths == 300
+		(option.LoanTenureMonths == 300 || option.LoanTenureMonths == MaxLoanTenureMonthsForHousingType(option.Type))
 	looksDeferredByOverrides := hasValidKeyDate && len(option.DIAIncomeOverrides) > 0
 
 	return looksDeferredByLegacyShape || looksDeferredByKeyDate || looksDeferredByDefaultedLoan || looksDeferredByOverrides
 }
 
+func IsNonHDBHousingType(housingType domain.HousingType) bool {
+	switch housingType {
+	case domain.HousingTypeExecutive, domain.HousingTypePrivate, domain.HousingTypeLanded, domain.HousingTypeOther:
+		return true
+	default:
+		return false
+	}
+}
+
+func MaxLoanTenureYearsForHousingType(housingType domain.HousingType) int {
+	switch housingType {
+	case domain.HousingTypeBTO, domain.HousingTypeResaleHDB:
+		return hdbMaxLoanTenureYears
+	default:
+		return nonHDBMaxLoanTenureYears
+	}
+}
+
+func MaxLoanTenureMonthsForHousingType(housingType domain.HousingType) int {
+	return MaxLoanTenureYearsForHousingType(housingType) * monthsPerYear
+}
+
 func isHousingGrantEligibleType(housingType domain.HousingType) bool {
 	switch housingType {
-	case domain.HousingTypeBTO, domain.HousingTypeResaleHDB, domain.HousingTypeExecutive:
+	case domain.HousingTypeBTO, domain.HousingTypeResaleHDB:
 		return true
 	default:
 		return false
