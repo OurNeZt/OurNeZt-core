@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"strings"
 
 	"github.com/OurNeZt/ournezt-core/internal/calculation"
 	"github.com/OurNeZt/ournezt-core/internal/domain"
@@ -117,6 +118,18 @@ func (s HousingServer) UpdateHousingOption(ctx context.Context, req *ourneztv1.H
 	if err != nil {
 		return nil, toStatusError(err)
 	}
+	if req.HousingGroupId == nil || req.VisibleOnDashboard == nil {
+		existing, getErr := s.housing.GetHousingOption(ctx, option.ID, actorID)
+		if getErr != nil {
+			return nil, toStatusError(getErr)
+		}
+		if req.HousingGroupId == nil {
+			option.GroupID = existing.GroupID
+		}
+		if req.VisibleOnDashboard == nil {
+			option.VisibleOnDashboard = existing.VisibleOnDashboard
+		}
+	}
 	if option, err = s.applyGrantEstimate(ctx, option, actorID); err != nil {
 		return nil, toStatusError(err)
 	}
@@ -145,6 +158,161 @@ func (s HousingServer) DeleteHousingOption(ctx context.Context, req *ourneztv1.D
 		return nil, toStatusError(err)
 	}
 	return &ourneztv1.DeleteHousingOptionResponse{}, nil
+}
+
+func (s HousingServer) CreateHousingGroup(ctx context.Context, req *ourneztv1.HousingGroup) (*ourneztv1.HousingGroup, error) {
+	group, err := housingGroupFromProto(req)
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+	if strings.TrimSpace(string(group.FamilyID)) == "" || strings.TrimSpace(group.Name) == "" {
+		return nil, toStatusError(apperror.ErrInvalidArgument)
+	}
+
+	actorID, err := optionalAuthenticatedActorID(ctx, s.auth)
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+
+	created, err := s.housing.CreateHousingGroup(ctx, group, actorID)
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+	return housingGroupToProto(created), nil
+}
+
+func (s HousingServer) ListHousingGroups(ctx context.Context, req *ourneztv1.ListHousingGroupsRequest) (*ourneztv1.ListHousingGroupsResponse, error) {
+	if req == nil {
+		return nil, toStatusError(apperror.ErrInvalidArgument)
+	}
+	viewerID, err := requestActorID(ctx, s.auth, req.GetViewerUserId())
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+	familyID, err := requireID(req.GetFamilyId())
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+
+	groups, err := s.housing.ListHousingGroups(ctx, familyID, viewerID)
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+
+	response := &ourneztv1.ListHousingGroupsResponse{
+		HousingGroups: make([]*ourneztv1.HousingGroup, 0, len(groups)),
+	}
+	for _, group := range groups {
+		response.HousingGroups = append(response.HousingGroups, housingGroupToProto(group))
+	}
+	return response, nil
+}
+
+func (s HousingServer) UpdateHousingGroup(ctx context.Context, req *ourneztv1.HousingGroup) (*ourneztv1.HousingGroup, error) {
+	group, err := housingGroupFromProto(req)
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+	if strings.TrimSpace(string(group.ID)) == "" || strings.TrimSpace(group.Name) == "" {
+		return nil, toStatusError(apperror.ErrInvalidArgument)
+	}
+
+	actorID, err := optionalAuthenticatedActorID(ctx, s.auth)
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+
+	updated, err := s.housing.UpdateHousingGroup(ctx, group, actorID)
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+	return housingGroupToProto(updated), nil
+}
+
+func (s HousingServer) DeleteHousingGroup(ctx context.Context, req *ourneztv1.DeleteHousingGroupRequest) (*ourneztv1.DeleteHousingGroupResponse, error) {
+	if req == nil {
+		return nil, toStatusError(apperror.ErrInvalidArgument)
+	}
+	actorID, err := requestActorID(ctx, s.auth, req.GetActorUserId())
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+	groupID, err := requireID(req.GetHousingGroupId())
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+
+	if err := s.housing.DeleteHousingGroup(ctx, groupID, actorID); err != nil {
+		return nil, toStatusError(err)
+	}
+	return &ourneztv1.DeleteHousingGroupResponse{}, nil
+}
+
+func (s HousingServer) AssignHousingOptionGroup(ctx context.Context, req *ourneztv1.AssignHousingOptionGroupRequest) (*ourneztv1.HousingOption, error) {
+	if req == nil {
+		return nil, toStatusError(apperror.ErrInvalidArgument)
+	}
+	actorID, err := requestActorID(ctx, s.auth, req.GetActorUserId())
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+	housingID, err := requireID(req.GetHousingId())
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+
+	updated, err := s.housing.AssignHousingOptionGroup(ctx, housingID, domain.ID(strings.TrimSpace(req.GetHousingGroupId())), actorID)
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+	return housingToProto(updated), nil
+}
+
+func (s HousingServer) UpdateHousingOptionVisibility(ctx context.Context, req *ourneztv1.UpdateHousingOptionVisibilityRequest) (*ourneztv1.HousingOption, error) {
+	if req == nil {
+		return nil, toStatusError(apperror.ErrInvalidArgument)
+	}
+	actorID, err := requestActorID(ctx, s.auth, req.GetActorUserId())
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+	housingID, err := requireID(req.GetHousingId())
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+
+	updated, err := s.housing.UpdateHousingOptionVisibility(ctx, housingID, req.GetVisibleOnDashboard(), actorID)
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+	return housingToProto(updated), nil
+}
+
+func (s HousingServer) BulkUpdateHousingGroupVisibility(ctx context.Context, req *ourneztv1.BulkUpdateHousingGroupVisibilityRequest) (*ourneztv1.BulkUpdateHousingGroupVisibilityResponse, error) {
+	if req == nil {
+		return nil, toStatusError(apperror.ErrInvalidArgument)
+	}
+	actorID, err := requestActorID(ctx, s.auth, req.GetActorUserId())
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+	groupID, err := requireID(req.GetHousingGroupId())
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+
+	options, err := s.housing.BulkUpdateHousingGroupVisibility(ctx, groupID, req.GetVisibleOnDashboard(), actorID)
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+
+	response := &ourneztv1.BulkUpdateHousingGroupVisibilityResponse{
+		HousingOptions: make([]*ourneztv1.HousingOption, 0, len(options)),
+	}
+	for _, option := range options {
+		response.HousingOptions = append(response.HousingOptions, housingToProto(option))
+	}
+	return response, nil
 }
 
 func (s HousingServer) CalculateHousingAffordability(_ context.Context, req *ourneztv1.CalculateHousingAffordabilityRequest) (*ourneztv1.HousingAffordability, error) {

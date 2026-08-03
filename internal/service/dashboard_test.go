@@ -37,6 +37,17 @@ func TestBuildHouseholdDashboardAggregatesIncomeCashAndHousing(t *testing.T) {
 			InterestRateBps:       260,
 			LoanTenureMonths:      300,
 			DownpaymentPercentBps: 2000,
+			VisibleOnDashboard:    true,
+		},
+		{
+			ID:                    "housing_2",
+			FamilyID:              "family_1",
+			PurchasePriceCents:    48000000,
+			LoanType:              domain.LoanTypeHDB,
+			InterestRateBps:       260,
+			LoanTenureMonths:      300,
+			DownpaymentPercentBps: 2000,
+			VisibleOnDashboard:    false,
 		},
 	}
 
