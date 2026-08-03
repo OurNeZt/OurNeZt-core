@@ -121,6 +121,7 @@ const (
 type HousingOption struct {
 	ID                        ID
 	FamilyID                  ID
+	GroupID                   ID
 	Name                      string
 	Type                      HousingType
 	Location                  string
@@ -137,10 +138,19 @@ type HousingOption struct {
 	LegalFeesCents            int64
 	BuyerStampDutyCents       int64
 	MonthlyMaintenanceCents   int64
+	VisibleOnDashboard        bool
 	ExpectedKeyCollectionDate *time.Time
 	DIAIncomeOverrides        []HousingDIAIncomeOverride
 	CreatedAt                 time.Time
 	UpdatedAt                 time.Time
+}
+
+type HousingGroup struct {
+	ID        ID
+	FamilyID  ID
+	Name      string
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 type HousingDIAIncomeOverride struct {

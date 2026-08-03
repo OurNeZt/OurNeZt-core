@@ -10,6 +10,13 @@ service HousingService {
   rpc ListHousingOptions(ListHousingOptionsRequest) returns (ListHousingOptionsResponse);
   rpc UpdateHousingOption(HousingOption) returns (HousingOption);
   rpc DeleteHousingOption(DeleteHousingOptionRequest) returns (DeleteHousingOptionResponse);
+  rpc CreateHousingGroup(HousingGroup) returns (HousingGroup);
+  rpc ListHousingGroups(ListHousingGroupsRequest) returns (ListHousingGroupsResponse);
+  rpc UpdateHousingGroup(HousingGroup) returns (HousingGroup);
+  rpc DeleteHousingGroup(DeleteHousingGroupRequest) returns (DeleteHousingGroupResponse);
+  rpc AssignHousingOptionGroup(AssignHousingOptionGroupRequest) returns (HousingOption);
+  rpc UpdateHousingOptionVisibility(UpdateHousingOptionVisibilityRequest) returns (HousingOption);
+  rpc BulkUpdateHousingGroupVisibility(BulkUpdateHousingGroupVisibilityRequest) returns (BulkUpdateHousingGroupVisibilityResponse);
   rpc CalculateHousingAffordability(CalculateHousingAffordabilityRequest) returns (HousingAffordability);
   rpc EstimateHousingGrant(EstimateHousingGrantRequest) returns (EstimateHousingGrantResponse);
 }
@@ -40,6 +47,14 @@ message HousingOption {
   int64 monthly_maintenance_cents = 18;
   string expected_key_collection_date = 19;
   repeated HousingDIAIncomeOverride dia_income_overrides = 20;
+  optional string housing_group_id = 21;
+  optional bool visible_on_dashboard = 22;
+}
+
+message HousingGroup {
+  string id = 1;
+  string family_id = 2;
+  string name = 3;
 }
 
 message GetHousingOptionRequest {
@@ -56,12 +71,50 @@ message ListHousingOptionsResponse {
   repeated HousingOption housing_options = 1;
 }
 
+message ListHousingGroupsRequest {
+  string viewer_user_id = 1;
+  string family_id = 2;
+}
+
+message ListHousingGroupsResponse {
+  repeated HousingGroup housing_groups = 1;
+}
+
 message DeleteHousingOptionRequest {
   string actor_user_id = 1;
   string housing_id = 2;
 }
 
 message DeleteHousingOptionResponse {}
+
+message DeleteHousingGroupRequest {
+  string actor_user_id = 1;
+  string housing_group_id = 2;
+}
+
+message DeleteHousingGroupResponse {}
+
+message AssignHousingOptionGroupRequest {
+  string actor_user_id = 1;
+  string housing_id = 2;
+  string housing_group_id = 3;
+}
+
+message UpdateHousingOptionVisibilityRequest {
+  string actor_user_id = 1;
+  string housing_id = 2;
+  bool visible_on_dashboard = 3;
+}
+
+message BulkUpdateHousingGroupVisibilityRequest {
+  string actor_user_id = 1;
+  string housing_group_id = 2;
+  bool visible_on_dashboard = 3;
+}
+
+message BulkUpdateHousingGroupVisibilityResponse {
+  repeated HousingOption housing_options = 1;
+}
 
 message CalculateHousingAffordabilityRequest {
   HousingOption housing_option = 1;

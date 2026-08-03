@@ -29,6 +29,9 @@ func BuildHouseholdDashboard(familyID domain.ID, people []domain.PersonProfile, 
 
 	results := make([]calculation.HousingAffordability, 0, len(housingOptions))
 	for _, option := range housingOptions {
+		if !option.VisibleOnDashboard {
+			continue
+		}
 		results = append(results, calculation.CalculateHousingAffordability(option, assets))
 	}
 

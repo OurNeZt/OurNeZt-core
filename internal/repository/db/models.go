@@ -50,6 +50,14 @@ type FamilyMember struct {
 	JoinedAt pgtype.Timestamptz `json:"joined_at"`
 }
 
+type HousingGroup struct {
+	ID        pgtype.UUID        `json:"id"`
+	FamilyID  pgtype.UUID        `json:"family_id"`
+	Name      string             `json:"name"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
 type HousingOption struct {
 	ID                        pgtype.UUID        `json:"id"`
 	FamilyID                  pgtype.UUID        `json:"family_id"`
@@ -73,6 +81,8 @@ type HousingOption struct {
 	CreatedAt                 pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt                 pgtype.Timestamptz `json:"updated_at"`
 	DiaIncomeOverrides        []byte             `json:"dia_income_overrides"`
+	HousingGroupID            pgtype.UUID        `json:"housing_group_id"`
+	VisibleOnDashboard        bool               `json:"visible_on_dashboard"`
 }
 
 type PersonIncomeHistory struct {
