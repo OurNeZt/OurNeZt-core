@@ -20,6 +20,95 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Removed
 - (fill)
 
+## [v1.4.0] - 2026-06-26
+
+### Added
+- Added housing grant calculation support for HDB-related housing options.
+- Added staged downpayment support to housing affordability calculations.
+- Added backend validation for housing-type-specific calculation fields.
+- Added tests for updated housing grant, loan tenure, and housing validation logic.
+
+### Changed
+- Updated loan tenure calculations for HDB/BTO and private property rules.
+- Updated housing grant income calculation to use the correct monthly average income table.
+- Updated grant-to-average calculation logic.
+- Updated housing affordability calculation logic for staged downpayment scenarios.
+- Updated housing protobuf contracts and regenerated generated code for housing calculation changes.
+- Updated server housing mappings for the revised housing calculation flow.
+- Refactored housing calculation logic for resale HDB, EC, private condo, landed, and other property types.
+
+### Fixed
+- Fixed non-HDB housing options accepting HDB-only calculation fields.
+- Fixed condo, landed, and other non-HDB housing validation against HDB-only loan/grant fields.
+- Fixed unused housing calculation variables after housing-type-specific logic changes.
+
+### Removed
+- Removed unused housing calculation variables for property types where they no longer apply.
+
+## [v1.3.3] - 2026-06-15
+
+### Added
+- Added contextual help tooltips across key housing inputs, calculated values, and planning views
+- Added centralized housing tooltip content management for easier updates and reuse
+- Added official reference links in selected tooltips for buyer stamp duty, HDB grant information, and HDB interest rate details
+- Added clearer upfront payment visibility in housing detail, comparison, and dashboard timeline views
+
+### Changed
+- Changed loan tenure input in the housing form from months to years
+- Changed `BTO + HDB loan` tenure handling to auto-assume 25 years as a system-derived value
+- Changed selected housing form fields to display system-derived values using placeholder/read-only behavior instead of looking user-entered
+- Changed the first housing payment checkpoint wording from `Initial Downpayment` to `Total Initial Payment`
+- Changed the Payment vs Income Timeline chart labels, legends, and stage naming for better readability
+- Changed tooltip styling and interaction behavior to be more minimal, consistent, and mobile-friendly
+
+### Fixed
+- Fixed tooltip positioning, clipping, visibility, and interaction issues across housing pages
+- Fixed “See more” tooltip links so they remain usable and clickable
+- Fixed housing grant display behavior to better reflect system-derived calculation handling
+- Fixed initial payment checkpoint calculation/display alignment for housing planning
+- Fixed the total initial payment display to include buyer stamp duty while keeping later downpayment stages separate
+- Fixed submission behavior for auto-derived `BTO + HDB loan` tenure values
+- Fixed housing inputs that were showing placeholder-like default values as actual entered values
+
+### Removed
+- Removed misleading prefilled-looking default values from selected housing inputs
+- Removed inconsistent tooltip presentation across different housing sections
+
+## [v1.3.2] - 2026-06-01
+
+### Added
+- Optional gRPC server TLS support via:
+    - `GRPC_TLS_CERT_FILE`
+    - `GRPC_TLS_KEY_FILE`
+- Startup logging now indicates whether gRPC TLS is enabled.
+
+### Changed
+- gRPC server bootstrap now conditionally applies TLS server credentials when cert/key are configured.
+
+### Fixed
+- Household gross income aggregation now consistently includes stored gross values across profile statuses.
+- CPF handling aligned to planning rules for selected statuses (student/NSF/part-time no employee CPF deduction in summary flow).
+
+### Removed
+- No removals in this release.
+
+
+## [v1.3.1] - 2026-06-01
+
+### Added
+- Explicit CPF exclusion handling for `student` and `full_time_nsf` employment statuses in income processing rules.
+
+### Changed
+- Gross income calculation flow was corrected to use the proper values/order of operations before affordability and CPF computations.
+- CPF contribution logic now applies only to CPF-eligible employment categories.
+
+### Fixed
+- Fixed gross income calculation issue that caused inaccurate totals in financial outputs.
+- Fixed CPF computation behavior so student and NSF gross income are excluded from CPF calculations.
+
+### Removed
+- No removals in this release.
+
 ## [v1.3.0] - 2026-05-31
 
 ### Added
