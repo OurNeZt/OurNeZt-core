@@ -6,6 +6,29 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ---
 
+## [v1.5.0] - 2026-08-04
+
+### Added
+- Housing group support with family-scoped `housing_groups` persistence.
+- Optional housing group assignment for each housing option.
+- Per-housing-option dashboard visibility control.
+- gRPC APIs for creating, listing, renaming, and deleting housing groups.
+- gRPC APIs for assigning housing options to groups and updating visibility.
+- Group-level bulk visibility update support for housing options.
+- Database migration for housing groups and dashboard visibility fields.
+
+### Changed
+- Household dashboard generation now includes only housing options marked as visible on the dashboard.
+- Housing service contracts and mappings now include housing group and dashboard visibility fields.
+- Housing repository flow now validates group assignment within the same family.
+
+### Fixed
+- Prevented group-level visibility actions from acting like a permanent parent restriction by implementing them as bulk updates only.
+- Ensured deleting a housing group keeps housing options intact and safely returns them to an ungrouped state.
+
+### Removed
+- No removals in this release.
+
 ## [v1.4.0] - 2026-06-26
 
 ### Added
