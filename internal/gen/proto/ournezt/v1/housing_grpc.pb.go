@@ -19,13 +19,20 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	HousingService_CreateHousingOption_FullMethodName           = "/ournezt.v1.HousingService/CreateHousingOption"
-	HousingService_GetHousingOption_FullMethodName              = "/ournezt.v1.HousingService/GetHousingOption"
-	HousingService_ListHousingOptions_FullMethodName            = "/ournezt.v1.HousingService/ListHousingOptions"
-	HousingService_UpdateHousingOption_FullMethodName           = "/ournezt.v1.HousingService/UpdateHousingOption"
-	HousingService_DeleteHousingOption_FullMethodName           = "/ournezt.v1.HousingService/DeleteHousingOption"
-	HousingService_CalculateHousingAffordability_FullMethodName = "/ournezt.v1.HousingService/CalculateHousingAffordability"
-	HousingService_EstimateHousingGrant_FullMethodName          = "/ournezt.v1.HousingService/EstimateHousingGrant"
+	HousingService_CreateHousingOption_FullMethodName              = "/ournezt.v1.HousingService/CreateHousingOption"
+	HousingService_GetHousingOption_FullMethodName                 = "/ournezt.v1.HousingService/GetHousingOption"
+	HousingService_ListHousingOptions_FullMethodName               = "/ournezt.v1.HousingService/ListHousingOptions"
+	HousingService_UpdateHousingOption_FullMethodName              = "/ournezt.v1.HousingService/UpdateHousingOption"
+	HousingService_DeleteHousingOption_FullMethodName              = "/ournezt.v1.HousingService/DeleteHousingOption"
+	HousingService_CreateHousingGroup_FullMethodName               = "/ournezt.v1.HousingService/CreateHousingGroup"
+	HousingService_ListHousingGroups_FullMethodName                = "/ournezt.v1.HousingService/ListHousingGroups"
+	HousingService_UpdateHousingGroup_FullMethodName               = "/ournezt.v1.HousingService/UpdateHousingGroup"
+	HousingService_DeleteHousingGroup_FullMethodName               = "/ournezt.v1.HousingService/DeleteHousingGroup"
+	HousingService_AssignHousingOptionGroup_FullMethodName         = "/ournezt.v1.HousingService/AssignHousingOptionGroup"
+	HousingService_UpdateHousingOptionVisibility_FullMethodName    = "/ournezt.v1.HousingService/UpdateHousingOptionVisibility"
+	HousingService_BulkUpdateHousingGroupVisibility_FullMethodName = "/ournezt.v1.HousingService/BulkUpdateHousingGroupVisibility"
+	HousingService_CalculateHousingAffordability_FullMethodName    = "/ournezt.v1.HousingService/CalculateHousingAffordability"
+	HousingService_EstimateHousingGrant_FullMethodName             = "/ournezt.v1.HousingService/EstimateHousingGrant"
 )
 
 // HousingServiceClient is the client API for HousingService service.
@@ -37,6 +44,13 @@ type HousingServiceClient interface {
 	ListHousingOptions(ctx context.Context, in *ListHousingOptionsRequest, opts ...grpc.CallOption) (*ListHousingOptionsResponse, error)
 	UpdateHousingOption(ctx context.Context, in *HousingOption, opts ...grpc.CallOption) (*HousingOption, error)
 	DeleteHousingOption(ctx context.Context, in *DeleteHousingOptionRequest, opts ...grpc.CallOption) (*DeleteHousingOptionResponse, error)
+	CreateHousingGroup(ctx context.Context, in *HousingGroup, opts ...grpc.CallOption) (*HousingGroup, error)
+	ListHousingGroups(ctx context.Context, in *ListHousingGroupsRequest, opts ...grpc.CallOption) (*ListHousingGroupsResponse, error)
+	UpdateHousingGroup(ctx context.Context, in *HousingGroup, opts ...grpc.CallOption) (*HousingGroup, error)
+	DeleteHousingGroup(ctx context.Context, in *DeleteHousingGroupRequest, opts ...grpc.CallOption) (*DeleteHousingGroupResponse, error)
+	AssignHousingOptionGroup(ctx context.Context, in *AssignHousingOptionGroupRequest, opts ...grpc.CallOption) (*HousingOption, error)
+	UpdateHousingOptionVisibility(ctx context.Context, in *UpdateHousingOptionVisibilityRequest, opts ...grpc.CallOption) (*HousingOption, error)
+	BulkUpdateHousingGroupVisibility(ctx context.Context, in *BulkUpdateHousingGroupVisibilityRequest, opts ...grpc.CallOption) (*BulkUpdateHousingGroupVisibilityResponse, error)
 	CalculateHousingAffordability(ctx context.Context, in *CalculateHousingAffordabilityRequest, opts ...grpc.CallOption) (*HousingAffordability, error)
 	EstimateHousingGrant(ctx context.Context, in *EstimateHousingGrantRequest, opts ...grpc.CallOption) (*EstimateHousingGrantResponse, error)
 }
@@ -99,6 +113,76 @@ func (c *housingServiceClient) DeleteHousingOption(ctx context.Context, in *Dele
 	return out, nil
 }
 
+func (c *housingServiceClient) CreateHousingGroup(ctx context.Context, in *HousingGroup, opts ...grpc.CallOption) (*HousingGroup, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(HousingGroup)
+	err := c.cc.Invoke(ctx, HousingService_CreateHousingGroup_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *housingServiceClient) ListHousingGroups(ctx context.Context, in *ListHousingGroupsRequest, opts ...grpc.CallOption) (*ListHousingGroupsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListHousingGroupsResponse)
+	err := c.cc.Invoke(ctx, HousingService_ListHousingGroups_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *housingServiceClient) UpdateHousingGroup(ctx context.Context, in *HousingGroup, opts ...grpc.CallOption) (*HousingGroup, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(HousingGroup)
+	err := c.cc.Invoke(ctx, HousingService_UpdateHousingGroup_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *housingServiceClient) DeleteHousingGroup(ctx context.Context, in *DeleteHousingGroupRequest, opts ...grpc.CallOption) (*DeleteHousingGroupResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteHousingGroupResponse)
+	err := c.cc.Invoke(ctx, HousingService_DeleteHousingGroup_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *housingServiceClient) AssignHousingOptionGroup(ctx context.Context, in *AssignHousingOptionGroupRequest, opts ...grpc.CallOption) (*HousingOption, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(HousingOption)
+	err := c.cc.Invoke(ctx, HousingService_AssignHousingOptionGroup_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *housingServiceClient) UpdateHousingOptionVisibility(ctx context.Context, in *UpdateHousingOptionVisibilityRequest, opts ...grpc.CallOption) (*HousingOption, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(HousingOption)
+	err := c.cc.Invoke(ctx, HousingService_UpdateHousingOptionVisibility_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *housingServiceClient) BulkUpdateHousingGroupVisibility(ctx context.Context, in *BulkUpdateHousingGroupVisibilityRequest, opts ...grpc.CallOption) (*BulkUpdateHousingGroupVisibilityResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BulkUpdateHousingGroupVisibilityResponse)
+	err := c.cc.Invoke(ctx, HousingService_BulkUpdateHousingGroupVisibility_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *housingServiceClient) CalculateHousingAffordability(ctx context.Context, in *CalculateHousingAffordabilityRequest, opts ...grpc.CallOption) (*HousingAffordability, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(HousingAffordability)
@@ -128,6 +212,13 @@ type HousingServiceServer interface {
 	ListHousingOptions(context.Context, *ListHousingOptionsRequest) (*ListHousingOptionsResponse, error)
 	UpdateHousingOption(context.Context, *HousingOption) (*HousingOption, error)
 	DeleteHousingOption(context.Context, *DeleteHousingOptionRequest) (*DeleteHousingOptionResponse, error)
+	CreateHousingGroup(context.Context, *HousingGroup) (*HousingGroup, error)
+	ListHousingGroups(context.Context, *ListHousingGroupsRequest) (*ListHousingGroupsResponse, error)
+	UpdateHousingGroup(context.Context, *HousingGroup) (*HousingGroup, error)
+	DeleteHousingGroup(context.Context, *DeleteHousingGroupRequest) (*DeleteHousingGroupResponse, error)
+	AssignHousingOptionGroup(context.Context, *AssignHousingOptionGroupRequest) (*HousingOption, error)
+	UpdateHousingOptionVisibility(context.Context, *UpdateHousingOptionVisibilityRequest) (*HousingOption, error)
+	BulkUpdateHousingGroupVisibility(context.Context, *BulkUpdateHousingGroupVisibilityRequest) (*BulkUpdateHousingGroupVisibilityResponse, error)
 	CalculateHousingAffordability(context.Context, *CalculateHousingAffordabilityRequest) (*HousingAffordability, error)
 	EstimateHousingGrant(context.Context, *EstimateHousingGrantRequest) (*EstimateHousingGrantResponse, error)
 	mustEmbedUnimplementedHousingServiceServer()
@@ -154,6 +245,27 @@ func (UnimplementedHousingServiceServer) UpdateHousingOption(context.Context, *H
 }
 func (UnimplementedHousingServiceServer) DeleteHousingOption(context.Context, *DeleteHousingOptionRequest) (*DeleteHousingOptionResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteHousingOption not implemented")
+}
+func (UnimplementedHousingServiceServer) CreateHousingGroup(context.Context, *HousingGroup) (*HousingGroup, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateHousingGroup not implemented")
+}
+func (UnimplementedHousingServiceServer) ListHousingGroups(context.Context, *ListHousingGroupsRequest) (*ListHousingGroupsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListHousingGroups not implemented")
+}
+func (UnimplementedHousingServiceServer) UpdateHousingGroup(context.Context, *HousingGroup) (*HousingGroup, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateHousingGroup not implemented")
+}
+func (UnimplementedHousingServiceServer) DeleteHousingGroup(context.Context, *DeleteHousingGroupRequest) (*DeleteHousingGroupResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteHousingGroup not implemented")
+}
+func (UnimplementedHousingServiceServer) AssignHousingOptionGroup(context.Context, *AssignHousingOptionGroupRequest) (*HousingOption, error) {
+	return nil, status.Error(codes.Unimplemented, "method AssignHousingOptionGroup not implemented")
+}
+func (UnimplementedHousingServiceServer) UpdateHousingOptionVisibility(context.Context, *UpdateHousingOptionVisibilityRequest) (*HousingOption, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateHousingOptionVisibility not implemented")
+}
+func (UnimplementedHousingServiceServer) BulkUpdateHousingGroupVisibility(context.Context, *BulkUpdateHousingGroupVisibilityRequest) (*BulkUpdateHousingGroupVisibilityResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BulkUpdateHousingGroupVisibility not implemented")
 }
 func (UnimplementedHousingServiceServer) CalculateHousingAffordability(context.Context, *CalculateHousingAffordabilityRequest) (*HousingAffordability, error) {
 	return nil, status.Error(codes.Unimplemented, "method CalculateHousingAffordability not implemented")
@@ -272,6 +384,132 @@ func _HousingService_DeleteHousingOption_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
+func _HousingService_CreateHousingGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HousingGroup)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HousingServiceServer).CreateHousingGroup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HousingService_CreateHousingGroup_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HousingServiceServer).CreateHousingGroup(ctx, req.(*HousingGroup))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HousingService_ListHousingGroups_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListHousingGroupsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HousingServiceServer).ListHousingGroups(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HousingService_ListHousingGroups_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HousingServiceServer).ListHousingGroups(ctx, req.(*ListHousingGroupsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HousingService_UpdateHousingGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HousingGroup)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HousingServiceServer).UpdateHousingGroup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HousingService_UpdateHousingGroup_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HousingServiceServer).UpdateHousingGroup(ctx, req.(*HousingGroup))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HousingService_DeleteHousingGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteHousingGroupRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HousingServiceServer).DeleteHousingGroup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HousingService_DeleteHousingGroup_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HousingServiceServer).DeleteHousingGroup(ctx, req.(*DeleteHousingGroupRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HousingService_AssignHousingOptionGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AssignHousingOptionGroupRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HousingServiceServer).AssignHousingOptionGroup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HousingService_AssignHousingOptionGroup_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HousingServiceServer).AssignHousingOptionGroup(ctx, req.(*AssignHousingOptionGroupRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HousingService_UpdateHousingOptionVisibility_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateHousingOptionVisibilityRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HousingServiceServer).UpdateHousingOptionVisibility(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HousingService_UpdateHousingOptionVisibility_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HousingServiceServer).UpdateHousingOptionVisibility(ctx, req.(*UpdateHousingOptionVisibilityRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HousingService_BulkUpdateHousingGroupVisibility_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BulkUpdateHousingGroupVisibilityRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HousingServiceServer).BulkUpdateHousingGroupVisibility(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HousingService_BulkUpdateHousingGroupVisibility_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HousingServiceServer).BulkUpdateHousingGroupVisibility(ctx, req.(*BulkUpdateHousingGroupVisibilityRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _HousingService_CalculateHousingAffordability_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CalculateHousingAffordabilityRequest)
 	if err := dec(in); err != nil {
@@ -334,6 +572,34 @@ var HousingService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteHousingOption",
 			Handler:    _HousingService_DeleteHousingOption_Handler,
+		},
+		{
+			MethodName: "CreateHousingGroup",
+			Handler:    _HousingService_CreateHousingGroup_Handler,
+		},
+		{
+			MethodName: "ListHousingGroups",
+			Handler:    _HousingService_ListHousingGroups_Handler,
+		},
+		{
+			MethodName: "UpdateHousingGroup",
+			Handler:    _HousingService_UpdateHousingGroup_Handler,
+		},
+		{
+			MethodName: "DeleteHousingGroup",
+			Handler:    _HousingService_DeleteHousingGroup_Handler,
+		},
+		{
+			MethodName: "AssignHousingOptionGroup",
+			Handler:    _HousingService_AssignHousingOptionGroup_Handler,
+		},
+		{
+			MethodName: "UpdateHousingOptionVisibility",
+			Handler:    _HousingService_UpdateHousingOptionVisibility_Handler,
+		},
+		{
+			MethodName: "BulkUpdateHousingGroupVisibility",
+			Handler:    _HousingService_BulkUpdateHousingGroupVisibility_Handler,
 		},
 		{
 			MethodName: "CalculateHousingAffordability",

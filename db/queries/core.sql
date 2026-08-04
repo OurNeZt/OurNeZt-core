@@ -40,3 +40,8 @@ SELECT * FROM housing_options
 WHERE family_id = $1
 ORDER BY created_at DESC;
 
+-- name: ListHousingGroupsByFamily :many
+SELECT * FROM housing_groups
+WHERE family_id = $1
+ORDER BY created_at DESC;
+

@@ -121,8 +121,40 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 	return i, err
 }
 
+const listHousingGroupsByFamily = `-- name: ListHousingGroupsByFamily :many
+SELECT id, family_id, name, created_at, updated_at FROM housing_groups
+WHERE family_id = $1
+ORDER BY created_at DESC
+`
+
+func (q *Queries) ListHousingGroupsByFamily(ctx context.Context, familyID pgtype.UUID) ([]HousingGroup, error) {
+	rows, err := q.db.Query(ctx, listHousingGroupsByFamily, familyID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []HousingGroup{}
+	for rows.Next() {
+		var i HousingGroup
+		if err := rows.Scan(
+			&i.ID,
+			&i.FamilyID,
+			&i.Name,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listHousingOptionsByFamily = `-- name: ListHousingOptionsByFamily :many
-SELECT id, family_id, name, housing_type, location, unit_type, purchase_price_cents, grant_amount_cents, loan_type, loan_amount_cents, interest_rate_bps, loan_tenure_months, downpayment_percent_bps, renovation_budget_cents, furniture_budget_cents, legal_fees_cents, buyer_stamp_duty_cents, monthly_maintenance_cents, expected_key_collection_date, created_at, updated_at, dia_income_overrides FROM housing_options
+SELECT id, family_id, name, housing_type, location, unit_type, purchase_price_cents, grant_amount_cents, loan_type, loan_amount_cents, interest_rate_bps, loan_tenure_months, downpayment_percent_bps, renovation_budget_cents, furniture_budget_cents, legal_fees_cents, buyer_stamp_duty_cents, monthly_maintenance_cents, expected_key_collection_date, created_at, updated_at, dia_income_overrides, housing_group_id, visible_on_dashboard FROM housing_options
 WHERE family_id = $1
 ORDER BY created_at DESC
 `
@@ -159,6 +191,8 @@ func (q *Queries) ListHousingOptionsByFamily(ctx context.Context, familyID pgtyp
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DiaIncomeOverrides,
+			&i.HousingGroupID,
+			&i.VisibleOnDashboard,
 		); err != nil {
 			return nil, err
 		}

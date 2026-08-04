@@ -12,12 +12,27 @@ import (
 )
 
 type fakeHousingRepository struct {
-	createInput domain.HousingOption
-	created     domain.HousingOption
-	got         domain.HousingOption
-	list        []domain.HousingOption
-	updated     domain.HousingOption
-	deletedID   domain.ID
+	createInput           domain.HousingOption
+	created               domain.HousingOption
+	got                   domain.HousingOption
+	list                  []domain.HousingOption
+	updated               domain.HousingOption
+	updateInput           domain.HousingOption
+	deletedID             domain.ID
+	groups                []domain.HousingGroup
+	groupInput            domain.HousingGroup
+	createdGroup          domain.HousingGroup
+	updatedGroup          domain.HousingGroup
+	deletedGroupID        domain.ID
+	assignedHousingID     domain.ID
+	assignedGroupID       domain.ID
+	assignedOption        domain.HousingOption
+	visibilityHousingID   domain.ID
+	visibilityValue       bool
+	visibilityOption      domain.HousingOption
+	bulkVisibilityGroupID domain.ID
+	bulkVisibilityValue   bool
+	bulkVisibilityOptions []domain.HousingOption
 }
 
 func (r *fakeHousingRepository) CreateHousingOption(_ context.Context, option domain.HousingOption, _ domain.ID) (domain.HousingOption, error) {
@@ -34,13 +49,50 @@ func (r *fakeHousingRepository) ListHousingOptions(_ context.Context, _ domain.I
 }
 
 func (r *fakeHousingRepository) UpdateHousingOption(_ context.Context, option domain.HousingOption, _ domain.ID) (domain.HousingOption, error) {
-	r.createInput = option
+	r.updateInput = option
 	return r.updated, nil
 }
 
 func (r *fakeHousingRepository) DeleteHousingOption(_ context.Context, housingID domain.ID, _ domain.ID) error {
 	r.deletedID = housingID
 	return nil
+}
+
+func (r *fakeHousingRepository) CreateHousingGroup(_ context.Context, group domain.HousingGroup, _ domain.ID) (domain.HousingGroup, error) {
+	r.groupInput = group
+	return r.createdGroup, nil
+}
+
+func (r *fakeHousingRepository) ListHousingGroups(_ context.Context, _ domain.ID, _ domain.ID) ([]domain.HousingGroup, error) {
+	return r.groups, nil
+}
+
+func (r *fakeHousingRepository) UpdateHousingGroup(_ context.Context, group domain.HousingGroup, _ domain.ID) (domain.HousingGroup, error) {
+	r.groupInput = group
+	return r.updatedGroup, nil
+}
+
+func (r *fakeHousingRepository) DeleteHousingGroup(_ context.Context, groupID domain.ID, _ domain.ID) error {
+	r.deletedGroupID = groupID
+	return nil
+}
+
+func (r *fakeHousingRepository) AssignHousingOptionGroup(_ context.Context, housingID domain.ID, groupID domain.ID, _ domain.ID) (domain.HousingOption, error) {
+	r.assignedHousingID = housingID
+	r.assignedGroupID = groupID
+	return r.assignedOption, nil
+}
+
+func (r *fakeHousingRepository) UpdateHousingOptionVisibility(_ context.Context, housingID domain.ID, visible bool, _ domain.ID) (domain.HousingOption, error) {
+	r.visibilityHousingID = housingID
+	r.visibilityValue = visible
+	return r.visibilityOption, nil
+}
+
+func (r *fakeHousingRepository) BulkUpdateHousingGroupVisibility(_ context.Context, groupID domain.ID, visible bool, _ domain.ID) ([]domain.HousingOption, error) {
+	r.bulkVisibilityGroupID = groupID
+	r.bulkVisibilityValue = visible
+	return r.bulkVisibilityOptions, nil
 }
 
 func TestHousingServerCreateOption(t *testing.T) {
@@ -76,6 +128,9 @@ func TestHousingServerCreateOption(t *testing.T) {
 	}
 	if repo.createInput.GrantAmountCents != 6500000 {
 		t.Fatalf("create input grant amount = %d, want 6500000", repo.createInput.GrantAmountCents)
+	}
+	if !repo.createInput.VisibleOnDashboard {
+		t.Fatal("create input visible on dashboard = false, want true")
 	}
 }
 
@@ -236,6 +291,174 @@ func TestHousingServerDeleteOption(t *testing.T) {
 	}
 	if repo.deletedID != "housing_9" {
 		t.Fatalf("deleted id = %q, want housing_9", repo.deletedID)
+	}
+}
+
+func TestHousingServerUpdateOptionPreservesGroupAndVisibilityWhenFieldsOmitted(t *testing.T) {
+	repo := &fakeHousingRepository{
+		got: domain.HousingOption{
+			ID:                 "housing_1",
+			FamilyID:           "family_1",
+			GroupID:            "group_1",
+			VisibleOnDashboard: false,
+		},
+		updated: domain.HousingOption{
+			ID:                 "housing_1",
+			FamilyID:           "family_1",
+			GroupID:            "group_1",
+			VisibleOnDashboard: false,
+		},
+	}
+	server := NewHousingServer(repo, &fakePeopleRepository{})
+
+	_, err := server.UpdateHousingOption(context.Background(), &ourneztv1.HousingOption{
+		Id:                    "housing_1",
+		FamilyId:              "family_1",
+		Name:                  "Updated Option",
+		HousingType:           "bto",
+		LoanType:              "hdb",
+		PurchasePriceCents:    45000000,
+		InterestRateBps:       260,
+		LoanTenureMonths:      300,
+		DownpaymentPercentBps: 2000,
+	})
+	if err != nil {
+		t.Fatalf("UpdateHousingOption returned error: %v", err)
+	}
+	if repo.updateInput.GroupID != "group_1" {
+		t.Fatalf("update group id = %q, want group_1", repo.updateInput.GroupID)
+	}
+	if repo.updateInput.VisibleOnDashboard {
+		t.Fatal("update visibility = true, want false")
+	}
+}
+
+func TestHousingServerCreateGroup(t *testing.T) {
+	repo := &fakeHousingRepository{
+		createdGroup: domain.HousingGroup{ID: "group_1", FamilyID: "family_1", Name: "June BTO 2026"},
+	}
+	server := NewHousingServer(repo, &fakePeopleRepository{})
+
+	response, err := server.CreateHousingGroup(context.Background(), &ourneztv1.HousingGroup{
+		FamilyId: "family_1",
+		Name:     "June BTO 2026",
+	})
+	if err != nil {
+		t.Fatalf("CreateHousingGroup returned error: %v", err)
+	}
+	if response.GetId() != "group_1" {
+		t.Fatalf("group id = %q, want group_1", response.GetId())
+	}
+	if repo.groupInput.Name != "June BTO 2026" {
+		t.Fatalf("group input name = %q, want June BTO 2026", repo.groupInput.Name)
+	}
+}
+
+func TestHousingServerListGroups(t *testing.T) {
+	repo := &fakeHousingRepository{
+		groups: []domain.HousingGroup{
+			{ID: "group_1", FamilyID: "family_1", Name: "Resale"},
+			{ID: "group_2", FamilyID: "family_1", Name: "EC"},
+		},
+	}
+	server := NewHousingServer(repo, &fakePeopleRepository{})
+
+	response, err := server.ListHousingGroups(context.Background(), &ourneztv1.ListHousingGroupsRequest{
+		ViewerUserId: "user_1",
+		FamilyId:     "family_1",
+	})
+	if err != nil {
+		t.Fatalf("ListHousingGroups returned error: %v", err)
+	}
+	if len(response.GetHousingGroups()) != 2 {
+		t.Fatalf("housing groups len = %d, want 2", len(response.GetHousingGroups()))
+	}
+}
+
+func TestHousingServerAssignHousingOptionGroup(t *testing.T) {
+	repo := &fakeHousingRepository{
+		assignedOption: domain.HousingOption{
+			ID:                 "housing_1",
+			FamilyID:           "family_1",
+			GroupID:            "group_1",
+			VisibleOnDashboard: true,
+		},
+	}
+	server := NewHousingServer(repo, &fakePeopleRepository{})
+
+	response, err := server.AssignHousingOptionGroup(context.Background(), &ourneztv1.AssignHousingOptionGroupRequest{
+		ActorUserId:    "user_1",
+		HousingId:      "housing_1",
+		HousingGroupId: "group_1",
+	})
+	if err != nil {
+		t.Fatalf("AssignHousingOptionGroup returned error: %v", err)
+	}
+	if repo.assignedHousingID != "housing_1" {
+		t.Fatalf("assigned housing id = %q, want housing_1", repo.assignedHousingID)
+	}
+	if repo.assignedGroupID != "group_1" {
+		t.Fatalf("assigned group id = %q, want group_1", repo.assignedGroupID)
+	}
+	if response.GetHousingGroupId() != "group_1" {
+		t.Fatalf("response housing group id = %q, want group_1", response.GetHousingGroupId())
+	}
+}
+
+func TestHousingServerUpdateHousingOptionVisibility(t *testing.T) {
+	repo := &fakeHousingRepository{
+		visibilityOption: domain.HousingOption{
+			ID:                 "housing_1",
+			FamilyID:           "family_1",
+			VisibleOnDashboard: false,
+		},
+	}
+	server := NewHousingServer(repo, &fakePeopleRepository{})
+
+	response, err := server.UpdateHousingOptionVisibility(context.Background(), &ourneztv1.UpdateHousingOptionVisibilityRequest{
+		ActorUserId:        "user_1",
+		HousingId:          "housing_1",
+		VisibleOnDashboard: false,
+	})
+	if err != nil {
+		t.Fatalf("UpdateHousingOptionVisibility returned error: %v", err)
+	}
+	if repo.visibilityHousingID != "housing_1" {
+		t.Fatalf("visibility housing id = %q, want housing_1", repo.visibilityHousingID)
+	}
+	if repo.visibilityValue {
+		t.Fatal("visibility value = true, want false")
+	}
+	if response.GetVisibleOnDashboard() {
+		t.Fatal("response visible on dashboard = true, want false")
+	}
+}
+
+func TestHousingServerBulkUpdateHousingGroupVisibility(t *testing.T) {
+	repo := &fakeHousingRepository{
+		bulkVisibilityOptions: []domain.HousingOption{
+			{ID: "housing_1", FamilyID: "family_1", GroupID: "group_1", VisibleOnDashboard: false},
+			{ID: "housing_2", FamilyID: "family_1", GroupID: "group_1", VisibleOnDashboard: false},
+		},
+	}
+	server := NewHousingServer(repo, &fakePeopleRepository{})
+
+	response, err := server.BulkUpdateHousingGroupVisibility(context.Background(), &ourneztv1.BulkUpdateHousingGroupVisibilityRequest{
+		ActorUserId:        "user_1",
+		HousingGroupId:     "group_1",
+		VisibleOnDashboard: false,
+	})
+	if err != nil {
+		t.Fatalf("BulkUpdateHousingGroupVisibility returned error: %v", err)
+	}
+	if repo.bulkVisibilityGroupID != "group_1" {
+		t.Fatalf("bulk visibility group id = %q, want group_1", repo.bulkVisibilityGroupID)
+	}
+	if repo.bulkVisibilityValue {
+		t.Fatal("bulk visibility value = true, want false")
+	}
+	if len(response.GetHousingOptions()) != 2 {
+		t.Fatalf("housing options len = %d, want 2", len(response.GetHousingOptions()))
 	}
 }
 

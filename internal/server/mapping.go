@@ -10,6 +10,14 @@ import (
 	"github.com/OurNeZt/ournezt-core/internal/platform/apperror"
 )
 
+func stringPtr(value string) *string {
+	return &value
+}
+
+func boolPtr(value bool) *bool {
+	return &value
+}
+
 func requireID(value string) (domain.ID, error) {
 	trimmed := strings.TrimSpace(value)
 	if trimmed == "" {
@@ -150,6 +158,7 @@ func housingFromProto(in *ourneztv1.HousingOption) (domain.HousingOption, error)
 	return domain.HousingOption{
 		ID:                        domain.ID(strings.TrimSpace(in.GetId())),
 		FamilyID:                  domain.ID(strings.TrimSpace(in.GetFamilyId())),
+		GroupID:                   domain.ID(strings.TrimSpace(in.GetHousingGroupId())),
 		Name:                      strings.TrimSpace(in.GetName()),
 		Type:                      domain.HousingType(strings.TrimSpace(in.GetHousingType())),
 		Location:                  strings.TrimSpace(in.GetLocation()),
@@ -166,6 +175,7 @@ func housingFromProto(in *ourneztv1.HousingOption) (domain.HousingOption, error)
 		LegalFeesCents:            in.GetLegalFeesCents(),
 		BuyerStampDutyCents:       in.GetBuyerStampDutyCents(),
 		MonthlyMaintenanceCents:   in.GetMonthlyMaintenanceCents(),
+		VisibleOnDashboard:        in.VisibleOnDashboard == nil || in.GetVisibleOnDashboard(),
 		ExpectedKeyCollectionDate: keyDate,
 		DIAIncomeOverrides:        overrides,
 	}, nil
@@ -183,7 +193,7 @@ func housingToProto(option domain.HousingOption) *ourneztv1.HousingOption {
 		})
 	}
 
-	return &ourneztv1.HousingOption{
+	protoOption := &ourneztv1.HousingOption{
 		Id:                        string(option.ID),
 		FamilyId:                  string(option.FamilyID),
 		Name:                      option.Name,
@@ -204,6 +214,31 @@ func housingToProto(option domain.HousingOption) *ourneztv1.HousingOption {
 		MonthlyMaintenanceCents:   option.MonthlyMaintenanceCents,
 		ExpectedKeyCollectionDate: formatDate(option.ExpectedKeyCollectionDate),
 		DiaIncomeOverrides:        overrides,
+		VisibleOnDashboard:        boolPtr(option.VisibleOnDashboard),
+	}
+	if strings.TrimSpace(string(option.GroupID)) != "" {
+		protoOption.HousingGroupId = stringPtr(string(option.GroupID))
+	}
+	return protoOption
+}
+
+func housingGroupFromProto(in *ourneztv1.HousingGroup) (domain.HousingGroup, error) {
+	if in == nil {
+		return domain.HousingGroup{}, apperror.ErrInvalidArgument
+	}
+
+	return domain.HousingGroup{
+		ID:       domain.ID(strings.TrimSpace(in.GetId())),
+		FamilyID: domain.ID(strings.TrimSpace(in.GetFamilyId())),
+		Name:     strings.TrimSpace(in.GetName()),
+	}, nil
+}
+
+func housingGroupToProto(group domain.HousingGroup) *ourneztv1.HousingGroup {
+	return &ourneztv1.HousingGroup{
+		Id:       string(group.ID),
+		FamilyId: string(group.FamilyID),
+		Name:     group.Name,
 	}
 }
 
