@@ -119,6 +119,7 @@ const (
 )
 
 type HousingOption struct {
+	Evaluation                *HousingEvaluationSummary
 	ID                        ID
 	FamilyID                  ID
 	GroupID                   ID
