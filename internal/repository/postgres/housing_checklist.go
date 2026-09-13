@@ -86,7 +86,9 @@ func (r HousingRepository) SaveHousingCriterion(ctx context.Context, c domain.Ho
 	if err != nil {
 		return domain.HousingCriterion{}, err
 	}
-	defer tx.Rollback(ctx)
+	defer func() {
+		_ = tx.Rollback(ctx)
+	}()
 	ids, err := checklistIDs(ctx, tx, c.FamilyID)
 	if err != nil {
 		return domain.HousingCriterion{}, err
@@ -130,7 +132,9 @@ func (r HousingRepository) DeleteHousingCriterion(ctx context.Context, familyID,
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback(ctx)
+	defer func() {
+		_ = tx.Rollback(ctx)
+	}()
 	tag, err := tx.Exec(ctx, `UPDATE housing_checklist_criteria SET deleted_at=now(),updated_at=now() WHERE id=$1::uuid AND family_id=$2::uuid AND deleted_at IS NULL`, string(criterionID), string(familyID))
 	if err != nil {
 		return normalizeError(err)
@@ -153,7 +157,9 @@ func (r HousingRepository) ReorderHousingCriteria(ctx context.Context, familyID 
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback(ctx)
+	defer func() {
+		_ = tx.Rollback(ctx)
+	}()
 	current, err := checklistIDs(ctx, tx, familyID)
 	if err != nil {
 		return err
@@ -209,7 +215,9 @@ func (r HousingRepository) SaveHousingAnswer(ctx context.Context, a domain.Housi
 	if err != nil {
 		return domain.HousingAnswer{}, normalizeError(err)
 	}
-	defer tx.Rollback(ctx)
+	defer func() {
+		_ = tx.Rollback(ctx)
+	}()
 	var familyID string
 	// Lock the active criterion until the answer is saved; retirement cannot race it.
 	err = tx.QueryRow(ctx, `SELECT h.family_id::text FROM housing_options h JOIN housing_checklist_criteria c ON c.family_id=h.family_id JOIN family_members fm ON fm.family_id=h.family_id WHERE h.id=$1::uuid AND c.id=$2::uuid AND c.deleted_at IS NULL AND fm.user_id=$3::uuid AND fm.role IN ('owner','admin','member') FOR SHARE OF c, h, fm`, string(a.HousingID), string(a.CriterionID), string(actorID)).Scan(&familyID)
