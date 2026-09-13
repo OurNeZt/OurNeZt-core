@@ -5,6 +5,12 @@ package ournezt.v1;
 option go_package = "github.com/OurNeZt/ournezt-core/internal/gen/proto/ournezt/v1;ourneztv1";
 
 service HousingService {
+  rpc ListHousingCriteria(ListHousingCriteriaRequest) returns (ListHousingCriteriaResponse);
+  rpc SaveHousingCriterion(HousingCriterion) returns (HousingCriterion);
+  rpc DeleteHousingCriterion(DeleteHousingCriterionRequest) returns (DeleteHousingCriterionResponse);
+  rpc ReorderHousingCriteria(ReorderHousingCriteriaRequest) returns (ListHousingCriteriaResponse);
+  rpc GetHousingEvaluation(GetHousingOptionRequest) returns (HousingEvaluation);
+  rpc SaveHousingAnswer(HousingAnswer) returns (HousingAnswer);
   rpc CreateHousingOption(HousingOption) returns (HousingOption);
   rpc GetHousingOption(GetHousingOptionRequest) returns (HousingOption);
   rpc ListHousingOptions(ListHousingOptionsRequest) returns (ListHousingOptionsResponse);
@@ -49,6 +55,48 @@ message HousingOption {
   repeated HousingDIAIncomeOverride dia_income_overrides = 20;
   optional string housing_group_id = 21;
   optional bool visible_on_dashboard = 22;
+  HousingEvaluationSummary evaluation = 23;
+}
+
+message HousingCriterion {
+  string id = 1;
+  string family_id = 2;
+  string name = 3;
+  string description = 4;
+  int32 display_order = 5;
+  // Absent means weight 1. Explicit weights must be finite, > 0 and <= 1000.
+  optional double weight = 6;
+}
+message HousingAnswer {
+  string housing_id = 1;
+  string criterion_id = 2;
+  // pending, complete (requires rating), or not_applicable (requires no rating).
+  string state = 3;
+  optional int32 rating = 4;
+  string notes = 5;
+}
+message HousingEvaluationSummary {
+  // Weighted mean on a 1-5 scale. Absent when no applicable criteria are rated.
+  optional double score = 1;
+  int32 total = 2;
+  int32 completed = 3;
+  int32 not_applicable = 4;
+  int32 rated = 5;
+  bool weighted = 6;
+}
+message HousingEvaluation {
+  repeated HousingCriterion criteria = 1;
+  repeated HousingAnswer answers = 2;
+  HousingEvaluationSummary summary = 3;
+}
+message ListHousingCriteriaRequest { string family_id = 1; }
+message ListHousingCriteriaResponse { repeated HousingCriterion criteria = 1; }
+message DeleteHousingCriterionRequest { string family_id = 1; string criterion_id = 2; }
+message DeleteHousingCriterionResponse {}
+message ReorderHousingCriteriaRequest {
+  string family_id = 1;
+  // Every active criterion ID exactly once, in the desired order.
+  repeated string criterion_ids = 2;
 }
 
 message HousingGroup {

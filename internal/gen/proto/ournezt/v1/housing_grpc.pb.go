@@ -19,6 +19,12 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
+	HousingService_ListHousingCriteria_FullMethodName              = "/ournezt.v1.HousingService/ListHousingCriteria"
+	HousingService_SaveHousingCriterion_FullMethodName             = "/ournezt.v1.HousingService/SaveHousingCriterion"
+	HousingService_DeleteHousingCriterion_FullMethodName           = "/ournezt.v1.HousingService/DeleteHousingCriterion"
+	HousingService_ReorderHousingCriteria_FullMethodName           = "/ournezt.v1.HousingService/ReorderHousingCriteria"
+	HousingService_GetHousingEvaluation_FullMethodName             = "/ournezt.v1.HousingService/GetHousingEvaluation"
+	HousingService_SaveHousingAnswer_FullMethodName                = "/ournezt.v1.HousingService/SaveHousingAnswer"
 	HousingService_CreateHousingOption_FullMethodName              = "/ournezt.v1.HousingService/CreateHousingOption"
 	HousingService_GetHousingOption_FullMethodName                 = "/ournezt.v1.HousingService/GetHousingOption"
 	HousingService_ListHousingOptions_FullMethodName               = "/ournezt.v1.HousingService/ListHousingOptions"
@@ -39,6 +45,12 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type HousingServiceClient interface {
+	ListHousingCriteria(ctx context.Context, in *ListHousingCriteriaRequest, opts ...grpc.CallOption) (*ListHousingCriteriaResponse, error)
+	SaveHousingCriterion(ctx context.Context, in *HousingCriterion, opts ...grpc.CallOption) (*HousingCriterion, error)
+	DeleteHousingCriterion(ctx context.Context, in *DeleteHousingCriterionRequest, opts ...grpc.CallOption) (*DeleteHousingCriterionResponse, error)
+	ReorderHousingCriteria(ctx context.Context, in *ReorderHousingCriteriaRequest, opts ...grpc.CallOption) (*ListHousingCriteriaResponse, error)
+	GetHousingEvaluation(ctx context.Context, in *GetHousingOptionRequest, opts ...grpc.CallOption) (*HousingEvaluation, error)
+	SaveHousingAnswer(ctx context.Context, in *HousingAnswer, opts ...grpc.CallOption) (*HousingAnswer, error)
 	CreateHousingOption(ctx context.Context, in *HousingOption, opts ...grpc.CallOption) (*HousingOption, error)
 	GetHousingOption(ctx context.Context, in *GetHousingOptionRequest, opts ...grpc.CallOption) (*HousingOption, error)
 	ListHousingOptions(ctx context.Context, in *ListHousingOptionsRequest, opts ...grpc.CallOption) (*ListHousingOptionsResponse, error)
@@ -61,6 +73,66 @@ type housingServiceClient struct {
 
 func NewHousingServiceClient(cc grpc.ClientConnInterface) HousingServiceClient {
 	return &housingServiceClient{cc}
+}
+
+func (c *housingServiceClient) ListHousingCriteria(ctx context.Context, in *ListHousingCriteriaRequest, opts ...grpc.CallOption) (*ListHousingCriteriaResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListHousingCriteriaResponse)
+	err := c.cc.Invoke(ctx, HousingService_ListHousingCriteria_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *housingServiceClient) SaveHousingCriterion(ctx context.Context, in *HousingCriterion, opts ...grpc.CallOption) (*HousingCriterion, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(HousingCriterion)
+	err := c.cc.Invoke(ctx, HousingService_SaveHousingCriterion_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *housingServiceClient) DeleteHousingCriterion(ctx context.Context, in *DeleteHousingCriterionRequest, opts ...grpc.CallOption) (*DeleteHousingCriterionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteHousingCriterionResponse)
+	err := c.cc.Invoke(ctx, HousingService_DeleteHousingCriterion_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *housingServiceClient) ReorderHousingCriteria(ctx context.Context, in *ReorderHousingCriteriaRequest, opts ...grpc.CallOption) (*ListHousingCriteriaResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListHousingCriteriaResponse)
+	err := c.cc.Invoke(ctx, HousingService_ReorderHousingCriteria_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *housingServiceClient) GetHousingEvaluation(ctx context.Context, in *GetHousingOptionRequest, opts ...grpc.CallOption) (*HousingEvaluation, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(HousingEvaluation)
+	err := c.cc.Invoke(ctx, HousingService_GetHousingEvaluation_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *housingServiceClient) SaveHousingAnswer(ctx context.Context, in *HousingAnswer, opts ...grpc.CallOption) (*HousingAnswer, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(HousingAnswer)
+	err := c.cc.Invoke(ctx, HousingService_SaveHousingAnswer_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *housingServiceClient) CreateHousingOption(ctx context.Context, in *HousingOption, opts ...grpc.CallOption) (*HousingOption, error) {
@@ -207,6 +279,12 @@ func (c *housingServiceClient) EstimateHousingGrant(ctx context.Context, in *Est
 // All implementations must embed UnimplementedHousingServiceServer
 // for forward compatibility.
 type HousingServiceServer interface {
+	ListHousingCriteria(context.Context, *ListHousingCriteriaRequest) (*ListHousingCriteriaResponse, error)
+	SaveHousingCriterion(context.Context, *HousingCriterion) (*HousingCriterion, error)
+	DeleteHousingCriterion(context.Context, *DeleteHousingCriterionRequest) (*DeleteHousingCriterionResponse, error)
+	ReorderHousingCriteria(context.Context, *ReorderHousingCriteriaRequest) (*ListHousingCriteriaResponse, error)
+	GetHousingEvaluation(context.Context, *GetHousingOptionRequest) (*HousingEvaluation, error)
+	SaveHousingAnswer(context.Context, *HousingAnswer) (*HousingAnswer, error)
 	CreateHousingOption(context.Context, *HousingOption) (*HousingOption, error)
 	GetHousingOption(context.Context, *GetHousingOptionRequest) (*HousingOption, error)
 	ListHousingOptions(context.Context, *ListHousingOptionsRequest) (*ListHousingOptionsResponse, error)
@@ -231,6 +309,24 @@ type HousingServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedHousingServiceServer struct{}
 
+func (UnimplementedHousingServiceServer) ListHousingCriteria(context.Context, *ListHousingCriteriaRequest) (*ListHousingCriteriaResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListHousingCriteria not implemented")
+}
+func (UnimplementedHousingServiceServer) SaveHousingCriterion(context.Context, *HousingCriterion) (*HousingCriterion, error) {
+	return nil, status.Error(codes.Unimplemented, "method SaveHousingCriterion not implemented")
+}
+func (UnimplementedHousingServiceServer) DeleteHousingCriterion(context.Context, *DeleteHousingCriterionRequest) (*DeleteHousingCriterionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteHousingCriterion not implemented")
+}
+func (UnimplementedHousingServiceServer) ReorderHousingCriteria(context.Context, *ReorderHousingCriteriaRequest) (*ListHousingCriteriaResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ReorderHousingCriteria not implemented")
+}
+func (UnimplementedHousingServiceServer) GetHousingEvaluation(context.Context, *GetHousingOptionRequest) (*HousingEvaluation, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetHousingEvaluation not implemented")
+}
+func (UnimplementedHousingServiceServer) SaveHousingAnswer(context.Context, *HousingAnswer) (*HousingAnswer, error) {
+	return nil, status.Error(codes.Unimplemented, "method SaveHousingAnswer not implemented")
+}
 func (UnimplementedHousingServiceServer) CreateHousingOption(context.Context, *HousingOption) (*HousingOption, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateHousingOption not implemented")
 }
@@ -292,6 +388,114 @@ func RegisterHousingServiceServer(s grpc.ServiceRegistrar, srv HousingServiceSer
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&HousingService_ServiceDesc, srv)
+}
+
+func _HousingService_ListHousingCriteria_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListHousingCriteriaRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HousingServiceServer).ListHousingCriteria(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HousingService_ListHousingCriteria_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HousingServiceServer).ListHousingCriteria(ctx, req.(*ListHousingCriteriaRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HousingService_SaveHousingCriterion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HousingCriterion)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HousingServiceServer).SaveHousingCriterion(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HousingService_SaveHousingCriterion_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HousingServiceServer).SaveHousingCriterion(ctx, req.(*HousingCriterion))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HousingService_DeleteHousingCriterion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteHousingCriterionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HousingServiceServer).DeleteHousingCriterion(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HousingService_DeleteHousingCriterion_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HousingServiceServer).DeleteHousingCriterion(ctx, req.(*DeleteHousingCriterionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HousingService_ReorderHousingCriteria_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReorderHousingCriteriaRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HousingServiceServer).ReorderHousingCriteria(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HousingService_ReorderHousingCriteria_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HousingServiceServer).ReorderHousingCriteria(ctx, req.(*ReorderHousingCriteriaRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HousingService_GetHousingEvaluation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetHousingOptionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HousingServiceServer).GetHousingEvaluation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HousingService_GetHousingEvaluation_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HousingServiceServer).GetHousingEvaluation(ctx, req.(*GetHousingOptionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HousingService_SaveHousingAnswer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HousingAnswer)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HousingServiceServer).SaveHousingAnswer(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HousingService_SaveHousingAnswer_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HousingServiceServer).SaveHousingAnswer(ctx, req.(*HousingAnswer))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _HousingService_CreateHousingOption_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -553,6 +757,30 @@ var HousingService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "ournezt.v1.HousingService",
 	HandlerType: (*HousingServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "ListHousingCriteria",
+			Handler:    _HousingService_ListHousingCriteria_Handler,
+		},
+		{
+			MethodName: "SaveHousingCriterion",
+			Handler:    _HousingService_SaveHousingCriterion_Handler,
+		},
+		{
+			MethodName: "DeleteHousingCriterion",
+			Handler:    _HousingService_DeleteHousingCriterion_Handler,
+		},
+		{
+			MethodName: "ReorderHousingCriteria",
+			Handler:    _HousingService_ReorderHousingCriteria_Handler,
+		},
+		{
+			MethodName: "GetHousingEvaluation",
+			Handler:    _HousingService_GetHousingEvaluation_Handler,
+		},
+		{
+			MethodName: "SaveHousingAnswer",
+			Handler:    _HousingService_SaveHousingAnswer_Handler,
+		},
 		{
 			MethodName: "CreateHousingOption",
 			Handler:    _HousingService_CreateHousingOption_Handler,
