@@ -86,7 +86,11 @@ func (r HousingRepository) GetHousingOption(ctx context.Context, housingID domai
 	if err != nil {
 		return domain.HousingOption{}, normalizeError(err)
 	}
-	return option, nil
+	options := []domain.HousingOption{option}
+	if err := r.attachHousingEvaluations(ctx, options, option.FamilyID, viewerID); err != nil {
+		return domain.HousingOption{}, err
+	}
+	return options[0], nil
 }
 
 func (r HousingRepository) ListHousingOptions(ctx context.Context, familyID domain.ID, viewerID domain.ID) ([]domain.HousingOption, error) {
@@ -124,6 +128,10 @@ func (r HousingRepository) ListHousingOptions(ctx context.Context, familyID doma
 	}
 	if err := rows.Err(); err != nil {
 		return nil, normalizeError(err)
+	}
+	rows.Close()
+	if err := r.attachHousingEvaluations(ctx, options, familyID, viewerID); err != nil {
+		return nil, err
 	}
 	return options, nil
 }
