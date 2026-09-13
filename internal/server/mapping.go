@@ -194,6 +194,7 @@ func housingToProto(option domain.HousingOption) *ourneztv1.HousingOption {
 	}
 
 	protoOption := &ourneztv1.HousingOption{
+		Evaluation:                evaluationSummaryToProto(option.Evaluation),
 		Id:                        string(option.ID),
 		FamilyId:                  string(option.FamilyID),
 		Name:                      option.Name,

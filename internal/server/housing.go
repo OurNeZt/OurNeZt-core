@@ -13,9 +13,10 @@ import (
 
 type HousingServer struct {
 	ourneztv1.UnimplementedHousingServiceServer
-	housing repository.Housing
-	people  repository.People
-	auth    Authenticator
+	housing   repository.Housing
+	people    repository.People
+	auth      Authenticator
+	checklist repository.HousingChecklist
 }
 
 func NewHousingServer(housing repository.Housing, people repository.People, auth ...Authenticator) HousingServer {
@@ -24,10 +25,12 @@ func NewHousingServer(housing repository.Housing, people repository.People, auth
 		authenticator = auth[0]
 	}
 
+	checklist, _ := housing.(repository.HousingChecklist)
 	return HousingServer{
-		housing: housing,
-		people:  people,
-		auth:    authenticator,
+		checklist: checklist,
+		housing:   housing,
+		people:    people,
+		auth:      authenticator,
 	}
 }
 
