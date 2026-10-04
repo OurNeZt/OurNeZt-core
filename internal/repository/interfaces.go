@@ -33,6 +33,7 @@ type People interface {
 }
 
 type Housing interface {
+	UpdateHousingNotes(ctx context.Context, housingID domain.ID, notes string, actorID domain.ID) (string, error)
 	CreateHousingOption(ctx context.Context, option domain.HousingOption, actorID domain.ID) (domain.HousingOption, error)
 	GetHousingOption(ctx context.Context, housingID domain.ID, viewerID domain.ID) (domain.HousingOption, error)
 	ListHousingOptions(ctx context.Context, familyID domain.ID, viewerID domain.ID) ([]domain.HousingOption, error)

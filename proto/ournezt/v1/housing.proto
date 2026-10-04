@@ -15,6 +15,7 @@ service HousingService {
   rpc GetHousingOption(GetHousingOptionRequest) returns (HousingOption);
   rpc ListHousingOptions(ListHousingOptionsRequest) returns (ListHousingOptionsResponse);
   rpc UpdateHousingOption(HousingOption) returns (HousingOption);
+  rpc UpdateHousingNotes(UpdateHousingNotesRequest) returns (UpdateHousingNotesResponse);
   rpc DeleteHousingOption(DeleteHousingOptionRequest) returns (DeleteHousingOptionResponse);
   rpc CreateHousingGroup(HousingGroup) returns (HousingGroup);
   rpc ListHousingGroups(ListHousingGroupsRequest) returns (ListHousingGroupsResponse);
@@ -56,7 +57,17 @@ message HousingOption {
   optional string housing_group_id = 21;
   optional bool visible_on_dashboard = 22;
   HousingEvaluationSummary evaluation = 23;
+  // Shared plain-text notepad, at most 10000 Unicode characters. Accepted on
+  // creation; subsequent changes use UpdateHousingNotes. Detail edits preserve it.
+  string notes = 24;
 }
+
+message UpdateHousingNotesRequest {
+  string housing_id = 1;
+  // Empty clears the notes. Whitespace and line breaks are preserved.
+  string notes = 2;
+}
+message UpdateHousingNotesResponse { string notes = 1; }
 
 message HousingCriterion {
   string id = 1;
