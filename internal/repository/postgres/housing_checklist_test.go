@@ -93,6 +93,7 @@ func TestHousingChecklistPostgres(t *testing.T) {
 	if _, err = repo.SaveHousingAnswer(ctx, answer, owner); err != nil {
 		t.Fatal(err)
 	}
+	t.Run("housing notes", func(t *testing.T) { testHousingNotes(t, pool, housing, family, owner, viewer, outsider) })
 	for _, actor := range []domain.ID{viewer, outsider} {
 		if _, err = repo.SaveHousingAnswer(ctx, answer, actor); err == nil {
 			t.Fatal("unauthorized answer saved")
