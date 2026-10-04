@@ -105,6 +105,7 @@ type HousingOption struct {
 	DiaIncomeOverrides        []byte             `json:"dia_income_overrides"`
 	HousingGroupID            pgtype.UUID        `json:"housing_group_id"`
 	VisibleOnDashboard        bool               `json:"visible_on_dashboard"`
+	Notes                     string             `json:"notes"`
 }
 
 type PersonIncomeHistory struct {

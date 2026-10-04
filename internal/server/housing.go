@@ -35,6 +35,9 @@ func NewHousingServer(housing repository.Housing, people repository.People, auth
 }
 
 func (s HousingServer) CreateHousingOption(ctx context.Context, req *ourneztv1.HousingOption) (*ourneztv1.HousingOption, error) {
+	if err := domain.ValidateHousingNotes(req.GetNotes()); err != nil {
+		return nil, toStatusError(err)
+	}
 	option, err := housingFromProto(req)
 	if err != nil {
 		return nil, toStatusError(err)
