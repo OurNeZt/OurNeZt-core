@@ -1,0 +1,3 @@
+DROP TABLE housing_checklist_answers;
+DROP TABLE housing_checklist_criteria;
+ALTER TABLE housing_options DROP CONSTRAINT housing_options_id_family_key;
