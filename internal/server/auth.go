@@ -52,15 +52,13 @@ func (s AuthServer) CreateUser(ctx context.Context, req *ourneztv1.CreateUserReq
 		return nil, toStatusError(apperror.ErrInvalidArgument)
 	}
 
+	if _, err := authenticatedAdmin(ctx, s); err != nil {
+		return nil, toStatusError(err)
+	}
+
 	role := domain.UserRole(req.GetRole())
 	if role == "" {
 		role = domain.UserRoleUser
-	}
-
-	if role == domain.UserRoleAdmin {
-		if _, err := authenticatedAdmin(ctx, s); err != nil {
-			return nil, toStatusError(err)
-		}
 	}
 
 	user, err := s.auth.CreateUser(ctx, req.GetEmail(), req.GetDisplayName(), req.GetPassword(), role)
