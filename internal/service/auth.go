@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/OurNeZt/ournezt-core/internal/authlimit"
 	"github.com/OurNeZt/ournezt-core/internal/domain"
 	"github.com/OurNeZt/ournezt-core/internal/platform/apperror"
 	"github.com/OurNeZt/ournezt-core/internal/platform/security"
@@ -27,10 +28,28 @@ type UserRepository interface {
 type AuthService struct {
 	users        UserRepository
 	argon2Params security.Argon2Params
+	limits       *authlimit.Limiter
 }
 
-func NewAuthService(users UserRepository, argon2Params security.Argon2Params) AuthService {
-	return AuthService{users: users, argon2Params: argon2Params}
+func NewAuthService(users UserRepository, argon2Params security.Argon2Params, limits ...*authlimit.Limiter) AuthService {
+	var guard *authlimit.Limiter
+	if len(limits) > 0 && limits[0] != nil {
+		guard = limits[0]
+	}
+	if guard == nil {
+		guard = authlimit.New(authlimit.Config{})
+	}
+	return AuthService{users: users, argon2Params: argon2Params, limits: guard}
+}
+
+func (s AuthService) beginPasswordWork(ctx context.Context, account string) (func(), error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if retry := s.limits.AllowAccount(account); retry > 0 {
+		return nil, &authlimit.LimitError{RetryAfter: retry}
+	}
+	return s.limits.Acquire(ctx)
 }
 
 func (s AuthService) CreateUser(ctx context.Context, email, displayName, password string, role domain.UserRole) (domain.User, error) {
@@ -44,6 +63,12 @@ func (s AuthService) CreateUser(ctx context.Context, email, displayName, passwor
 	if role != domain.UserRoleUser && role != domain.UserRoleAdmin {
 		return domain.User{}, apperror.ErrInvalidArgument
 	}
+
+	release, err := s.beginPasswordWork(ctx, "create:"+email)
+	if err != nil {
+		return domain.User{}, err
+	}
+	defer release()
 
 	hash, err := security.HashPassword(password, s.argon2Params)
 	if err != nil {
@@ -64,7 +89,14 @@ func (s AuthService) ListUsers(ctx context.Context) ([]domain.User, error) {
 }
 
 func (s AuthService) Login(ctx context.Context, email, password string) (domain.User, error) {
-	user, err := s.users.GetUserByEmail(ctx, strings.ToLower(strings.TrimSpace(email)))
+	email = strings.ToLower(strings.TrimSpace(email))
+	release, err := s.beginPasswordWork(ctx, "login:"+email)
+	if err != nil {
+		return domain.User{}, err
+	}
+	defer release()
+
+	user, err := s.users.GetUserByEmail(ctx, email)
 	if err != nil {
 		return domain.User{}, err
 	}
@@ -87,6 +119,12 @@ func (s AuthService) ChangePassword(ctx context.Context, userID domain.ID, curre
 	if strings.TrimSpace(string(userID)) == "" || strings.TrimSpace(currentPassword) == "" || strings.TrimSpace(newPassword) == "" {
 		return apperror.ErrInvalidArgument
 	}
+
+	release, err := s.beginPasswordWork(ctx, "password:"+string(userID))
+	if err != nil {
+		return err
+	}
+	defer release()
 
 	user, err := s.users.GetUserByID(ctx, userID)
 	if err != nil {
@@ -206,6 +244,12 @@ func (s AuthService) EnsureBootstrapAdmin(ctx context.Context, email, displayNam
 	if hasAdmin {
 		return domain.User{}, false, nil
 	}
+
+	release, err := s.limits.Acquire(ctx)
+	if err != nil {
+		return domain.User{}, false, err
+	}
+	defer release()
 
 	hash, err := security.HashPassword(temporaryPassword, s.argon2Params)
 	if err != nil {
