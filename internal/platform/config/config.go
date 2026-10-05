@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/OurNeZt/ournezt-core/internal/authlimit"
 )
 
 type Config struct {
@@ -23,6 +25,7 @@ type Config struct {
 	PasswordMemoryKB          uint32
 	PasswordIterations        uint32
 	PasswordParallelism       uint8
+	AuthLimits                authlimit.Config
 }
 
 func Load() Config {
@@ -41,6 +44,12 @@ func Load() Config {
 		PasswordMemoryKB:          uint32(envInt("PASSWORD_MEMORY_KB", 64*1024)),
 		PasswordIterations:        uint32(envInt("PASSWORD_ITERATIONS", 3)),
 		PasswordParallelism:       uint8(envInt("PASSWORD_PARALLELISM", 2)),
+		AuthLimits: authlimit.Config{
+			IPLimit:       envInt("AUTH_IP_LIMIT", 120),
+			AccountLimit:  envInt("AUTH_ACCOUNT_LIMIT", 5),
+			Window:        envDuration("AUTH_RATE_WINDOW", time.Minute),
+			MaxConcurrent: envInt("AUTH_MAX_CONCURRENT", 2),
+		},
 	}
 }
 
