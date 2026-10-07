@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"strings"
 
 	"github.com/OurNeZt/ournezt-core/internal/domain"
@@ -27,6 +28,9 @@ func (s AuthServer) Authenticate(ctx context.Context) (domain.User, error) {
 
 	user, err := s.sessions.GetUserBySessionTokenHash(ctx, security.HashToken(token), s.now())
 	if err != nil {
+		if errors.Is(err, apperror.ErrNotFound) {
+			return domain.User{}, apperror.ErrUnauthenticated
+		}
 		return domain.User{}, err
 	}
 	if user.DisabledAt != nil {
