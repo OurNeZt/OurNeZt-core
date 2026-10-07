@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/OurNeZt/ournezt-core/internal/authlimit"
 	ourneztv1 "github.com/OurNeZt/ournezt-core/internal/gen/proto/ournezt/v1"
 	"github.com/OurNeZt/ournezt-core/internal/platform/config"
 	"github.com/OurNeZt/ournezt-core/internal/platform/database"
@@ -45,7 +46,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	grpcOptions := make([]grpc.ServerOption, 0, 1)
+	authLimits := authlimit.New(cfg.AuthLimits)
+	grpcOptions := []grpc.ServerOption{grpc.ChainUnaryInterceptor(server.AuthRateLimitInterceptor(authLimits, logger))}
 	grpcTLS := cfg.GRPCTLSCertFile != "" && cfg.GRPCTLSKeyFile != ""
 	if grpcTLS {
 		tlsCreds, tlsErr := credentials.NewServerTLSFromFile(cfg.GRPCTLSCertFile, cfg.GRPCTLSKeyFile)
@@ -72,7 +74,7 @@ func main() {
 		Parallelism: cfg.PasswordParallelism,
 		SaltLength:  16,
 		KeyLength:   32,
-	})
+	}, authLimits)
 
 	if (cfg.BootstrapAdminEmail == "") != (cfg.BootstrapAdminPassword == "") {
 		logger.Error("bootstrap admin config invalid", "reason", "set both BOOTSTRAP_ADMIN_EMAIL and BOOTSTRAP_ADMIN_PASSWORD together")
