@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/OurNeZt/ournezt-core/internal/domain"
@@ -51,15 +52,13 @@ func (s AuthServer) CreateUser(ctx context.Context, req *ourneztv1.CreateUserReq
 		return nil, toStatusError(apperror.ErrInvalidArgument)
 	}
 
+	if _, err := authenticatedAdmin(ctx, s); err != nil {
+		return nil, toStatusError(err)
+	}
+
 	role := domain.UserRole(req.GetRole())
 	if role == "" {
 		role = domain.UserRoleUser
-	}
-
-	if role == domain.UserRoleAdmin {
-		if _, err := authenticatedAdmin(ctx, s); err != nil {
-			return nil, toStatusError(err)
-		}
 	}
 
 	user, err := s.auth.CreateUser(ctx, req.GetEmail(), req.GetDisplayName(), req.GetPassword(), role)
@@ -76,6 +75,9 @@ func (s AuthServer) Login(ctx context.Context, req *ourneztv1.LoginRequest) (*ou
 
 	user, err := s.auth.Login(ctx, req.GetEmail(), req.GetPassword())
 	if err != nil {
+		if errors.Is(err, apperror.ErrNotFound) || errors.Is(err, apperror.ErrDisabledUser) || errors.Is(err, apperror.ErrUnauthenticated) {
+			return nil, toStatusError(apperror.ErrUnauthenticated)
+		}
 		return nil, toStatusError(err)
 	}
 

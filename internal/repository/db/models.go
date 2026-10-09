@@ -50,6 +50,28 @@ type FamilyMember struct {
 	JoinedAt pgtype.Timestamptz `json:"joined_at"`
 }
 
+type HousingChecklistAnswer struct {
+	HousingID   pgtype.UUID        `json:"housing_id"`
+	CriterionID pgtype.UUID        `json:"criterion_id"`
+	FamilyID    pgtype.UUID        `json:"family_id"`
+	State       string             `json:"state"`
+	Rating      pgtype.Int4        `json:"rating"`
+	Notes       string             `json:"notes"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+type HousingChecklistCriterium struct {
+	ID           pgtype.UUID        `json:"id"`
+	FamilyID     pgtype.UUID        `json:"family_id"`
+	Name         string             `json:"name"`
+	Description  string             `json:"description"`
+	DisplayOrder int32              `json:"display_order"`
+	Weight       pgtype.Float8      `json:"weight"`
+	DeletedAt    pgtype.Timestamptz `json:"deleted_at"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+}
+
 type HousingGroup struct {
 	ID        pgtype.UUID        `json:"id"`
 	FamilyID  pgtype.UUID        `json:"family_id"`
@@ -83,6 +105,7 @@ type HousingOption struct {
 	DiaIncomeOverrides        []byte             `json:"dia_income_overrides"`
 	HousingGroupID            pgtype.UUID        `json:"housing_group_id"`
 	VisibleOnDashboard        bool               `json:"visible_on_dashboard"`
+	Notes                     string             `json:"notes"`
 }
 
 type PersonIncomeHistory struct {

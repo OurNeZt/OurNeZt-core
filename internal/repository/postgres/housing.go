@@ -20,6 +20,9 @@ func NewHousingRepository(pool *pgxpool.Pool) HousingRepository {
 }
 
 func (r HousingRepository) CreateHousingOption(ctx context.Context, option domain.HousingOption, actorID domain.ID) (domain.HousingOption, error) {
+	if err := domain.ValidateHousingNotes(option.Notes); err != nil {
+		return domain.HousingOption{}, err
+	}
 	if strings.TrimSpace(string(option.FamilyID)) == "" || strings.TrimSpace(option.Name) == "" {
 		return domain.HousingOption{}, apperror.ErrInvalidArgument
 	}
@@ -42,25 +45,25 @@ func (r HousingRepository) CreateHousingOption(ctx context.Context, option domai
 			loan_type, loan_amount_cents, interest_rate_bps, loan_tenure_months, downpayment_percent_bps,
 			renovation_budget_cents, furniture_budget_cents, legal_fees_cents, buyer_stamp_duty_cents,
 			monthly_maintenance_cents, dia_income_overrides, expected_key_collection_date, housing_group_id,
-			visible_on_dashboard
+			visible_on_dashboard, notes
 		)
 		VALUES (
 			$1::uuid, $2, $3, $4, $5, $6, $7,
 			$8, $9, $10, $11, $12,
 			$13, $14, $15, $16,
-			$17, $18::jsonb, $19::date, NULLIF($20, '')::uuid, $21
+			$17, $18::jsonb, $19::date, NULLIF($20, '')::uuid, $21, $22
 		)
 		RETURNING
 			id::text, family_id::text, name, housing_type, location, unit_type, purchase_price_cents,
 			grant_amount_cents, loan_type, loan_amount_cents, interest_rate_bps, loan_tenure_months,
 			downpayment_percent_bps, renovation_budget_cents, furniture_budget_cents, legal_fees_cents,
 			buyer_stamp_duty_cents, monthly_maintenance_cents, dia_income_overrides, expected_key_collection_date::text,
-			COALESCE(housing_group_id::text, ''), visible_on_dashboard, created_at, updated_at
+			COALESCE(housing_group_id::text, ''), visible_on_dashboard, created_at, updated_at, notes
 	`, string(option.FamilyID), option.Name, string(option.Type), option.Location, option.UnitType, option.PurchasePriceCents,
 		option.GrantAmountCents, string(option.LoanType), option.LoanAmountCents, option.InterestRateBps, option.LoanTenureMonths,
 		option.DownpaymentPercentBps, option.RenovationBudgetCents, option.FurnitureBudgetCents, option.LegalFeesCents,
 		option.BuyerStampDutyCents, option.MonthlyMaintenanceCents, diaOverridesJSON, optionalDateString(option.ExpectedKeyCollectionDate),
-		string(option.GroupID), option.VisibleOnDashboard)
+		string(option.GroupID), option.VisibleOnDashboard, option.Notes)
 
 	created, err := scanHousingRow(row)
 	if err != nil {
@@ -76,7 +79,7 @@ func (r HousingRepository) GetHousingOption(ctx context.Context, housingID domai
 			h.grant_amount_cents, h.loan_type, h.loan_amount_cents, h.interest_rate_bps, h.loan_tenure_months,
 			h.downpayment_percent_bps, h.renovation_budget_cents, h.furniture_budget_cents, h.legal_fees_cents,
 			h.buyer_stamp_duty_cents, h.monthly_maintenance_cents, h.dia_income_overrides, h.expected_key_collection_date::text,
-			COALESCE(h.housing_group_id::text, ''), h.visible_on_dashboard, h.created_at, h.updated_at
+			COALESCE(h.housing_group_id::text, ''), h.visible_on_dashboard, h.created_at, h.updated_at, h.notes
 		FROM housing_options h
 		JOIN family_members fm ON fm.family_id = h.family_id
 		WHERE h.id = $1::uuid AND fm.user_id = $2::uuid
@@ -86,7 +89,11 @@ func (r HousingRepository) GetHousingOption(ctx context.Context, housingID domai
 	if err != nil {
 		return domain.HousingOption{}, normalizeError(err)
 	}
-	return option, nil
+	options := []domain.HousingOption{option}
+	if err := r.attachHousingEvaluations(ctx, options, option.FamilyID, viewerID); err != nil {
+		return domain.HousingOption{}, err
+	}
+	return options[0], nil
 }
 
 func (r HousingRepository) ListHousingOptions(ctx context.Context, familyID domain.ID, viewerID domain.ID) ([]domain.HousingOption, error) {
@@ -104,7 +111,7 @@ func (r HousingRepository) ListHousingOptions(ctx context.Context, familyID doma
 			grant_amount_cents, loan_type, loan_amount_cents, interest_rate_bps, loan_tenure_months,
 			downpayment_percent_bps, renovation_budget_cents, furniture_budget_cents, legal_fees_cents,
 			buyer_stamp_duty_cents, monthly_maintenance_cents, dia_income_overrides, expected_key_collection_date::text,
-			COALESCE(housing_group_id::text, ''), visible_on_dashboard, created_at, updated_at
+			COALESCE(housing_group_id::text, ''), visible_on_dashboard, created_at, updated_at, notes
 		FROM housing_options
 		WHERE family_id = $1::uuid
 		ORDER BY created_at DESC
@@ -124,6 +131,10 @@ func (r HousingRepository) ListHousingOptions(ctx context.Context, familyID doma
 	}
 	if err := rows.Err(); err != nil {
 		return nil, normalizeError(err)
+	}
+	rows.Close()
+	if err := r.attachHousingEvaluations(ctx, options, familyID, viewerID); err != nil {
+		return nil, err
 	}
 	return options, nil
 }
@@ -178,7 +189,7 @@ func (r HousingRepository) UpdateHousingOption(ctx context.Context, option domai
 			h.grant_amount_cents, h.loan_type, h.loan_amount_cents, h.interest_rate_bps, h.loan_tenure_months,
 			h.downpayment_percent_bps, h.renovation_budget_cents, h.furniture_budget_cents, h.legal_fees_cents,
 			h.buyer_stamp_duty_cents, h.monthly_maintenance_cents, h.dia_income_overrides, h.expected_key_collection_date::text,
-			COALESCE(h.housing_group_id::text, ''), h.visible_on_dashboard, h.created_at, h.updated_at
+			COALESCE(h.housing_group_id::text, ''), h.visible_on_dashboard, h.created_at, h.updated_at, h.notes
 	`, string(option.ID), option.Name, string(option.Type), option.Location, option.UnitType, option.PurchasePriceCents,
 		option.GrantAmountCents, string(option.LoanType), option.LoanAmountCents, option.InterestRateBps,
 		option.LoanTenureMonths, option.DownpaymentPercentBps, option.RenovationBudgetCents, option.FurnitureBudgetCents,
@@ -340,7 +351,7 @@ func (r HousingRepository) AssignHousingOptionGroup(ctx context.Context, housing
 			h.grant_amount_cents, h.loan_type, h.loan_amount_cents, h.interest_rate_bps, h.loan_tenure_months,
 			h.downpayment_percent_bps, h.renovation_budget_cents, h.furniture_budget_cents, h.legal_fees_cents,
 			h.buyer_stamp_duty_cents, h.monthly_maintenance_cents, h.dia_income_overrides, h.expected_key_collection_date::text,
-			COALESCE(h.housing_group_id::text, ''), h.visible_on_dashboard, h.created_at, h.updated_at
+			COALESCE(h.housing_group_id::text, ''), h.visible_on_dashboard, h.created_at, h.updated_at, h.notes
 	`, string(housingID), groupIDText, string(actorID), groupFamilyID)
 
 	updated, err := scanHousingRow(row)
@@ -366,7 +377,7 @@ func (r HousingRepository) UpdateHousingOptionVisibility(ctx context.Context, ho
 			h.grant_amount_cents, h.loan_type, h.loan_amount_cents, h.interest_rate_bps, h.loan_tenure_months,
 			h.downpayment_percent_bps, h.renovation_budget_cents, h.furniture_budget_cents, h.legal_fees_cents,
 			h.buyer_stamp_duty_cents, h.monthly_maintenance_cents, h.dia_income_overrides, h.expected_key_collection_date::text,
-			COALESCE(h.housing_group_id::text, ''), h.visible_on_dashboard, h.created_at, h.updated_at
+			COALESCE(h.housing_group_id::text, ''), h.visible_on_dashboard, h.created_at, h.updated_at, h.notes
 	`, string(housingID), visible, string(actorID))
 
 	updated, err := scanHousingRow(row)
@@ -396,7 +407,7 @@ func (r HousingRepository) BulkUpdateHousingGroupVisibility(ctx context.Context,
 			grant_amount_cents, loan_type, loan_amount_cents, interest_rate_bps, loan_tenure_months,
 			downpayment_percent_bps, renovation_budget_cents, furniture_budget_cents, legal_fees_cents,
 			buyer_stamp_duty_cents, monthly_maintenance_cents, dia_income_overrides, expected_key_collection_date::text,
-			COALESCE(housing_group_id::text, ''), visible_on_dashboard, created_at, updated_at
+			COALESCE(housing_group_id::text, ''), visible_on_dashboard, created_at, updated_at, notes
 	`, string(groupID), visible)
 	if err != nil {
 		return nil, normalizeError(err)
@@ -458,6 +469,7 @@ func scanHousingRow(scanner interface{ Scan(dest ...any) error }) (domain.Housin
 		&visibleOnDashboard,
 		&option.CreatedAt,
 		&option.UpdatedAt,
+		&option.Notes,
 	)
 	if err != nil {
 		return domain.HousingOption{}, err

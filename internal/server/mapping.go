@@ -156,6 +156,7 @@ func housingFromProto(in *ourneztv1.HousingOption) (domain.HousingOption, error)
 	}
 
 	return domain.HousingOption{
+		Notes:                     in.GetNotes(),
 		ID:                        domain.ID(strings.TrimSpace(in.GetId())),
 		FamilyID:                  domain.ID(strings.TrimSpace(in.GetFamilyId())),
 		GroupID:                   domain.ID(strings.TrimSpace(in.GetHousingGroupId())),
@@ -194,6 +195,8 @@ func housingToProto(option domain.HousingOption) *ourneztv1.HousingOption {
 	}
 
 	protoOption := &ourneztv1.HousingOption{
+		Notes:                     option.Notes,
+		Evaluation:                evaluationSummaryToProto(option.Evaluation),
 		Id:                        string(option.ID),
 		FamilyId:                  string(option.FamilyID),
 		Name:                      option.Name,
