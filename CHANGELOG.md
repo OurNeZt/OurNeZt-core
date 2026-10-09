@@ -9,16 +9,37 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [v1.6.0] - 2026-10-09
 
 ### Added
-- (fill)
+
+- Family-level housing checklists with reusable criteria, display ordering, optional weights, and criterion retirement.
+- Per-housing checklist answers with completion states, ratings, and criterion-specific notes.
+- Weighted housing evaluation scores and completion summaries in housing API responses.
+- Authenticated gRPC APIs for checklist management and housing evaluations with family authorization checks.
+- Shared plain-text housing notes with a 10,000-character limit and a dedicated update API.
+- Database migrations `000006_housing_checklist` and `000007_housing_notes`.
+- Configurable authentication limits by account and transport peer IP.
+- Shared concurrency limits for password verification and hashing.
+- Retry-delay information in throttled gRPC responses.
+- Regression tests for checklist scoring, housing notes, authentication throttling, and user-creation authorization.
+- PostgreSQL integration test coverage in CI.
 
 ### Changed
-- (fill)
+
+- Housing API contracts and generated bindings now include checklist evaluations and shared notes.
+- All `CreateUser` requests now require an authenticated, active admin session.
+- Authentication requests are throttled before expensive password work.
+- Authentication failures now use generic credential responses without exposing account status.
+- Authentication limits recover automatically as rate windows expire and active password operations finish.
 
 ### Fixed
-- (fill)
+
+- Prevented unauthenticated and non-admin callers from creating ordinary users directly through Core.
+- Prevented rejected user-creation requests from reaching password hashing or consuming the account creation budget.
+- Preserved shared housing notes when housing details, group assignments, or visibility settings are updated.
+- Corrected missing-session handling to return `Unauthenticated`.
 
 ### Removed
-- (fill)
+
+- No removals in this release.
 
 ## [v1.5.0] - 2026-08-04
 
