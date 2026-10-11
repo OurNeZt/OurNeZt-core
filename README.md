@@ -59,6 +59,7 @@
         <li><a href="#configuration">Configuration</a></li>
       </ul>
     </li>
+    <li><a href="#session-revocation">Session Revocation</a></li>
     <li><a href="#running-the-service">Running The Service</a></li>
     <li><a href="#testing">Testing</a></li>
     <li><a href="#docker">Docker</a></li>
@@ -88,6 +89,7 @@ OurNeZt Core currently provides backend support for:
 
 - User registration, login, session validation, and user disabling.
 - Session-token based authentication using gRPC metadata.
+- Current-session revocation on logout and all-session revocation after password changes.
 - Family and household creation, membership, invite codes, and role-based access control.
 - Person profile management for household members.
 - Income, CPF, cash savings, expense, and household surplus calculations.
@@ -207,6 +209,21 @@ Behaviour:
 
 ---
 
+## Session Revocation
+
+Sessions use opaque tokens; Core stores their hashes and checks expiry and `revoked_at` on validation and authenticated RPCs.
+
+- `RevokeCurrentSession` revokes only the token presented through `x-session-token` or Bearer metadata. Its request has no user ID or target token field. Unknown, expired, and already-revoked tokens are safe to revoke repeatedly; missing session metadata is rejected.
+- A successful `ChangePassword` atomically updates the password, clears the first-login password-change flag, and revokes every session for that user, including the current one. Clients must require a fresh login. Failed password checks or failed database operations leave credentials and sessions intact.
+- Session creation locks the user row and compares the password hash verified during login. A login that verified old credentials cannot create a surviving session after a password change. Password updates also compare the verified hash to prevent stale concurrent updates.
+- Bootstrap credential replacement revokes existing sessions in the same transaction.
+
+No new database migration is required: the existing session revocation column is used. Deploy the updated Core before the matching Web release. Web retains its cookie and offers retry when logout revocation cannot be confirmed, including when an older Core lacks the new RPC.
+
+This follows the [OWASP session management guidance](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html) on server-side logout invalidation and reauthentication after password changes.
+
+---
+
 ## Running The Service
 
 Run locally:
@@ -246,6 +263,23 @@ Run tests with coverage:
 ```bash
 go test -v -cover ./...
 ```
+
+### Session Revocation Tests
+
+Run the token-reuse and gRPC lifecycle regressions without a database:
+
+```bash
+go test ./internal/server ./internal/service -run 'TestSession|TestChangePassword' -count=1 -v
+```
+
+For the PostgreSQL transaction and concurrency checks, set `TEST_DATABASE_URL` to a disposable test database:
+
+```bash
+export TEST_DATABASE_URL='postgres://postgres:test-password@localhost:55432/ournezt_test?sslmode=disable'
+go test ./internal/repository/postgres -run TestSessionRevocationPostgres -count=1 -v
+```
+
+Each test creates an isolated schema, applies the migrations, and removes that schema afterward. The checks cover token scope and expiry, rollback when revocation fails, stale credential rejection, and both orderings of concurrent login/password changes. Without `TEST_DATABASE_URL`, database tests are skipped. The existing CI PostgreSQL service runs them automatically with `go test ./...`.
 
 Generate an HTML coverage report:
 
@@ -336,6 +370,7 @@ ghcr.io/OurNeZt/ournezt-core:latest
 - [x] gRPC service definitions
 - [x] PostgreSQL repository layer
 - [x] Authentication and session handling
+- [x] Logout and password-change session revocation
 - [x] Family and household management
 - [x] Person profile management
 - [x] Finance and CPF calculation logic
