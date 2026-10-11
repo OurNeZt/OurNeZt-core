@@ -98,7 +98,14 @@ func (r *fakeUserRepository) PromoteToBootstrapAdmin(_ context.Context, userID d
 	return domain.User{}, apperror.ErrNotFound
 }
 
-func (r *fakeUserRepository) UpdateUserPassword(_ context.Context, userID domain.ID, passwordHash string, mustChangePassword bool) error {
+func (r *fakeUserRepository) UpdateUserPassword(_ context.Context, userID domain.ID, expectedPasswordHash, passwordHash string, mustChangePassword bool) error {
+	user, err := r.GetUserByID(context.Background(), userID)
+	if err != nil {
+		return err
+	}
+	if user.PasswordHash != expectedPasswordHash {
+		return apperror.ErrUnauthenticated
+	}
 	r.passwordUpdates = append(r.passwordUpdates, struct {
 		userID     domain.ID
 		hash       string

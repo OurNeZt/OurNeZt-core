@@ -19,7 +19,9 @@ type UserRepository interface {
 	GetUserByEmail(ctx context.Context, email string) (domain.User, error)
 	UpdateUserAccount(ctx context.Context, userID domain.ID, email string, displayName string) (domain.User, error)
 	PromoteToBootstrapAdmin(ctx context.Context, userID domain.ID, displayName string, passwordHash string) (domain.User, error)
-	UpdateUserPassword(ctx context.Context, userID domain.ID, passwordHash string, mustChangePassword bool) error
+	// UpdateUserPassword compares the verified hash and atomically revokes all
+	// sessions with the password update. Failed updates must leave both intact.
+	UpdateUserPassword(ctx context.Context, userID domain.ID, expectedPasswordHash, passwordHash string, mustChangePassword bool) error
 	DisableUser(ctx context.Context, userID domain.ID) error
 	CreateAdminAccessKey(ctx context.Context, userID domain.ID, tokenHash string, expiresAt time.Time) error
 	ConsumeAdminAccessKey(ctx context.Context, userID domain.ID, tokenHash string, now time.Time) (bool, error)
@@ -147,7 +149,7 @@ func (s AuthService) ChangePassword(ctx context.Context, userID domain.ID, curre
 		return err
 	}
 
-	return s.users.UpdateUserPassword(ctx, userID, newHash, false)
+	return s.users.UpdateUserPassword(ctx, userID, user.PasswordHash, newHash, false)
 }
 
 func (s AuthService) UpdateMyAccount(ctx context.Context, userID domain.ID, email, displayName string) (domain.User, error) {

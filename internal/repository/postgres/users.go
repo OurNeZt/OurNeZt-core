@@ -102,7 +102,12 @@ func (r UserRepository) HasActiveAdmin(ctx context.Context) (bool, error) {
 }
 
 func (r UserRepository) PromoteToBootstrapAdmin(ctx context.Context, userID domain.ID, displayName string, passwordHash string) (domain.User, error) {
-	row := r.pool.QueryRow(ctx, `
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return domain.User{}, normalizeError(err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	row := tx.QueryRow(ctx, `
 		UPDATE users
 		SET
 			role = 'admin',
@@ -117,6 +122,12 @@ func (r UserRepository) PromoteToBootstrapAdmin(ctx context.Context, userID doma
 
 	user, err := scanUserRow(row)
 	if err != nil {
+		return domain.User{}, normalizeError(err)
+	}
+	if _, err = tx.Exec(ctx, "UPDATE sessions SET revoked_at = now() WHERE user_id = $1::uuid AND revoked_at IS NULL", string(userID)); err != nil {
+		return domain.User{}, normalizeError(err)
+	}
+	if err = tx.Commit(ctx); err != nil {
 		return domain.User{}, normalizeError(err)
 	}
 	return user, nil
@@ -137,27 +148,51 @@ func (r UserRepository) DisableUser(ctx context.Context, userID domain.ID) error
 	return nil
 }
 
-func (r UserRepository) CreateSession(ctx context.Context, userID domain.ID, tokenHash string, expiresAt time.Time) error {
-	_, err := r.pool.Exec(ctx, `
-		INSERT INTO sessions (user_id, token_hash, expires_at)
-		VALUES ($1::uuid, $2, $3)
-	`, string(userID), tokenHash, expiresAt)
-	return normalizeError(err)
+// CreateSession locks the user while confirming the password hash used by Login.
+// A login verified before a password change cannot mint a surviving session later.
+func (r UserRepository) CreateSession(ctx context.Context, userID domain.ID, verifiedPasswordHash, tokenHash string, expiresAt time.Time) error {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return normalizeError(err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	var currentHash string
+	var disabledAt sql.NullTime
+	err = tx.QueryRow(ctx, "SELECT password_hash, disabled_at FROM users WHERE id = $1::uuid FOR UPDATE", string(userID)).Scan(&currentHash, &disabledAt)
+	if err != nil {
+		return normalizeError(err)
+	}
+	if currentHash != verifiedPasswordHash || disabledAt.Valid {
+		return apperror.ErrUnauthenticated
+	}
+	if _, err = tx.Exec(ctx, "INSERT INTO sessions (user_id, token_hash, expires_at) VALUES ($1::uuid, $2, $3)", string(userID), tokenHash, expiresAt); err != nil {
+		return normalizeError(err)
+	}
+	return normalizeError(tx.Commit(ctx))
 }
 
-func (r UserRepository) UpdateUserPassword(ctx context.Context, userID domain.ID, passwordHash string, mustChangePassword bool) error {
-	commandTag, err := r.pool.Exec(ctx, `
-		UPDATE users
-		SET password_hash = $2, must_change_password = $3, updated_at = now()
-		WHERE id = $1::uuid
-	`, string(userID), passwordHash, mustChangePassword)
+// UpdateUserPassword updates credentials and revokes sessions in one transaction.
+// The compare prevents two changes verified against the same old hash succeeding.
+func (r UserRepository) UpdateUserPassword(ctx context.Context, userID domain.ID, expectedPasswordHash, passwordHash string, mustChangePassword bool) error {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return normalizeError(err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	commandTag, err := tx.Exec(ctx, `
+  UPDATE users SET password_hash = $3, must_change_password = $4, updated_at = now()
+  WHERE id = $1::uuid AND password_hash = $2 AND disabled_at IS NULL
+ `, string(userID), expectedPasswordHash, passwordHash, mustChangePassword)
 	if err != nil {
 		return normalizeError(err)
 	}
 	if commandTag.RowsAffected() == 0 {
-		return apperror.ErrNotFound
+		return apperror.ErrUnauthenticated
 	}
-	return nil
+	if _, err = tx.Exec(ctx, "UPDATE sessions SET revoked_at = now() WHERE user_id = $1::uuid AND revoked_at IS NULL", string(userID)); err != nil {
+		return normalizeError(err)
+	}
+	return normalizeError(tx.Commit(ctx))
 }
 
 func (r UserRepository) UpdateUserAccount(ctx context.Context, userID domain.ID, email string, displayName string) (domain.User, error) {
@@ -218,6 +253,11 @@ func (r UserRepository) GetUserBySessionTokenHash(ctx context.Context, tokenHash
 		return domain.User{}, normalizeError(err)
 	}
 	return user, nil
+}
+
+func (r UserRepository) RevokeSessionByTokenHash(ctx context.Context, tokenHash string) error {
+	_, err := r.pool.Exec(ctx, "UPDATE sessions SET revoked_at = now() WHERE token_hash = $1 AND revoked_at IS NULL", tokenHash)
+	return normalizeError(err)
 }
 
 func (r UserRepository) RevokeSessionsByUserID(ctx context.Context, userID domain.ID) error {
