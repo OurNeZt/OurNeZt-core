@@ -28,9 +28,11 @@ type UserRepository interface {
 }
 
 type AuthService struct {
-	users        UserRepository
-	argon2Params security.Argon2Params
-	limits       *authlimit.Limiter
+	users             UserRepository
+	argon2Params      security.Argon2Params
+	limits            *authlimit.Limiter
+	dummyPasswordHash string
+	verifyPassword    func(string, string) (bool, error)
 }
 
 func NewAuthService(users UserRepository, argon2Params security.Argon2Params, limits ...*authlimit.Limiter) AuthService {
@@ -41,7 +43,11 @@ func NewAuthService(users UserRepository, argon2Params security.Argon2Params, li
 	if guard == nil {
 		guard = authlimit.New(authlimit.Config{})
 	}
-	return AuthService{users: users, argon2Params: argon2Params, limits: guard}
+	return AuthService{
+		users: users, argon2Params: argon2Params, limits: guard,
+		dummyPasswordHash: security.DummyPasswordHash(argon2Params),
+		verifyPassword:    security.VerifyPassword,
+	}
 }
 
 func (s AuthService) beginPasswordWork(ctx context.Context, account string) (func(), error) {
@@ -98,19 +104,20 @@ func (s AuthService) Login(ctx context.Context, email, password string) (domain.
 	}
 	defer release()
 
-	user, err := s.users.GetUserByEmail(ctx, email)
-	if err != nil {
-		return domain.User{}, err
-	}
-	if user.DisabledAt != nil {
-		return domain.User{}, apperror.ErrDisabledUser
+	user, lookupErr := s.users.GetUserByEmail(ctx, email)
+	hash := user.PasswordHash
+	if lookupErr != nil {
+		hash = s.dummyPasswordHash
 	}
 
-	ok, err := security.VerifyPassword(password, user.PasswordHash)
-	if err != nil {
-		return domain.User{}, err
+	// Unknown accounts and lookup failures do the same bounded password work as
+	// known accounts. Disabled accounts are verified before rejecting them.
+	ok, verifyErr := s.verifyPassword(password, hash)
+	if verifyErr != nil && lookupErr == nil {
+		// A malformed stored hash fails before the KDF; do dummy work as well.
+		_, _ = s.verifyPassword(password, s.dummyPasswordHash)
 	}
-	if !ok {
+	if lookupErr != nil || verifyErr != nil || !ok || user.DisabledAt != nil {
 		return domain.User{}, apperror.ErrUnauthenticated
 	}
 

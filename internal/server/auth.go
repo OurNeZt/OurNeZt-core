@@ -76,20 +76,17 @@ func (s AuthServer) Login(ctx context.Context, req *ourneztv1.LoginRequest) (*ou
 
 	user, err := s.auth.Login(ctx, req.GetEmail(), req.GetPassword())
 	if err != nil {
-		if errors.Is(err, apperror.ErrNotFound) || errors.Is(err, apperror.ErrDisabledUser) || errors.Is(err, apperror.ErrUnauthenticated) {
-			return nil, toStatusError(apperror.ErrUnauthenticated)
-		}
-		return nil, toStatusError(err)
+		return nil, toLoginStatusError(err)
 	}
 
 	token, err := security.NewSessionToken(s.tokenBytes)
 	if err != nil {
-		return nil, toStatusError(err)
+		return nil, toLoginStatusError(err)
 	}
 	tokenHash := security.HashToken(token)
 
 	if err := s.sessions.CreateSession(ctx, user.ID, user.PasswordHash, tokenHash, s.now().Add(s.sessionTTL)); err != nil {
-		return nil, toStatusError(err)
+		return nil, toLoginStatusError(err)
 	}
 
 	return &ourneztv1.LoginResponse{

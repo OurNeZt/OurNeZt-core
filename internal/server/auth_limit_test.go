@@ -71,7 +71,7 @@ func TestLoginReturnsGenericCredentialFailures(t *testing.T) {
 	srv := NewAuthServer(service.NewAuthService(repo, security.DefaultArgon2Params()), &fakeAuthSessionStore{}, 32, time.Hour, nil)
 	for _, email := range []string{"missing@example.com", "disabled@example.com", "active@example.com"} {
 		_, err := srv.Login(context.Background(), &pb.LoginRequest{Email: email, Password: "wrong"})
-		if status.Code(err) != codes.Unauthenticated || status.Convert(err).Message() != "unauthenticated" {
+		if status.Code(err) != codes.Unauthenticated || status.Convert(err).Message() != "Invalid email or password." {
 			t.Fatalf("credential details leaked for %s: %v", email, err)
 		}
 	}

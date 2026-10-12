@@ -12,6 +12,18 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 )
 
+// Login failures must not reveal account state, including failures while
+// creating a session. Traffic limits and request cancellation remain distinct.
+func toLoginStatusError(err error) error {
+	if err == nil {
+		return nil
+	}
+	if errors.Is(err, authlimit.ErrLimited) || errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return toStatusError(err)
+	}
+	return status.Error(codes.Unauthenticated, "Invalid email or password.")
+}
+
 func toStatusError(err error) error {
 	if err == nil {
 		return nil
