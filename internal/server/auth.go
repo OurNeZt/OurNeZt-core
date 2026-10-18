@@ -13,9 +13,10 @@ import (
 )
 
 type AuthSessionStore interface {
-	CreateSession(ctx context.Context, userID domain.ID, tokenHash string, expiresAt time.Time) error
+	CreateSession(ctx context.Context, userID domain.ID, verifiedPasswordHash, tokenHash string, expiresAt time.Time) error
 	GetUserBySessionTokenHash(ctx context.Context, tokenHash string, now time.Time) (domain.User, error)
 	RevokeSessionsByUserID(ctx context.Context, userID domain.ID) error
+	RevokeSessionByTokenHash(ctx context.Context, tokenHash string) error
 }
 
 type AuthServer struct {
@@ -87,7 +88,7 @@ func (s AuthServer) Login(ctx context.Context, req *ourneztv1.LoginRequest) (*ou
 	}
 	tokenHash := security.HashToken(token)
 
-	if err := s.sessions.CreateSession(ctx, user.ID, tokenHash, s.now().Add(s.sessionTTL)); err != nil {
+	if err := s.sessions.CreateSession(ctx, user.ID, user.PasswordHash, tokenHash, s.now().Add(s.sessionTTL)); err != nil {
 		return nil, toStatusError(err)
 	}
 
@@ -104,6 +105,9 @@ func (s AuthServer) ValidateSession(ctx context.Context, req *ourneztv1.Validate
 
 	user, err := s.sessions.GetUserBySessionTokenHash(ctx, security.HashToken(req.GetSessionToken()), s.now())
 	if err != nil {
+		if errors.Is(err, apperror.ErrNotFound) {
+			err = apperror.ErrUnauthenticated
+		}
 		return nil, toStatusError(err)
 	}
 	if user.DisabledAt != nil {
@@ -111,6 +115,22 @@ func (s AuthServer) ValidateSession(ctx context.Context, req *ourneztv1.Validate
 	}
 
 	return &ourneztv1.ValidateSessionResponse{User: userToProto(user)}, nil
+}
+
+// RevokeCurrentSession uses only the presented token, never a caller-supplied
+// user ID. Revoking an unknown, expired, or already-revoked token is idempotent.
+func (s AuthServer) RevokeCurrentSession(ctx context.Context, req *ourneztv1.RevokeCurrentSessionRequest) (*ourneztv1.RevokeCurrentSessionResponse, error) {
+	if req == nil {
+		return nil, toStatusError(apperror.ErrInvalidArgument)
+	}
+	token := sessionTokenFromContext(ctx)
+	if token == "" {
+		return nil, toStatusError(apperror.ErrUnauthenticated)
+	}
+	if err := s.sessions.RevokeSessionByTokenHash(ctx, security.HashToken(token)); err != nil {
+		return nil, toStatusError(err)
+	}
+	return &ourneztv1.RevokeCurrentSessionResponse{}, nil
 }
 
 func (s AuthServer) ChangePassword(ctx context.Context, req *ourneztv1.ChangePasswordRequest) (*ourneztv1.ChangePasswordResponse, error) {
