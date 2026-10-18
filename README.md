@@ -315,6 +315,31 @@ Each test creates an isolated schema, applies the migrations, and removes that s
 
 ### Family Invite Revocation Tests
 
+For a readable reviewer report, run this from the Core repository root with `TEST_DATABASE_URL` configured:
+
+```bash
+go run ./cmd/family-invite-check
+```
+
+The command runs the actual PostgreSQL regression tests and prints one plain-language result per scenario, such as `PASS: Failed replacements leave the previous invite usable.` It verifies all eight required scenarios completed and exits nonzero for any failure, skipped check, missing result, timeout, or test-process error. Raw test output is hidden; the command gives the focused `go test` command when technical details are needed.
+
+It does not need a running Core server, account credentials, or an existing family. Tests use temporary schemas and clean them up afterward. No existing families are changed. This verifies the checked-out code against PostgreSQL; it does not probe an already-deployed Core server.
+
+For a self-contained local review with Docker and PowerShell:
+
+```powershell
+docker run --detach --rm --name ournezt-invite-review -e POSTGRES_PASSWORD=invite-review-test -e POSTGRES_DB=ournezt_test -p 127.0.0.1:15455:5432 postgres:17-bookworm
+# Wait until this reports that PostgreSQL is accepting connections:
+docker exec ournezt-invite-review pg_isready -U postgres
+$env:TEST_DATABASE_URL = 'postgres://postgres:invite-review-test@127.0.0.1:15455/ournezt_test?sslmode=disable'
+go run ./cmd/family-invite-check
+docker stop ournezt-invite-review
+```
+
+Port 15455 must be available. For an existing disposable test database, set `TEST_DATABASE_URL` directly and omit the Docker commands. The report command refuses to run without a database URL, so skipped integration tests cannot look like a successful review. Use `-timeout 5m` if the default two-minute test budget is insufficient.
+
+For detailed developer output, run the focused tests directly:
+
 Set `TEST_DATABASE_URL` to a disposable PostgreSQL database. Each test creates an isolated schema, applies the migrations, and removes that schema afterward. The existing CI PostgreSQL service runs these tests automatically.
 
 ```bash
