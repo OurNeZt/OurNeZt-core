@@ -59,6 +59,7 @@
         <li><a href="#configuration">Configuration</a></li>
       </ul>
     </li>
+    <li><a href="#login-response-protections">Login Response Protections</a></li>
     <li><a href="#session-revocation">Session Revocation</a></li>
     <li><a href="#running-the-service">Running The Service</a></li>
     <li><a href="#testing">Testing</a></li>
@@ -206,6 +207,24 @@ Behaviour:
 - If no active admin exists, startup creates (or promotes) this account to admin.
 - The bootstrap admin is forced to change password on first login.
 - If any active admin already exists, bootstrap is skipped.
+
+---
+
+## Login Response Protections
+
+Login rejects unknown emails, wrong passwords, disabled accounts, account lookup failures, and malformed stored password hashes with the same gRPC `Unauthenticated` response: `Invalid email or password.` Failed session creation also uses this generic response. Request cancellation, deadlines, and authentication traffic limits remain distinct.
+
+Unknown accounts and lookup failures perform dummy Argon2id verification using the configured password cost. Disabled accounts undergo password verification before rejection, and malformed stored hashes trigger dummy verification. All this work runs within the existing account rate and password concurrency limits. This reduces timing differences; it does not guarantee identical latency, especially if stored hashes use different Argon2 settings.
+
+Run the account enumeration regression checks without a database:
+
+```bash
+go test ./internal/platform/security ./internal/service ./internal/server -run 'TestDummyPasswordHash|TestVerifyPasswordRejectsInvalidStoredParameters|TestLogin' -count=1 -v
+```
+
+The checks cover identical gRPC codes, messages, and empty error details; failed logins creating no session; configured dummy verification cost; verification for disabled users and lookup failures; and rate/concurrency limits during dummy work. `TestLoginGRPCFailureResponses` starts the real Auth server and service on an in-memory gRPC transport, checks the client-visible responses for unknown emails, wrong passwords, disabled users with both correct and wrong passwords, lookup failures, and malformed hashes, then verifies a successful login still creates a session. No running Core instance or PostgreSQL is needed. The service tests inspect the verification work rather than asserting noisy timing thresholds.
+
+For a running Web + Core deployment, use Web's `cmd/login-enumeration-check` with existing active and disabled test fixture emails. Its README includes the reviewer command and expected results.
 
 ---
 

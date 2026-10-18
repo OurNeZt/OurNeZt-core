@@ -299,8 +299,8 @@ func TestLoginRejectsDisabledUser(t *testing.T) {
 	service := NewAuthService(repo, fastServiceArgon2Params())
 
 	_, err := service.Login(context.Background(), "person@example.com", "temporary-pass")
-	if !errors.Is(err, apperror.ErrDisabledUser) {
-		t.Fatalf("Login error = %v, want ErrDisabledUser", err)
+	if !errors.Is(err, apperror.ErrUnauthenticated) {
+		t.Fatalf("Login error = %v, want ErrUnauthenticated", err)
 	}
 }
 
