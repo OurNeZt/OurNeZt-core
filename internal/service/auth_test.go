@@ -155,7 +155,7 @@ func TestCreateUserNormalizesEmailAndHashesPassword(t *testing.T) {
 	repo := &fakeUserRepository{}
 	service := NewAuthService(repo, fastServiceArgon2Params())
 
-	got, err := service.CreateUser(context.Background(), " PERSON@Example.COM ", " Alex ", "temporary-pass", "")
+	got, err := service.CreateUser(context.Background(), " PERSON@Example.COM ", " Alex ", "temporary-passphrase", "")
 	if err != nil {
 		t.Fatalf("CreateUser returned error: %v", err)
 	}
@@ -172,11 +172,11 @@ func TestCreateUserNormalizesEmailAndHashesPassword(t *testing.T) {
 	if got.MustChangePassword {
 		t.Fatal("MustChangePassword = true, want false for normal users")
 	}
-	if got.PasswordHash == "temporary-pass" {
+	if got.PasswordHash == "temporary-passphrase" {
 		t.Fatal("PasswordHash contains the raw password")
 	}
 
-	ok, err := security.VerifyPassword("temporary-pass", repo.created.PasswordHash)
+	ok, err := security.VerifyPassword("temporary-passphrase", repo.created.PasswordHash)
 	if err != nil {
 		t.Fatalf("VerifyPassword returned error: %v", err)
 	}
@@ -189,7 +189,7 @@ func TestCreateAdminUserRequiresPasswordChange(t *testing.T) {
 	repo := &fakeUserRepository{}
 	service := NewAuthService(repo, fastServiceArgon2Params())
 
-	got, err := service.CreateUser(context.Background(), "admin@example.com", "Admin", "temporary-pass", domain.UserRoleAdmin)
+	got, err := service.CreateUser(context.Background(), "admin@example.com", "Admin", "temporary-passphrase", domain.UserRoleAdmin)
 	if err != nil {
 		t.Fatalf("CreateUser returned error: %v", err)
 	}
@@ -201,7 +201,7 @@ func TestCreateAdminUserRequiresPasswordChange(t *testing.T) {
 func TestCreateUserRejectsMissingEmailOrPassword(t *testing.T) {
 	service := NewAuthService(&fakeUserRepository{}, fastServiceArgon2Params())
 
-	_, err := service.CreateUser(context.Background(), "", "Alex", "temporary-pass", domain.UserRoleUser)
+	_, err := service.CreateUser(context.Background(), "", "Alex", "temporary-passphrase", domain.UserRoleUser)
 	if !errors.Is(err, apperror.ErrInvalidArgument) {
 		t.Fatalf("missing email error = %v, want ErrInvalidArgument", err)
 	}
@@ -343,7 +343,7 @@ func TestChangePasswordUpdatesHashAndClearsFlag(t *testing.T) {
 	}
 	service := NewAuthService(repo, fastServiceArgon2Params())
 
-	err = service.ChangePassword(context.Background(), "admin_1", "temporary-pass", "safer-pass")
+	err = service.ChangePassword(context.Background(), "admin_1", "temporary-pass", "safer-passphrase-for-tests")
 	if err != nil {
 		t.Fatalf("ChangePassword returned error: %v", err)
 	}
@@ -353,7 +353,7 @@ func TestChangePasswordUpdatesHashAndClearsFlag(t *testing.T) {
 	if repo.passwordUpdates[0].mustChange {
 		t.Fatal("mustChange flag stayed true after password change")
 	}
-	ok, verifyErr := security.VerifyPassword("safer-pass", repo.passwordUpdates[0].hash)
+	ok, verifyErr := security.VerifyPassword("safer-passphrase-for-tests", repo.passwordUpdates[0].hash)
 	if verifyErr != nil {
 		t.Fatalf("VerifyPassword returned error: %v", verifyErr)
 	}
@@ -429,7 +429,7 @@ func TestEnsureBootstrapAdminCreatesWhenNoAdminExists(t *testing.T) {
 	repo := &fakeUserRepository{users: map[string]domain.User{}}
 	service := NewAuthService(repo, fastServiceArgon2Params())
 
-	user, changed, err := service.EnsureBootstrapAdmin(context.Background(), "admin@ournezt.local", "Bootstrap Admin", "TempPass123!")
+	user, changed, err := service.EnsureBootstrapAdmin(context.Background(), "admin@ournezt.local", "Bootstrap Admin", "Temporary-admin-passphrase!")
 	if err != nil {
 		t.Fatalf("EnsureBootstrapAdmin returned error: %v", err)
 	}
@@ -461,7 +461,7 @@ func TestEnsureBootstrapAdminPromotesExistingUser(t *testing.T) {
 	}
 	service := NewAuthService(repo, fastServiceArgon2Params())
 
-	user, changed, err := service.EnsureBootstrapAdmin(context.Background(), "member@ournezt.local", "Primary Admin", "TempPass123!")
+	user, changed, err := service.EnsureBootstrapAdmin(context.Background(), "member@ournezt.local", "Primary Admin", "Temporary-admin-passphrase!")
 	if err != nil {
 		t.Fatalf("EnsureBootstrapAdmin returned error: %v", err)
 	}
@@ -476,7 +476,7 @@ func TestEnsureBootstrapAdminPromotesExistingUser(t *testing.T) {
 	}
 }
 
-func TestEnsureBootstrapAdminSkipsWhenAdminExists(t *testing.T) {
+func TestPasswordPolicyBootstrapSkipsWhenAdminExists(t *testing.T) {
 	repo := &fakeUserRepository{
 		users:          map[string]domain.User{},
 		hasActiveAdmin: true,

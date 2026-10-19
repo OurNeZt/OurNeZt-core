@@ -62,9 +62,9 @@ func TestAllPasswordOperationsShareConcurrencyCap(t *testing.T) {
 	cancel()
 	copyOfService := svc
 	_, loginErr := copyOfService.Login(context.Background(), "b@example.com", "password")
-	_, createErr := copyOfService.CreateUser(context.Background(), "c@example.com", "Name", "password", domain.UserRoleUser)
-	changeErr := copyOfService.ChangePassword(context.Background(), "user", "old", "new")
-	_, _, bootstrapErr := copyOfService.EnsureBootstrapAdmin(context.Background(), "d@example.com", "Admin", "password")
+	_, createErr := copyOfService.CreateUser(context.Background(), "c@example.com", "Name", "fresh-passphrase-for-tests", domain.UserRoleUser)
+	changeErr := copyOfService.ChangePassword(context.Background(), "user", "old", "fresh-passphrase-for-tests")
+	_, _, bootstrapErr := copyOfService.EnsureBootstrapAdmin(context.Background(), "d@example.com", "Admin", "fresh-passphrase-for-tests")
 	for _, err := range []error{loginErr, createErr, changeErr, bootstrapErr} {
 		if !errors.Is(err, authlimit.ErrLimited) {
 			t.Fatalf("expensive operation bypassed cap: %v", err)
