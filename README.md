@@ -61,6 +61,7 @@
     </li>
     <li><a href="#login-response-protections">Login Response Protections</a></li>
     <li><a href="#session-revocation">Session Revocation</a></li>
+    <li><a href="#family-invite-codes">Family Invite Codes</a></li>
     <li><a href="#running-the-service">Running The Service</a></li>
     <li><a href="#testing">Testing</a></li>
     <li><a href="#docker">Docker</a></li>
@@ -243,6 +244,18 @@ This follows the [OWASP session management guidance](https://cheatsheetseries.ow
 
 ---
 
+## Family Invite Codes
+
+Regenerating a family's invite code revokes every previous unrevoked code for that family and creates the replacement in one transaction. Only the replacement can be used afterward. This also handles older data containing several active codes, including codes without an expiry. Other families' codes and existing memberships are unaffected.
+
+Only family owners and family admins can regenerate codes. If authorization, revocation, or replacement creation fails, the transaction rolls back and the previous code remains usable until its original expiry. Codes continue to be stored as hashes; the raw replacement is returned only after a successful commit.
+
+Regeneration and joining coordinate through a lock on the family. Simultaneous regenerations leave only the last replacement active, including when no code existed initially. A join that reaches the lock after regeneration must recheck revocation and expiry before adding the member. A join that holds the lock first completes before regeneration; rotating codes does not remove members who already joined.
+
+No database migration, new environment setting, or Web change is required: the existing `family_invites.revoked_at` column is used. Existing codes are revoked when that family next regenerates its code.
+
+---
+
 ## Running The Service
 
 Run locally:
@@ -300,7 +313,55 @@ go test ./internal/repository/postgres -run TestSessionRevocationPostgres -count
 
 Each test creates an isolated schema, applies the migrations, and removes that schema afterward. The checks cover token scope and expiry, rollback when revocation fails, stale credential rejection, and both orderings of concurrent login/password changes. Without `TEST_DATABASE_URL`, database tests are skipped. The existing CI PostgreSQL service runs them automatically with `go test ./...`.
 
-Generate an HTML coverage report:
+### Family Invite Revocation Tests
+
+For a readable reviewer report, run this from the Core repository root with `TEST_DATABASE_URL` configured:
+
+```bash
+go run ./cmd/family-invite-check
+```
+
+The command runs the actual PostgreSQL regression tests and prints one plain-language result per scenario, such as `PASS: Failed replacements leave the previous invite usable.` It verifies all eight required scenarios completed and exits nonzero for any failure, skipped check, missing result, timeout, or test-process error. Raw test output is hidden; the command gives the focused `go test` command when technical details are needed.
+
+It does not need a running Core server, account credentials, or an existing family. Tests use temporary schemas and clean them up afterward. No existing families are changed. This verifies the checked-out code against PostgreSQL; it does not probe an already-deployed Core server.
+
+For a self-contained local review with Docker and PowerShell:
+
+```powershell
+docker run --detach --rm --name ournezt-invite-review -e POSTGRES_PASSWORD=invite-review-test -e POSTGRES_DB=ournezt_test -p 127.0.0.1:15455:5432 postgres:17-bookworm
+# Wait until this reports that PostgreSQL is accepting connections:
+docker exec ournezt-invite-review pg_isready -U postgres
+$env:TEST_DATABASE_URL = 'postgres://postgres:invite-review-test@127.0.0.1:15455/ournezt_test?sslmode=disable'
+go run ./cmd/family-invite-check
+docker stop ournezt-invite-review
+```
+
+Port 15455 must be available. For an existing disposable test database, set `TEST_DATABASE_URL` directly and omit the Docker commands. The report command refuses to run without a database URL, so skipped integration tests cannot look like a successful review. Use `-timeout 5m` if the default two-minute test budget is insufficient.
+
+For detailed developer output, run the focused tests directly:
+
+Set `TEST_DATABASE_URL` to a disposable PostgreSQL database. Each test creates an isolated schema, applies the migrations, and removes that schema afterward. The existing CI PostgreSQL service runs these tests automatically.
+
+```bash
+export TEST_DATABASE_URL='postgres://postgres:test-password@localhost:15455/ournezt_test?sslmode=disable'
+go test ./internal/repository/postgres -run TestFamilyInvitePostgres -count=1 -v
+```
+
+In PowerShell, set the variable with `$env:TEST_DATABASE_URL = 'postgres://postgres:test-password@localhost:15455/ournezt_test?sslmode=disable'`, then run the same `go test` command. Without this variable, the database checks explicitly report `SKIP`.
+
+The tests check replaced and expired codes, multiple legacy codes, owner/admin permissions, unrelated families, repeated joins, rollback failures, simultaneous regenerations, both orderings of joining and regeneration, and expiry while a join waits for a lock.
+
+For a manual review with separate owner and joining accounts:
+
+| Check | Expected result |
+| --- | --- |
+| Generate code A, regenerate to code B, then join using A | Rejected; no new membership |
+| Join using code B | Accepted |
+| Regenerate again to code C, then join using B | Rejected; code C works |
+| Try a code for a different family | That family's code remains usable |
+| Attempt regeneration as a member or viewer | Rejected; the current code remains usable |
+
+Optional developer code coverage report (shows which source code ran; this is not a feature pass/fail report):
 
 ```bash
 go test -coverprofile=coverage.out ./...
