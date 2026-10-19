@@ -37,7 +37,7 @@ func (r *fakeUserRepository) CreateUser(_ context.Context, user domain.User) (do
 	return user, nil
 }
 
-func (r *fakeUserRepository) ListUsers(_ context.Context) ([]domain.User, error) {
+func (r *fakeUserRepository) ListUsers(_ context.Context, pages ...domain.Page) ([]domain.User, error) {
 	if r.listed != nil {
 		return r.listed, nil
 	}

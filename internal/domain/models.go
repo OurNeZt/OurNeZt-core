@@ -92,6 +92,7 @@ type PersonProfile struct {
 }
 
 type PersonIncomeHistoryEntry struct {
+	ID                        ID
 	PersonID                  ID
 	PersonName                string
 	GrossMonthlyIncomeCents   int64

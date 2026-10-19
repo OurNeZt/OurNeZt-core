@@ -33,12 +33,19 @@ func (r UserRepository) CreateUser(ctx context.Context, user domain.User) (domai
 	return created, nil
 }
 
-func (r UserRepository) ListUsers(ctx context.Context) ([]domain.User, error) {
+func (r UserRepository) ListUsers(ctx context.Context, pages ...domain.Page) ([]domain.User, error) {
+	limit, afterTime, afterID, pageErr := listWindow(pages)
+	if pageErr != nil {
+		return nil, pageErr
+	}
+
 	rows, err := r.pool.Query(ctx, `
 		SELECT id::text, email, display_name, role, password_hash, must_change_password, disabled_at, created_at, updated_at
 		FROM users
-		ORDER BY created_at DESC, email ASC
-	`)
+		WHERE (created_at,id) < (COALESCE($1::timestamptz,'infinity'::timestamptz),COALESCE(NULLIF($2,''),'ffffffff-ffff-ffff-ffff-ffffffffffff')::uuid)
+		ORDER BY created_at DESC,id DESC
+		LIMIT $3
+	`, afterTime, afterID, limit)
 	if err != nil {
 		return nil, normalizeError(err)
 	}
@@ -56,7 +63,7 @@ func (r UserRepository) ListUsers(ctx context.Context) ([]domain.User, error) {
 		return nil, normalizeError(rowsErr)
 	}
 
-	return users, nil
+	return completeList(users, pages)
 }
 
 func (r UserRepository) GetUserByEmail(ctx context.Context, email string) (domain.User, error) {

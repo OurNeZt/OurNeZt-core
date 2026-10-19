@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"strings"
+	"time"
 
 	"github.com/OurNeZt/ournezt-core/internal/domain"
 	ourneztv1 "github.com/OurNeZt/ournezt-core/internal/gen/proto/ournezt/v1"
@@ -82,13 +83,20 @@ func (s PersonServer) ListPersonProfilesByFamily(ctx context.Context, req *ourne
 		return nil, toStatusError(err)
 	}
 
-	profiles, err := s.people.ListPersonProfilesByFamily(ctx, familyID, viewerID)
+	scope := "people:" + string(familyID) + ":" + string(viewerID)
+	page, err := domain.ParsePage(req.GetPageSize(), req.GetPageToken(), scope)
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+	profiles, err := s.people.ListPersonProfilesByFamily(ctx, familyID, viewerID, page)
 	if err != nil {
 		return nil, toStatusError(err)
 	}
 
+	profiles, nextToken := domain.PageResult(profiles, page, scope, func(item domain.PersonProfile) (time.Time, domain.ID) { return item.CreatedAt, item.ID })
 	response := &ourneztv1.ListPersonProfilesByFamilyResponse{
-		People: make([]*ourneztv1.PersonProfile, 0, len(profiles)),
+		NextPageToken: nextToken,
+		People:        make([]*ourneztv1.PersonProfile, 0, len(profiles)),
 	}
 	for _, profile := range profiles {
 		response.People = append(response.People, personToProto(profile))
@@ -109,13 +117,20 @@ func (s PersonServer) ListIncomeHistoryByFamily(ctx context.Context, req *ournez
 		return nil, toStatusError(err)
 	}
 
-	entries, err := s.people.ListPersonIncomeHistoryByFamily(ctx, familyID, viewerID)
+	scope := "history:" + string(familyID) + ":" + string(viewerID)
+	page, err := domain.ParsePage(req.GetPageSize(), req.GetPageToken(), scope)
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+	entries, err := s.people.ListPersonIncomeHistoryByFamily(ctx, familyID, viewerID, page)
 	if err != nil {
 		return nil, toStatusError(err)
 	}
 
+	entries, nextToken := domain.PageResult(entries, page, scope, func(item domain.PersonIncomeHistoryEntry) (time.Time, domain.ID) { return item.RecordedAt, item.ID })
 	response := &ourneztv1.ListIncomeHistoryByFamilyResponse{
-		Entries: make([]*ourneztv1.IncomeHistoryEntry, 0, len(entries)),
+		NextPageToken: nextToken,
+		Entries:       make([]*ourneztv1.IncomeHistoryEntry, 0, len(entries)),
 	}
 	for _, entry := range entries {
 		response.Entries = append(response.Entries, personIncomeHistoryEntryToProto(entry))
