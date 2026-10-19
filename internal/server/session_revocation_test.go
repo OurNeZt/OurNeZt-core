@@ -34,13 +34,13 @@ func sessionFixture(t *testing.T) (AuthServer, *fakeServerUserRepository, *fakeA
 	return NewAuthServer(service.NewAuthService(repo, fastServerArgon2Params()), sessions, 32, time.Hour, time.Now), repo, sessions
 }
 
-func sessionTransport(t *testing.T, auth AuthServer) pb.AuthServiceClient {
+func sessionTransport(t *testing.T, auth AuthServer, options ...grpc.ServerOption) pb.AuthServiceClient {
 	t.Helper()
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
 	}
-	transport := grpc.NewServer()
+	transport := grpc.NewServer(options...)
 	pb.RegisterAuthServiceServer(transport, auth)
 	go func() { _ = transport.Serve(listener) }()
 	t.Cleanup(transport.Stop)
@@ -89,7 +89,7 @@ func TestSessionRevocationLifecycleOverGRPC(t *testing.T) {
 	valid(other, true)
 	// Bearer metadata is supported too, including first-login password changes.
 	changeCtx := metadata.AppendToOutgoingContext(ctx, "authorization", "Bearer "+second)
-	if _, err := client.ChangePassword(changeCtx, &pb.ChangePasswordRequest{CurrentPassword: "old-password", NewPassword: "new-password"}); err != nil {
+	if _, err := client.ChangePassword(changeCtx, &pb.ChangePasswordRequest{CurrentPassword: "old-password", NewPassword: "new-password-for-tests"}); err != nil {
 		t.Fatal(err)
 	}
 	valid(first, false)
@@ -101,7 +101,7 @@ func TestSessionRevocationLifecycleOverGRPC(t *testing.T) {
 	if _, err := client.Login(ctx, &pb.LoginRequest{Email: "user@example.com", Password: "old-password"}); status.Code(err) != codes.Unauthenticated {
 		t.Fatalf("old password still works: %v", err)
 	}
-	valid(login("user@example.com", "new-password"), true)
+	valid(login("user@example.com", "new-password-for-tests"), true)
 }
 
 func TestSessionRevocationPasswordFailuresLeaveSessionsIntact(t *testing.T) {
@@ -119,7 +119,7 @@ func TestSessionRevocationPasswordFailuresLeaveSessionsIntact(t *testing.T) {
 			repo.passwordError = errors.New("database update failed")
 		}
 		ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs("x-session-token", login.GetSessionToken()))
-		_, err = auth.ChangePassword(ctx, &pb.ChangePasswordRequest{CurrentPassword: current, NewPassword: "new-password"})
+		_, err = auth.ChangePassword(ctx, &pb.ChangePasswordRequest{CurrentPassword: current, NewPassword: "new-password-for-tests"})
 		if status.Code(err) != expected || repo.users["user@example.com"].PasswordHash != before || len(sessions.revokedUsers) != 0 {
 			t.Fatalf("failed change altered credentials/sessions: %v", err)
 		}

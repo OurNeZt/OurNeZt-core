@@ -116,3 +116,12 @@ func TestLoadFallsBackForInvalidNumbers(t *testing.T) {
 		t.Fatalf("SessionTokenBytes = %d, want 32", got.SessionTokenBytes)
 	}
 }
+
+func TestPasswordPolicyBootstrapConfigPreservesPassword(t *testing.T) {
+	for _, password := range []string{"  a peaceful garden near home  ", "\t \u2003"} {
+		t.Setenv("BOOTSTRAP_ADMIN_PASSWORD", password)
+		if Load().BootstrapAdminPassword != password {
+			t.Fatal("configuration trimmed the bootstrap password before policy validation")
+		}
+	}
+}
