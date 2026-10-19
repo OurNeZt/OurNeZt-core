@@ -1049,9 +1049,12 @@ func (x *GetHousingOptionRequest) GetHousingId() string {
 }
 
 type ListHousingOptionsRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	ViewerUserId  string                 `protobuf:"bytes,1,opt,name=viewer_user_id,json=viewerUserId,proto3" json:"viewer_user_id,omitempty"`
-	FamilyId      string                 `protobuf:"bytes,2,opt,name=family_id,json=familyId,proto3" json:"family_id,omitempty"`
+	state        protoimpl.MessageState `protogen:"open.v1"`
+	ViewerUserId string                 `protobuf:"bytes,1,opt,name=viewer_user_id,json=viewerUserId,proto3" json:"viewer_user_id,omitempty"`
+	FamilyId     string                 `protobuf:"bytes,2,opt,name=family_id,json=familyId,proto3" json:"family_id,omitempty"`
+	// Zero uses 50; maximum 100. Pass next_page_token unchanged to continue.
+	PageSize      int32  `protobuf:"varint,99,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	PageToken     string `protobuf:"bytes,100,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1100,9 +1103,24 @@ func (x *ListHousingOptionsRequest) GetFamilyId() string {
 	return ""
 }
 
+func (x *ListHousingOptionsRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+func (x *ListHousingOptionsRequest) GetPageToken() string {
+	if x != nil {
+		return x.PageToken
+	}
+	return ""
+}
+
 type ListHousingOptionsResponse struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	HousingOptions []*HousingOption       `protobuf:"bytes,1,rep,name=housing_options,json=housingOptions,proto3" json:"housing_options,omitempty"`
+	NextPageToken  string                 `protobuf:"bytes,99,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -1144,10 +1162,20 @@ func (x *ListHousingOptionsResponse) GetHousingOptions() []*HousingOption {
 	return nil
 }
 
+func (x *ListHousingOptionsResponse) GetNextPageToken() string {
+	if x != nil {
+		return x.NextPageToken
+	}
+	return ""
+}
+
 type ListHousingGroupsRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	ViewerUserId  string                 `protobuf:"bytes,1,opt,name=viewer_user_id,json=viewerUserId,proto3" json:"viewer_user_id,omitempty"`
-	FamilyId      string                 `protobuf:"bytes,2,opt,name=family_id,json=familyId,proto3" json:"family_id,omitempty"`
+	state        protoimpl.MessageState `protogen:"open.v1"`
+	ViewerUserId string                 `protobuf:"bytes,1,opt,name=viewer_user_id,json=viewerUserId,proto3" json:"viewer_user_id,omitempty"`
+	FamilyId     string                 `protobuf:"bytes,2,opt,name=family_id,json=familyId,proto3" json:"family_id,omitempty"`
+	// Zero uses 50; maximum 100. Pass next_page_token unchanged to continue.
+	PageSize      int32  `protobuf:"varint,99,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	PageToken     string `protobuf:"bytes,100,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1196,9 +1224,24 @@ func (x *ListHousingGroupsRequest) GetFamilyId() string {
 	return ""
 }
 
+func (x *ListHousingGroupsRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+func (x *ListHousingGroupsRequest) GetPageToken() string {
+	if x != nil {
+		return x.PageToken
+	}
+	return ""
+}
+
 type ListHousingGroupsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	HousingGroups []*HousingGroup        `protobuf:"bytes,1,rep,name=housing_groups,json=housingGroups,proto3" json:"housing_groups,omitempty"`
+	NextPageToken string                 `protobuf:"bytes,99,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1238,6 +1281,13 @@ func (x *ListHousingGroupsResponse) GetHousingGroups() []*HousingGroup {
 		return x.HousingGroups
 	}
 	return nil
+}
+
+func (x *ListHousingGroupsResponse) GetNextPageToken() string {
+	if x != nil {
+		return x.NextPageToken
+	}
+	return ""
 }
 
 type DeleteHousingOptionRequest struct {
@@ -2083,17 +2133,25 @@ const file_ournezt_v1_housing_proto_rawDesc = "" +
 	"\x17GetHousingOptionRequest\x12$\n" +
 	"\x0eviewer_user_id\x18\x01 \x01(\tR\fviewerUserId\x12\x1d\n" +
 	"\n" +
-	"housing_id\x18\x02 \x01(\tR\thousingId\"^\n" +
+	"housing_id\x18\x02 \x01(\tR\thousingId\"\x9a\x01\n" +
 	"\x19ListHousingOptionsRequest\x12$\n" +
 	"\x0eviewer_user_id\x18\x01 \x01(\tR\fviewerUserId\x12\x1b\n" +
-	"\tfamily_id\x18\x02 \x01(\tR\bfamilyId\"`\n" +
+	"\tfamily_id\x18\x02 \x01(\tR\bfamilyId\x12\x1b\n" +
+	"\tpage_size\x18c \x01(\x05R\bpageSize\x12\x1d\n" +
+	"\n" +
+	"page_token\x18d \x01(\tR\tpageToken\"\x88\x01\n" +
 	"\x1aListHousingOptionsResponse\x12B\n" +
-	"\x0fhousing_options\x18\x01 \x03(\v2\x19.ournezt.v1.HousingOptionR\x0ehousingOptions\"]\n" +
+	"\x0fhousing_options\x18\x01 \x03(\v2\x19.ournezt.v1.HousingOptionR\x0ehousingOptions\x12&\n" +
+	"\x0fnext_page_token\x18c \x01(\tR\rnextPageToken\"\x99\x01\n" +
 	"\x18ListHousingGroupsRequest\x12$\n" +
 	"\x0eviewer_user_id\x18\x01 \x01(\tR\fviewerUserId\x12\x1b\n" +
-	"\tfamily_id\x18\x02 \x01(\tR\bfamilyId\"\\\n" +
+	"\tfamily_id\x18\x02 \x01(\tR\bfamilyId\x12\x1b\n" +
+	"\tpage_size\x18c \x01(\x05R\bpageSize\x12\x1d\n" +
+	"\n" +
+	"page_token\x18d \x01(\tR\tpageToken\"\x84\x01\n" +
 	"\x19ListHousingGroupsResponse\x12?\n" +
-	"\x0ehousing_groups\x18\x01 \x03(\v2\x18.ournezt.v1.HousingGroupR\rhousingGroups\"_\n" +
+	"\x0ehousing_groups\x18\x01 \x03(\v2\x18.ournezt.v1.HousingGroupR\rhousingGroups\x12&\n" +
+	"\x0fnext_page_token\x18c \x01(\tR\rnextPageToken\"_\n" +
 	"\x1aDeleteHousingOptionRequest\x12\"\n" +
 	"\ractor_user_id\x18\x01 \x01(\tR\vactorUserId\x12\x1d\n" +
 	"\n" +

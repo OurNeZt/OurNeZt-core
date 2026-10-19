@@ -60,8 +60,10 @@
       </ul>
     </li>
     <li><a href="#login-response-protections">Login Response Protections</a></li>
+    <li><a href="#password-policy">Password Policy</a></li>
     <li><a href="#session-revocation">Session Revocation</a></li>
     <li><a href="#family-invite-codes">Family Invite Codes</a></li>
+    <li><a href="#resource-limits-and-retention">Resource Limits And Retention</a></li>
     <li><a href="#running-the-service">Running The Service</a></li>
     <li><a href="#testing">Testing</a></li>
     <li><a href="#docker">Docker</a></li>
@@ -198,9 +200,10 @@ Example:
 export GRPC_ADDR=":50051"
 export DATABASE_URL="postgres://ournezt:ournezt@localhost:5432/ournezt?sslmode=disable"
 export SESSION_TOKEN_BYTES="32"
-export BOOTSTRAP_ADMIN_EMAIL = "admin@example.com"
-export BOOTSTRAP_ADMIN_PASSWORD = "P@ssw0rd"
-export BOOTSTRAP_ADMIN_DISPLAY_NAME = "Admin"
+export BOOTSTRAP_ADMIN_EMAIL="admin@example.com"
+# Replace this example with your own unique passphrase.
+export BOOTSTRAP_ADMIN_PASSWORD="replace-with-a-unique-passphrase"
+export BOOTSTRAP_ADMIN_DISPLAY_NAME="Admin"
 ```
 
 Behaviour:
@@ -229,6 +232,27 @@ For a running Web + Core deployment, use Web's `cmd/login-enumeration-check` wit
 
 ---
 
+## Password Policy
+
+New passwords must contain at least 15 Unicode code points and at most 1,024 UTF-8 bytes. Blank, whitespace-only, invalid UTF-8, and blocklisted common passwords are rejected. Spaces and Unicode are supported, with no required mix of uppercase, lowercase, digits, or symbols. These length and composition choices follow the [NIST password guidance for single-factor authentication](https://pages.nist.gov/800-63-4/sp800-63b.html#passwordver).
+
+The policy applies to user/admin creation, password changes, and bootstrap admin creation or promotion. Invalid input returns gRPC `InvalidArgument` with a reason, without echoing the password. Validation happens before password hashing or account mutation. A rejected password change leaves the existing password, first-login flag, and sessions intact. A successful change still revokes all sessions and requires a new login.
+
+The embedded, offline blocklist contains 1,330 entries selected from a pinned public SecLists dataset plus a few predictable public examples. It compares the whole password after lowercasing and trimming surrounding whitespace; hashing always uses the exact original bytes. It performs no external requests and is not comprehensive or live breach screening. Source, license, selection rules, and update instructions are in [the blocklist notes](internal/domain/passwords/README.md).
+
+Existing passwords remain usable for login and current-password verification, even if they do not meet the new policy. Only replacement passwords must satisfy it; this change does not force a reset or require a database migration. Bootstrap configuration also preserves password spaces. Replace weak bootstrap credentials before provisioning a new admin: startup fails validation if it needs to create or promote an admin with a password that violates the policy. When an active admin already exists, bootstrap skips password-policy checks because it does not set credentials; existing input-size checks still apply.
+
+Reviewer checks (no database or running Core instance required):
+
+```bash
+go test ./internal/domain ./internal/platform/config ./internal/service ./internal/server -run TestPasswordPolicy -count=1 -v
+go test ./...
+```
+
+The focused tests cover minimum and maximum boundaries in characters/bytes, Unicode, whitespace, common passwords, unchanged legacy login, exact password preservation, bootstrap creation/promotion, and validation before expensive work. The gRPC test exercises user creation and first-login password changes through the actual server/service, checks client-visible errors, verifies rejected changes leave sessions valid, then confirms a valid change revokes the session and permits login with the exact new password.
+
+---
+
 ## Session Revocation
 
 Sessions use opaque tokens; Core stores their hashes and checks expiry and `revoked_at` on validation and authenticated RPCs.
@@ -253,6 +277,84 @@ Only family owners and family admins can regenerate codes. If authorization, rev
 Regeneration and joining coordinate through a lock on the family. Simultaneous regenerations leave only the last replacement active, including when no code existed initially. A join that reaches the lock after regeneration must recheck revocation and expiry before adding the member. A join that holds the lock first completes before regeneration; rotating codes does not remove members who already joined.
 
 No database migration, new environment setting, or Web change is required: the existing `family_invites.revoked_at` column is used. Existing codes are revoked when that family next regenerates its code.
+
+---
+
+## Resource Limits And Retention
+
+Core bounds persisted strings, incoming requests, list queries, and resource counts. These protections apply to direct gRPC clients as well as Web.
+
+### Pagination
+
+`ListUsers`, `ListUserFamilies`, `ListFamilyMembers`, `ListPersonProfilesByFamily`, `ListIncomeHistoryByFamily`, `ListHousingOptions`, and `ListHousingGroups` accept `page_size` and `page_token`. Zero uses **50** records; allowed explicit sizes are **1–100**. Responses contain `next_page_token`; keep the same authenticated viewer and family, pass that token unchanged, and stop when it is empty. Invalid sizes and malformed or mismatched tokens return `InvalidArgument`.
+
+Queries seek by timestamp and UUID, with supporting indexes and a SQL limit of page size plus one. Users, families, profiles, housing, and groups sort newest first; members and income history sort oldest first. UUIDs break timestamp ties. Tokens survive deletion of their boundary row, are scoped to the list and viewer/family, and never replace authorization. Pagination does not provide a snapshot across concurrent mutations.
+
+Checklist lists and single-housing evaluations remain complete bounded collections, because pagination would break ordering and scoring. Internal dashboard and grant calculations read complete collections or fail explicitly if legacy data exceeds the aggregate bound of 100 records. Housing list summaries fetch answers only for the selected housing rows and do not load answer notes.
+
+**Client rollout:** the new protobuf fields are additive, but older clients receive only the first page. Update Web/client bindings and follow `next_page_token` before deploying where more than 50 users or income-history rows are expected. Core alone cannot make an older Web client display later pages. Normal new family collections fit within the default page size under the quotas below.
+
+### Storage Quotas
+
+| Resource | Maximum |
+| --- | --- |
+| Family memberships, including owned families | 20 per user |
+| Family members | 50 per family |
+| Person profiles | 50 per family |
+| Housing options | 50 per family |
+| Housing groups | 50 per family |
+| Checklist criteria, including retired criteria | 50 per family |
+| Income-history snapshots | 5,000 per family |
+| Sessions, including retained expired/revoked rows | 100 per user |
+| Admin access keys, including retained expired/used rows | 100 per user |
+| Invite codes, including retained expired/revoked rows | 100 per family |
+
+Database triggers lock the owning user or family before checking counts, so concurrent creates and joins cannot claim the same last slot. Rejoining an existing membership is idempotent. Quota failures use `ResourceExhausted` with a resource-specific message; login continues to return its generic authentication failure. Failed family creation, invite replacement, or profile/history updates roll back without leaving an orphan or partially changing data.
+
+Financial history is preserved rather than automatically deleted. Once its quota is reached, profile mutations that would append history fail until storage is reduced through an intentional profile deletion or operator maintenance. Retiring a checklist criterion does not release its storage slot, because historical answers remain attached to it.
+
+### Input Limits
+
+| Input | Maximum |
+| --- | --- |
+| Email | 254 Unicode characters |
+| Display, family, person, housing, and group names; housing unit type | 120 Unicode characters |
+| Relationship label | 64 Unicode characters |
+| Housing location | 255 Unicode characters |
+| Checklist description | 2,000 Unicode characters |
+| Checklist answer notes | 5,000 Unicode characters |
+| Housing notes | 10,000 Unicode characters |
+| Passwords, including current/new passwords | 1,024 UTF-8 bytes |
+| Page token | 512 characters |
+| Other string fields, including presented session/access tokens | 256 Unicode characters |
+| Repeated request fields, including DIA overrides and reorder IDs | 50 entries |
+| Incoming gRPC message | 1 MiB |
+
+A unary interceptor rejects oversized inputs before authentication, password hashing, or repository work. Service checks also bound credentials before hashing. Database checks protect persisted strings and cap the stored DIA override JSON array at 50 entries and 16 KiB. Existing enum, notes, and numeric constraints remain in force.
+
+### Credential Retention
+
+Core runs cleanup at startup and every **10 minutes**. A pass deletes at most **500 sessions, 500 access keys, and 500 invites**, with a shared five-second deadline. Expired credentials, revoked sessions/invites, and used access keys become eligible **seven days after their expiry or terminal timestamp**. Currently valid credentials, recent terminal rows, and active legacy invites without expiry are preserved. Cleanup releases quota slots and uses `FOR UPDATE SKIP LOCKED` so multiple Core instances can share the work. A large backlog drains over multiple passes; errors are logged and retried on the next pass.
+
+### Migration And Reviewer Checks
+
+Apply migration `000008_resource_limits` before starting this Core version. Its down migration removes the new checks, quota triggers, and indexes; it cannot restore expired credential rows already deleted by retention.
+
+Length checks use `NOT VALID` to preserve legacy records during rollout while enforcing new writes and updates. Audit existing oversized strings and over-quota families, repair them explicitly, then run `VALIDATE CONSTRAINT` on each new length/JSON check. Migration does not truncate names, delete financial history, or remove existing families. Legacy collections exceeding aggregate bounds require operator repair; paginated list APIs remain available. The application database role needs its existing SELECT/INSERT/UPDATE/DELETE privileges for the cleanup worker.
+
+Run request, cursor, service, and status tests without PostgreSQL:
+
+```bash
+go test ./internal/domain ./internal/service ./internal/server -run TestResource -count=1 -v
+```
+
+For database checks, set `TEST_DATABASE_URL` to a disposable PostgreSQL database, then run:
+
+```bash
+go test ./internal/repository/postgres -run TestResourceLimitsPostgres -count=1 -v
+```
+
+Each test creates and drops its own schema. The suite checks last-slot races, owner/family isolation, membership idempotency, rollback, Unicode limits, JSON limits, seven paginated list endpoints, timestamp ties, deleted cursor boundaries, access control, retention cutoffs and batches, quota recovery, and migration up/down with legacy data. Existing CI runs these tests against its PostgreSQL service with `go test ./...`.
 
 ---
 

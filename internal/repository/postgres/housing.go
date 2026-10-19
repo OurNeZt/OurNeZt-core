@@ -96,7 +96,12 @@ func (r HousingRepository) GetHousingOption(ctx context.Context, housingID domai
 	return options[0], nil
 }
 
-func (r HousingRepository) ListHousingOptions(ctx context.Context, familyID domain.ID, viewerID domain.ID) ([]domain.HousingOption, error) {
+func (r HousingRepository) ListHousingOptions(ctx context.Context, familyID domain.ID, viewerID domain.ID, pages ...domain.Page) ([]domain.HousingOption, error) {
+	limit, afterTime, afterID, pageErr := listWindow(pages)
+	if pageErr != nil {
+		return nil, pageErr
+	}
+
 	allowed, err := r.hasFamilyAccess(ctx, viewerID, familyID)
 	if err != nil {
 		return nil, err
@@ -114,8 +119,10 @@ func (r HousingRepository) ListHousingOptions(ctx context.Context, familyID doma
 			COALESCE(housing_group_id::text, ''), visible_on_dashboard, created_at, updated_at, notes
 		FROM housing_options
 		WHERE family_id = $1::uuid
-		ORDER BY created_at DESC
-	`, string(familyID))
+		AND (created_at,id) < (COALESCE($2::timestamptz,'infinity'::timestamptz),COALESCE(NULLIF($3,''),'ffffffff-ffff-ffff-ffff-ffffffffffff')::uuid)
+		ORDER BY created_at DESC,id DESC
+		LIMIT $4
+	`, string(familyID), afterTime, afterID, limit)
 	if err != nil {
 		return nil, normalizeError(err)
 	}
@@ -136,7 +143,7 @@ func (r HousingRepository) ListHousingOptions(ctx context.Context, familyID doma
 	if err := r.attachHousingEvaluations(ctx, options, familyID, viewerID); err != nil {
 		return nil, err
 	}
-	return options, nil
+	return completeList(options, pages)
 }
 
 func (r HousingRepository) UpdateHousingOption(ctx context.Context, option domain.HousingOption, actorID domain.ID) (domain.HousingOption, error) {
@@ -243,7 +250,12 @@ func (r HousingRepository) CreateHousingGroup(ctx context.Context, group domain.
 	return created, nil
 }
 
-func (r HousingRepository) ListHousingGroups(ctx context.Context, familyID domain.ID, viewerID domain.ID) ([]domain.HousingGroup, error) {
+func (r HousingRepository) ListHousingGroups(ctx context.Context, familyID domain.ID, viewerID domain.ID, pages ...domain.Page) ([]domain.HousingGroup, error) {
+	limit, afterTime, afterID, pageErr := listWindow(pages)
+	if pageErr != nil {
+		return nil, pageErr
+	}
+
 	allowed, err := r.hasFamilyAccess(ctx, viewerID, familyID)
 	if err != nil {
 		return nil, err
@@ -256,8 +268,10 @@ func (r HousingRepository) ListHousingGroups(ctx context.Context, familyID domai
 		SELECT id::text, family_id::text, name, created_at, updated_at
 		FROM housing_groups
 		WHERE family_id = $1::uuid
-		ORDER BY created_at DESC
-	`, string(familyID))
+		AND (created_at,id) < (COALESCE($2::timestamptz,'infinity'::timestamptz),COALESCE(NULLIF($3,''),'ffffffff-ffff-ffff-ffff-ffffffffffff')::uuid)
+		ORDER BY created_at DESC,id DESC
+		LIMIT $4
+	`, string(familyID), afterTime, afterID, limit)
 	if err != nil {
 		return nil, normalizeError(err)
 	}
@@ -274,7 +288,7 @@ func (r HousingRepository) ListHousingGroups(ctx context.Context, familyID domai
 	if err := rows.Err(); err != nil {
 		return nil, normalizeError(err)
 	}
-	return groups, nil
+	return completeList(groups, pages)
 }
 
 func (r HousingRepository) UpdateHousingGroup(ctx context.Context, group domain.HousingGroup, actorID domain.ID) (domain.HousingGroup, error) {
@@ -394,6 +408,15 @@ func (r HousingRepository) BulkUpdateHousingGroupVisibility(ctx context.Context,
 	}
 	if err := r.assertFamilyWriter(ctx, actorID, familyID); err != nil {
 		return nil, err
+	}
+	// New families are capped at 50 housing rows. Refuse a legacy aggregate
+	// above that cap instead of updating it and returning a partial response.
+	var count int
+	if err := r.pool.QueryRow(ctx, `SELECT count(*) FROM (SELECT 1 FROM housing_options WHERE family_id=$1::uuid LIMIT 51) bounded`, string(familyID)).Scan(&count); err != nil {
+		return nil, normalizeError(err)
+	}
+	if count > 50 {
+		return nil, apperror.ErrQuotaExceeded
 	}
 
 	rows, err := r.pool.Query(ctx, `

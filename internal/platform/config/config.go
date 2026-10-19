@@ -36,7 +36,7 @@ func Load() Config {
 		GRPCTLSKeyFile:            env("GRPC_TLS_KEY_FILE", ""),
 		DatabaseURL:               env("DATABASE_URL", ""),
 		BootstrapAdminEmail:       env("BOOTSTRAP_ADMIN_EMAIL", ""),
-		BootstrapAdminPassword:    env("BOOTSTRAP_ADMIN_PASSWORD", ""),
+		BootstrapAdminPassword:    os.Getenv("BOOTSTRAP_ADMIN_PASSWORD"),
 		BootstrapAdminDisplayName: env("BOOTSTRAP_ADMIN_DISPLAY_NAME", "Bootstrap Admin"),
 		ShutdownTimeout:           envDuration("SHUTDOWN_TIMEOUT", 10*time.Second),
 		SessionTokenBytes:         envInt("SESSION_TOKEN_BYTES", 32),

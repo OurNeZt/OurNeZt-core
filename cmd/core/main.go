@@ -47,7 +47,7 @@ func main() {
 	}
 
 	authLimits := authlimit.New(cfg.AuthLimits)
-	grpcOptions := []grpc.ServerOption{grpc.ChainUnaryInterceptor(server.AuthRateLimitInterceptor(authLimits, logger))}
+	grpcOptions := []grpc.ServerOption{grpc.ChainUnaryInterceptor(server.InputLimitInterceptor, server.AuthRateLimitInterceptor(authLimits, logger)), grpc.MaxRecvMsgSize(1 << 20)}
 	grpcTLS := cfg.GRPCTLSCertFile != "" && cfg.GRPCTLSKeyFile != ""
 	if grpcTLS {
 		tlsCreds, tlsErr := credentials.NewServerTLSFromFile(cfg.GRPCTLSCertFile, cfg.GRPCTLSKeyFile)
@@ -62,6 +62,10 @@ func main() {
 	healthServer := health.NewServer()
 	healthServer.SetServingStatus("", grpc_health_v1.HealthCheckResponse_SERVING)
 	grpc_health_v1.RegisterHealthServer(grpcServer, healthServer)
+
+	retentionDone := make(chan struct{})
+	go func() { defer close(retentionDone); postgres.New(pool).RunCredentialRetention(ctx, logger) }()
+	defer func() { stop(); <-retentionDone }()
 
 	userRepo := postgres.NewUserRepository(pool)
 	familyRepo := postgres.NewFamilyRepository(pool)

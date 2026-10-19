@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -77,6 +78,12 @@ func normalizeError(err error) error {
 
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) {
+		if pgErr.Code == "P0001" && pgErr.ConstraintName == "resource_quota" {
+			return fmt.Errorf("%w: %s", apperror.ErrQuotaExceeded, pgErr.Message)
+		}
+		if pgErr.Code == "23514" && strings.HasPrefix(pgErr.ConstraintName, "limits_") {
+			return fmt.Errorf("%w: persisted input exceeds %s", apperror.ErrInvalidArgument, pgErr.ConstraintName)
+		}
 		switch pgErr.Code {
 		case "23505": // unique_violation
 			return apperror.ErrConflict

@@ -129,7 +129,7 @@ func TestFamilyInvitePostgresJoinWaitsForRegeneration(t *testing.T) {
 	}()
 	waitForInviteLock(t, ctx, f, "%INSERT INTO family_invites%")
 	go func() { _, err := f.repo.JoinFamilyByCode(ctx, user.ID, security.HashToken("original")); joined <- err }()
-	waitForInviteLock(t, ctx, f, "%FOR SHARE OF f%")
+	waitForInviteLock(t, ctx, f, "%FOR UPDATE OF f%")
 	release()
 	if err := <-generated; err != nil {
 		t.Fatal(err)
@@ -185,7 +185,7 @@ func TestFamilyInvitePostgresJoinRechecksExpiryAfterWaiting(t *testing.T) {
 	}
 	joined := make(chan error, 1)
 	go func() { _, err := f.repo.JoinFamilyByCode(ctx, user.ID, security.HashToken("expiring")); joined <- err }()
-	waitForInviteLock(t, ctx, f, "%FOR SHARE OF f%")
+	waitForInviteLock(t, ctx, f, "%FOR UPDATE OF f%")
 	// This expiry is after the join transaction's start, but before it can
 	// acquire the family lock. Transaction-start now() would accept the code.
 	if _, err := tx.Exec(ctx, `UPDATE family_invites SET expires_at=clock_timestamp() WHERE family_id=$1`, f.family.ID); err != nil {

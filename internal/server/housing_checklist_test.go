@@ -33,7 +33,7 @@ func (r *checklistTestRepo) ListHousingCriteria(_ context.Context, _, actor doma
 	r.actor = actor
 	return []domain.HousingCriterion{{ID: "c", FamilyID: "f", Name: "Location"}}, r.err
 }
-func (r *checklistTestRepo) ListHousingAnswers(_ context.Context, _, actor domain.ID) ([]domain.HousingAnswer, error) {
+func (r *checklistTestRepo) ListHousingAnswers(_ context.Context, _, actor domain.ID, selected ...domain.ID) ([]domain.HousingAnswer, error) {
 	r.actor = actor
 	rating := int32(4)
 	return []domain.HousingAnswer{{HousingID: "h", CriterionID: "c", State: "complete", Rating: &rating}, {HousingID: "other", CriterionID: "c", State: "pending"}, {HousingID: "h", CriterionID: "retired", State: "complete", Rating: &rating}}, r.err
