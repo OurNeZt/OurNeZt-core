@@ -44,6 +44,8 @@ func toStatusError(err error) error {
 		return st.Err()
 	case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
 		return status.FromContextError(err).Err()
+	case errors.Is(err, apperror.ErrQuotaExceeded):
+		return status.Error(codes.ResourceExhausted, err.Error())
 	case errors.Is(err, apperror.ErrInvalidArgument):
 		return status.Error(codes.InvalidArgument, err.Error())
 	case errors.Is(err, apperror.ErrUnauthenticated), errors.Is(err, apperror.ErrDisabledUser):

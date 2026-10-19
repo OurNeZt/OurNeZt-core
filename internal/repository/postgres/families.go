@@ -116,13 +116,13 @@ func (r FamilyRepository) JoinFamilyByCode(ctx context.Context, userID domain.ID
 
 	// Hold the family lock until membership is committed. Regeneration takes
 	// an exclusive lock on the same row, so it cannot replace a code between
-	// validation and adding the member. Different joins can share this lock.
+	// validation and adding the member. Joins serialize so membership quotas cannot race.
 	row := tx.QueryRow(ctx, `
 		SELECT f.id::text, f.name, f.family_type, f.created_at, f.updated_at
 		FROM family_invites fi
 		JOIN families f ON f.id = fi.family_id
 		WHERE fi.code_hash = $1
-		FOR SHARE OF f
+		FOR UPDATE OF f
 	`, codeHash)
 
 	family, err := scanFamilyRow(row)
