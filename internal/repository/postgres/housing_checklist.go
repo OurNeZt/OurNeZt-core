@@ -17,7 +17,7 @@ func (r HousingRepository) ListHousingCriteria(ctx context.Context, familyID, ac
 	if !allowed {
 		return nil, apperror.ErrForbidden
 	}
-	rows, err := r.pool.Query(ctx, `SELECT id::text, family_id::text, name, description, display_order, weight FROM housing_checklist_criteria WHERE family_id=$1::uuid AND deleted_at IS NULL ORDER BY display_order, id`, string(familyID))
+	rows, err := r.pool.Query(ctx, `SELECT id::text, family_id::text, name, description, display_order, weight FROM housing_checklist_criteria WHERE family_id=$1::uuid AND deleted_at IS NULL ORDER BY display_order, id LIMIT 51`, string(familyID))
 	if err != nil {
 		return nil, normalizeError(err)
 	}
@@ -29,6 +29,9 @@ func (r HousingRepository) ListHousingCriteria(ctx context.Context, familyID, ac
 			return nil, normalizeError(err)
 		}
 		criteria = append(criteria, c)
+	}
+	if len(criteria) > 50 {
+		return nil, apperror.ErrQuotaExceeded
 	}
 	return criteria, normalizeError(rows.Err())
 }
@@ -52,7 +55,7 @@ func (r HousingRepository) checklistTransaction(ctx context.Context, familyID, a
 }
 
 func checklistIDs(ctx context.Context, tx pgx.Tx, familyID domain.ID) ([]domain.ID, error) {
-	rows, err := tx.Query(ctx, `SELECT id::text FROM housing_checklist_criteria WHERE family_id=$1::uuid AND deleted_at IS NULL ORDER BY display_order, id`, string(familyID))
+	rows, err := tx.Query(ctx, `SELECT id::text FROM housing_checklist_criteria WHERE family_id=$1::uuid AND deleted_at IS NULL ORDER BY display_order, id LIMIT 51`, string(familyID))
 	if err != nil {
 		return nil, normalizeError(err)
 	}
@@ -64,6 +67,9 @@ func checklistIDs(ctx context.Context, tx pgx.Tx, familyID domain.ID) ([]domain.
 			return nil, normalizeError(err)
 		}
 		ids = append(ids, id)
+	}
+	if len(ids) > 50 {
+		return nil, apperror.ErrQuotaExceeded
 	}
 	return ids, normalizeError(rows.Err())
 }
@@ -183,7 +189,15 @@ func (r HousingRepository) ReorderHousingCriteria(ctx context.Context, familyID 
 	return normalizeError(tx.Commit(ctx))
 }
 
-func (r HousingRepository) ListHousingAnswers(ctx context.Context, familyID, actorID domain.ID) ([]domain.HousingAnswer, error) {
+func (r HousingRepository) ListHousingAnswers(ctx context.Context, familyID, actorID domain.ID, selected ...domain.ID) ([]domain.HousingAnswer, error) {
+	return r.listHousingAnswers(ctx, familyID, actorID, true, selected)
+}
+
+func (r HousingRepository) listHousingAnswers(ctx context.Context, familyID, actorID domain.ID, notes bool, selected []domain.ID) ([]domain.HousingAnswer, error) {
+	ids := make([]string, len(selected))
+	for i, id := range selected {
+		ids[i] = string(id)
+	}
 	allowed, err := r.hasFamilyAccess(ctx, actorID, familyID)
 	if err != nil {
 		return nil, err
@@ -191,7 +205,7 @@ func (r HousingRepository) ListHousingAnswers(ctx context.Context, familyID, act
 	if !allowed {
 		return nil, apperror.ErrForbidden
 	}
-	rows, err := r.pool.Query(ctx, `SELECT a.housing_id::text,a.criterion_id::text,a.state,a.rating,a.notes FROM housing_checklist_answers a JOIN housing_checklist_criteria c ON c.id=a.criterion_id WHERE a.family_id=$1::uuid AND c.deleted_at IS NULL`, string(familyID))
+	rows, err := r.pool.Query(ctx, `SELECT a.housing_id::text,a.criterion_id::text,a.state,a.rating,CASE WHEN $3 THEN a.notes ELSE '' END FROM housing_checklist_answers a JOIN housing_checklist_criteria c ON c.id=a.criterion_id WHERE a.family_id=$1::uuid AND c.deleted_at IS NULL AND (cardinality($2::uuid[])=0 OR a.housing_id=ANY($2::uuid[])) LIMIT 5001`, string(familyID), ids, notes)
 	if err != nil {
 		return nil, normalizeError(err)
 	}
@@ -203,6 +217,9 @@ func (r HousingRepository) ListHousingAnswers(ctx context.Context, familyID, act
 			return nil, normalizeError(err)
 		}
 		answers = append(answers, a)
+	}
+	if len(answers) > 5000 {
+		return nil, apperror.ErrQuotaExceeded
 	}
 	return answers, normalizeError(rows.Err())
 }
@@ -239,7 +256,11 @@ func (r HousingRepository) attachHousingEvaluations(ctx context.Context, options
 	if err != nil {
 		return err
 	}
-	answers, err := r.ListHousingAnswers(ctx, familyID, actorID)
+	ids := make([]domain.ID, len(options))
+	for i := range options {
+		ids[i] = options[i].ID
+	}
+	answers, err := r.listHousingAnswers(ctx, familyID, actorID, false, ids)
 	if err != nil {
 		return err
 	}

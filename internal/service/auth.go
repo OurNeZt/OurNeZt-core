@@ -61,6 +61,9 @@ func (s AuthService) beginPasswordWork(ctx context.Context, account string) (fun
 }
 
 func (s AuthService) CreateUser(ctx context.Context, email, displayName, password string, role domain.UserRole) (domain.User, error) {
+	if err := domain.ValidateAuthInputLengths(email, displayName, password); err != nil {
+		return domain.User{}, err
+	}
 	email = strings.ToLower(strings.TrimSpace(email))
 	if email == "" || strings.TrimSpace(password) == "" {
 		return domain.User{}, apperror.ErrInvalidArgument
@@ -97,6 +100,9 @@ func (s AuthService) ListUsers(ctx context.Context, pages ...domain.Page) ([]dom
 }
 
 func (s AuthService) Login(ctx context.Context, email, password string) (domain.User, error) {
+	if err := domain.ValidateAuthInputLengths(email, "", password); err != nil {
+		return domain.User{}, apperror.ErrUnauthenticated
+	}
 	email = strings.ToLower(strings.TrimSpace(email))
 	release, err := s.beginPasswordWork(ctx, "login:"+email)
 	if err != nil {
@@ -125,6 +131,12 @@ func (s AuthService) Login(ctx context.Context, email, password string) (domain.
 }
 
 func (s AuthService) ChangePassword(ctx context.Context, userID domain.ID, currentPassword, newPassword string) error {
+	if err := domain.ValidateAuthInputLengths("", "", currentPassword); err != nil {
+		return err
+	}
+	if err := domain.ValidateAuthInputLengths("", "", newPassword); err != nil {
+		return err
+	}
 	if strings.TrimSpace(string(userID)) == "" || strings.TrimSpace(currentPassword) == "" || strings.TrimSpace(newPassword) == "" {
 		return apperror.ErrInvalidArgument
 	}
@@ -160,6 +172,9 @@ func (s AuthService) ChangePassword(ctx context.Context, userID domain.ID, curre
 }
 
 func (s AuthService) UpdateMyAccount(ctx context.Context, userID domain.ID, email, displayName string) (domain.User, error) {
+	if err := domain.ValidateAuthInputLengths(email, displayName, ""); err != nil {
+		return domain.User{}, err
+	}
 	if strings.TrimSpace(string(userID)) == "" {
 		return domain.User{}, apperror.ErrInvalidArgument
 	}
@@ -236,6 +251,9 @@ func (s AuthService) DisableUser(ctx context.Context, userID domain.ID) error {
 }
 
 func (s AuthService) EnsureBootstrapAdmin(ctx context.Context, email, displayName, temporaryPassword string) (domain.User, bool, error) {
+	if err := domain.ValidateAuthInputLengths(email, displayName, temporaryPassword); err != nil {
+		return domain.User{}, false, err
+	}
 	email = strings.ToLower(strings.TrimSpace(email))
 	displayName = strings.TrimSpace(displayName)
 	temporaryPassword = strings.TrimSpace(temporaryPassword)

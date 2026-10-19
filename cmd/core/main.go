@@ -47,7 +47,7 @@ func main() {
 	}
 
 	authLimits := authlimit.New(cfg.AuthLimits)
-	grpcOptions := []grpc.ServerOption{grpc.ChainUnaryInterceptor(server.AuthRateLimitInterceptor(authLimits, logger))}
+	grpcOptions := []grpc.ServerOption{grpc.ChainUnaryInterceptor(server.InputLimitInterceptor, server.AuthRateLimitInterceptor(authLimits, logger)), grpc.MaxRecvMsgSize(1 << 20)}
 	grpcTLS := cfg.GRPCTLSCertFile != "" && cfg.GRPCTLSKeyFile != ""
 	if grpcTLS {
 		tlsCreds, tlsErr := credentials.NewServerTLSFromFile(cfg.GRPCTLSCertFile, cfg.GRPCTLSKeyFile)
