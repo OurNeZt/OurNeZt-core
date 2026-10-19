@@ -246,9 +246,12 @@ func (x *GetPersonProfileRequest) GetPersonId() string {
 }
 
 type ListPersonProfilesByFamilyRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	ViewerUserId  string                 `protobuf:"bytes,1,opt,name=viewer_user_id,json=viewerUserId,proto3" json:"viewer_user_id,omitempty"`
-	FamilyId      string                 `protobuf:"bytes,2,opt,name=family_id,json=familyId,proto3" json:"family_id,omitempty"`
+	state        protoimpl.MessageState `protogen:"open.v1"`
+	ViewerUserId string                 `protobuf:"bytes,1,opt,name=viewer_user_id,json=viewerUserId,proto3" json:"viewer_user_id,omitempty"`
+	FamilyId     string                 `protobuf:"bytes,2,opt,name=family_id,json=familyId,proto3" json:"family_id,omitempty"`
+	// Zero uses 50; maximum 100. Pass next_page_token unchanged to continue.
+	PageSize      int32  `protobuf:"varint,99,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	PageToken     string `protobuf:"bytes,100,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -297,9 +300,24 @@ func (x *ListPersonProfilesByFamilyRequest) GetFamilyId() string {
 	return ""
 }
 
+func (x *ListPersonProfilesByFamilyRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+func (x *ListPersonProfilesByFamilyRequest) GetPageToken() string {
+	if x != nil {
+		return x.PageToken
+	}
+	return ""
+}
+
 type ListPersonProfilesByFamilyResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	People        []*PersonProfile       `protobuf:"bytes,1,rep,name=people,proto3" json:"people,omitempty"`
+	NextPageToken string                 `protobuf:"bytes,99,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -341,10 +359,20 @@ func (x *ListPersonProfilesByFamilyResponse) GetPeople() []*PersonProfile {
 	return nil
 }
 
+func (x *ListPersonProfilesByFamilyResponse) GetNextPageToken() string {
+	if x != nil {
+		return x.NextPageToken
+	}
+	return ""
+}
+
 type ListIncomeHistoryByFamilyRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	ViewerUserId  string                 `protobuf:"bytes,1,opt,name=viewer_user_id,json=viewerUserId,proto3" json:"viewer_user_id,omitempty"`
-	FamilyId      string                 `protobuf:"bytes,2,opt,name=family_id,json=familyId,proto3" json:"family_id,omitempty"`
+	state        protoimpl.MessageState `protogen:"open.v1"`
+	ViewerUserId string                 `protobuf:"bytes,1,opt,name=viewer_user_id,json=viewerUserId,proto3" json:"viewer_user_id,omitempty"`
+	FamilyId     string                 `protobuf:"bytes,2,opt,name=family_id,json=familyId,proto3" json:"family_id,omitempty"`
+	// Zero uses 50; maximum 100. Pass next_page_token unchanged to continue.
+	PageSize      int32  `protobuf:"varint,99,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	PageToken     string `protobuf:"bytes,100,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -389,6 +417,20 @@ func (x *ListIncomeHistoryByFamilyRequest) GetViewerUserId() string {
 func (x *ListIncomeHistoryByFamilyRequest) GetFamilyId() string {
 	if x != nil {
 		return x.FamilyId
+	}
+	return ""
+}
+
+func (x *ListIncomeHistoryByFamilyRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+func (x *ListIncomeHistoryByFamilyRequest) GetPageToken() string {
+	if x != nil {
+		return x.PageToken
 	}
 	return ""
 }
@@ -472,6 +514,7 @@ func (x *IncomeHistoryEntry) GetRecordedAt() string {
 type ListIncomeHistoryByFamilyResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Entries       []*IncomeHistoryEntry  `protobuf:"bytes,1,rep,name=entries,proto3" json:"entries,omitempty"`
+	NextPageToken string                 `protobuf:"bytes,99,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -511,6 +554,13 @@ func (x *ListIncomeHistoryByFamilyResponse) GetEntries() []*IncomeHistoryEntry {
 		return x.Entries
 	}
 	return nil
+}
+
+func (x *ListIncomeHistoryByFamilyResponse) GetNextPageToken() string {
+	if x != nil {
+		return x.NextPageToken
+	}
+	return ""
 }
 
 type DeletePersonProfileRequest struct {
@@ -631,15 +681,22 @@ const file_ournezt_v1_person_proto_rawDesc = "" +
 	"\x16monthly_expenses_cents\x18\x10 \x01(\x03R\x14monthlyExpensesCents\"\\\n" +
 	"\x17GetPersonProfileRequest\x12$\n" +
 	"\x0eviewer_user_id\x18\x01 \x01(\tR\fviewerUserId\x12\x1b\n" +
-	"\tperson_id\x18\x02 \x01(\tR\bpersonId\"f\n" +
+	"\tperson_id\x18\x02 \x01(\tR\bpersonId\"\xa2\x01\n" +
 	"!ListPersonProfilesByFamilyRequest\x12$\n" +
 	"\x0eviewer_user_id\x18\x01 \x01(\tR\fviewerUserId\x12\x1b\n" +
-	"\tfamily_id\x18\x02 \x01(\tR\bfamilyId\"W\n" +
+	"\tfamily_id\x18\x02 \x01(\tR\bfamilyId\x12\x1b\n" +
+	"\tpage_size\x18c \x01(\x05R\bpageSize\x12\x1d\n" +
+	"\n" +
+	"page_token\x18d \x01(\tR\tpageToken\"\x7f\n" +
 	"\"ListPersonProfilesByFamilyResponse\x121\n" +
-	"\x06people\x18\x01 \x03(\v2\x19.ournezt.v1.PersonProfileR\x06people\"e\n" +
+	"\x06people\x18\x01 \x03(\v2\x19.ournezt.v1.PersonProfileR\x06people\x12&\n" +
+	"\x0fnext_page_token\x18c \x01(\tR\rnextPageToken\"\xa1\x01\n" +
 	" ListIncomeHistoryByFamilyRequest\x12$\n" +
 	"\x0eviewer_user_id\x18\x01 \x01(\tR\fviewerUserId\x12\x1b\n" +
-	"\tfamily_id\x18\x02 \x01(\tR\bfamilyId\"\xf1\x01\n" +
+	"\tfamily_id\x18\x02 \x01(\tR\bfamilyId\x12\x1b\n" +
+	"\tpage_size\x18c \x01(\x05R\bpageSize\x12\x1d\n" +
+	"\n" +
+	"page_token\x18d \x01(\tR\tpageToken\"\xf1\x01\n" +
 	"\x12IncomeHistoryEntry\x12\x1b\n" +
 	"\tperson_id\x18\x01 \x01(\tR\bpersonId\x12\x1f\n" +
 	"\vperson_name\x18\x02 \x01(\tR\n" +
@@ -647,9 +704,10 @@ const file_ournezt_v1_person_proto_rawDesc = "" +
 	"\x1agross_monthly_income_cents\x18\x03 \x01(\x03R\x17grossMonthlyIncomeCents\x12?\n" +
 	"\x1cexpected_future_income_cents\x18\x04 \x01(\x03R\x19expectedFutureIncomeCents\x12\x1f\n" +
 	"\vrecorded_at\x18\x05 \x01(\tR\n" +
-	"recordedAt\"]\n" +
+	"recordedAt\"\x85\x01\n" +
 	"!ListIncomeHistoryByFamilyResponse\x128\n" +
-	"\aentries\x18\x01 \x03(\v2\x1e.ournezt.v1.IncomeHistoryEntryR\aentries\"]\n" +
+	"\aentries\x18\x01 \x03(\v2\x1e.ournezt.v1.IncomeHistoryEntryR\aentries\x12&\n" +
+	"\x0fnext_page_token\x18c \x01(\tR\rnextPageToken\"]\n" +
 	"\x1aDeletePersonProfileRequest\x12\"\n" +
 	"\ractor_user_id\x18\x01 \x01(\tR\vactorUserId\x12\x1b\n" +
 	"\tperson_id\x18\x02 \x01(\tR\bpersonId\"\x1d\n" +

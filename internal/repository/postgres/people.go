@@ -136,7 +136,12 @@ func (r PersonRepository) GetPersonProfile(ctx context.Context, personID domain.
 	return profile, nil
 }
 
-func (r PersonRepository) ListPersonProfilesByFamily(ctx context.Context, familyID domain.ID, viewerID domain.ID) ([]domain.PersonProfile, error) {
+func (r PersonRepository) ListPersonProfilesByFamily(ctx context.Context, familyID domain.ID, viewerID domain.ID, pages ...domain.Page) ([]domain.PersonProfile, error) {
+	limit, afterTime, afterID, pageErr := listWindow(pages)
+	if pageErr != nil {
+		return nil, pageErr
+	}
+
 	allowed, err := r.hasFamilyAccess(ctx, viewerID, familyID)
 	if err != nil {
 		return nil, err
@@ -153,8 +158,10 @@ func (r PersonRepository) ListPersonProfilesByFamily(ctx context.Context, family
 			cpf_ma_cents, monthly_expenses_cents, created_at, updated_at
 		FROM person_profiles
 		WHERE family_id = $1::uuid
-		ORDER BY created_at DESC
-	`, string(familyID))
+		AND (created_at,id) < (COALESCE($2::timestamptz,'infinity'::timestamptz),COALESCE(NULLIF($3,''),'ffffffff-ffff-ffff-ffff-ffffffffffff')::uuid)
+		ORDER BY created_at DESC,id DESC
+		LIMIT $4
+	`, string(familyID), afterTime, afterID, limit)
 	if err != nil {
 		if isLinkedUserCompatibilityError(err) {
 			legacyRows, legacyErr := r.pool.Query(ctx, `
@@ -165,8 +172,10 @@ func (r PersonRepository) ListPersonProfilesByFamily(ctx context.Context, family
 					cpf_ma_cents, monthly_expenses_cents, created_at, updated_at
 				FROM person_profiles
 				WHERE family_id = $1::uuid
-				ORDER BY created_at DESC
-			`, string(familyID))
+				AND (created_at,id) < (COALESCE($2::timestamptz,'infinity'::timestamptz),COALESCE(NULLIF($3,''),'ffffffff-ffff-ffff-ffff-ffffffffffff')::uuid)
+		ORDER BY created_at DESC,id DESC
+		LIMIT $4
+			`, string(familyID), afterTime, afterID, limit)
 			if legacyErr != nil {
 				return nil, normalizeError(legacyErr)
 			}
@@ -183,7 +192,7 @@ func (r PersonRepository) ListPersonProfilesByFamily(ctx context.Context, family
 			if err := legacyRows.Err(); err != nil {
 				return nil, normalizeError(err)
 			}
-			return profiles, nil
+			return completeList(profiles, pages)
 		}
 		return nil, normalizeError(err)
 	}
@@ -200,10 +209,15 @@ func (r PersonRepository) ListPersonProfilesByFamily(ctx context.Context, family
 	if err := rows.Err(); err != nil {
 		return nil, normalizeError(err)
 	}
-	return profiles, nil
+	return completeList(profiles, pages)
 }
 
-func (r PersonRepository) ListPersonIncomeHistoryByFamily(ctx context.Context, familyID domain.ID, viewerID domain.ID) ([]domain.PersonIncomeHistoryEntry, error) {
+func (r PersonRepository) ListPersonIncomeHistoryByFamily(ctx context.Context, familyID domain.ID, viewerID domain.ID, pages ...domain.Page) ([]domain.PersonIncomeHistoryEntry, error) {
+	limit, afterTime, afterID, pageErr := listWindow(pages)
+	if pageErr != nil {
+		return nil, pageErr
+	}
+
 	allowed, err := r.hasFamilyAccess(ctx, viewerID, familyID)
 	if err != nil {
 		return nil, err
@@ -214,7 +228,7 @@ func (r PersonRepository) ListPersonIncomeHistoryByFamily(ctx context.Context, f
 
 	rows, err := r.pool.Query(ctx, `
 		SELECT
-			h.person_profile_id::text,
+			h.id::text, h.person_profile_id::text,
 			COALESCE(p.name, h.person_name),
 			h.gross_monthly_income_cents,
 			h.expected_future_income_cents,
@@ -222,8 +236,10 @@ func (r PersonRepository) ListPersonIncomeHistoryByFamily(ctx context.Context, f
 		FROM person_income_history h
 		LEFT JOIN person_profiles p ON p.id = h.person_profile_id
 		WHERE h.family_id = $1::uuid
-		ORDER BY h.recorded_at ASC, h.person_profile_id ASC
-	`, string(familyID))
+		AND (h.recorded_at,h.id) > (COALESCE($2::timestamptz,'-infinity'::timestamptz),COALESCE(NULLIF($3,''),'00000000-0000-0000-0000-000000000000')::uuid)
+		ORDER BY h.recorded_at ASC,h.id ASC
+		LIMIT $4
+	`, string(familyID), afterTime, afterID, limit)
 	if err != nil {
 		return nil, normalizeError(err)
 	}
@@ -234,7 +250,7 @@ func (r PersonRepository) ListPersonIncomeHistoryByFamily(ctx context.Context, f
 		var entry domain.PersonIncomeHistoryEntry
 		var personID string
 		if scanErr := rows.Scan(
-			&personID,
+			&entry.ID, &personID,
 			&entry.PersonName,
 			&entry.GrossMonthlyIncomeCents,
 			&entry.ExpectedFutureIncomeCents,
@@ -248,7 +264,7 @@ func (r PersonRepository) ListPersonIncomeHistoryByFamily(ctx context.Context, f
 	if err := rows.Err(); err != nil {
 		return nil, normalizeError(err)
 	}
-	return entries, nil
+	return completeList(entries, pages)
 }
 
 func (r PersonRepository) UpdatePersonProfile(ctx context.Context, profile domain.PersonProfile, actorID domain.ID) (domain.PersonProfile, error) {

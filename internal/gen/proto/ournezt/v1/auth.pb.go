@@ -686,7 +686,10 @@ func (x *ConsumeAdminAccessKeyResponse) GetAccessGranted() bool {
 }
 
 type ListUsersRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Zero uses 50; maximum 100. Pass next_page_token unchanged to continue.
+	PageSize      int32  `protobuf:"varint,99,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	PageToken     string `protobuf:"bytes,100,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -721,9 +724,24 @@ func (*ListUsersRequest) Descriptor() ([]byte, []int) {
 	return file_ournezt_v1_auth_proto_rawDescGZIP(), []int{14}
 }
 
+func (x *ListUsersRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+func (x *ListUsersRequest) GetPageToken() string {
+	if x != nil {
+		return x.PageToken
+	}
+	return ""
+}
+
 type ListUsersResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Users         []*User                `protobuf:"bytes,1,rep,name=users,proto3" json:"users,omitempty"`
+	NextPageToken string                 `protobuf:"bytes,99,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -763,6 +781,13 @@ func (x *ListUsersResponse) GetUsers() []*User {
 		return x.Users
 	}
 	return nil
+}
+
+func (x *ListUsersResponse) GetNextPageToken() string {
+	if x != nil {
+		return x.NextPageToken
+	}
+	return ""
 }
 
 type CreateUserRequest struct {
@@ -955,10 +980,14 @@ const file_ournezt_v1_auth_proto_rawDesc = "" +
 	"\n" +
 	"access_key\x18\x01 \x01(\tR\taccessKey\"F\n" +
 	"\x1dConsumeAdminAccessKeyResponse\x12%\n" +
-	"\x0eaccess_granted\x18\x01 \x01(\bR\raccessGranted\"\x12\n" +
-	"\x10ListUsersRequest\";\n" +
+	"\x0eaccess_granted\x18\x01 \x01(\bR\raccessGranted\"N\n" +
+	"\x10ListUsersRequest\x12\x1b\n" +
+	"\tpage_size\x18c \x01(\x05R\bpageSize\x12\x1d\n" +
+	"\n" +
+	"page_token\x18d \x01(\tR\tpageToken\"c\n" +
 	"\x11ListUsersResponse\x12&\n" +
-	"\x05users\x18\x01 \x03(\v2\x10.ournezt.v1.UserR\x05users\"|\n" +
+	"\x05users\x18\x01 \x03(\v2\x10.ournezt.v1.UserR\x05users\x12&\n" +
+	"\x0fnext_page_token\x18c \x01(\tR\rnextPageToken\"|\n" +
 	"\x11CreateUserRequest\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12!\n" +
 	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x12\x1a\n" +
