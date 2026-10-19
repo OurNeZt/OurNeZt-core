@@ -6,6 +6,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/OurNeZt/ournezt-core/internal/domain"
 	"github.com/OurNeZt/ournezt-core/internal/platform/apperror"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
@@ -57,10 +58,10 @@ func validateMessage(message protoreflect.Message, depth int) error {
 			case "page_token":
 				limit = 512
 			case "password", "current_password", "new_password":
-				if len(v.String()) > 1024 {
-					return inputTooLong(name, 1024, "bytes")
+				if len(v.String()) > domain.MaxPasswordBytes {
+					return inputTooLong(name, domain.MaxPasswordBytes, "bytes")
 				}
-				limit = 1024
+				limit = domain.MaxPasswordBytes
 			}
 			if !utf8.ValidString(v.String()) || utf8.RuneCountInString(v.String()) > limit {
 				return inputTooLong(name, limit, "characters")
