@@ -60,6 +60,7 @@
       </ul>
     </li>
     <li><a href="#login-response-protections">Login Response Protections</a></li>
+    <li><a href="#password-policy">Password Policy</a></li>
     <li><a href="#session-revocation">Session Revocation</a></li>
     <li><a href="#family-invite-codes">Family Invite Codes</a></li>
     <li><a href="#resource-limits-and-retention">Resource Limits And Retention</a></li>
@@ -199,9 +200,10 @@ Example:
 export GRPC_ADDR=":50051"
 export DATABASE_URL="postgres://ournezt:ournezt@localhost:5432/ournezt?sslmode=disable"
 export SESSION_TOKEN_BYTES="32"
-export BOOTSTRAP_ADMIN_EMAIL = "admin@example.com"
-export BOOTSTRAP_ADMIN_PASSWORD = "P@ssw0rd"
-export BOOTSTRAP_ADMIN_DISPLAY_NAME = "Admin"
+export BOOTSTRAP_ADMIN_EMAIL="admin@example.com"
+# Replace this example with your own unique passphrase.
+export BOOTSTRAP_ADMIN_PASSWORD="replace-with-a-unique-passphrase"
+export BOOTSTRAP_ADMIN_DISPLAY_NAME="Admin"
 ```
 
 Behaviour:
@@ -227,6 +229,27 @@ go test ./internal/platform/security ./internal/service ./internal/server -run '
 The checks cover identical gRPC codes, messages, and empty error details; failed logins creating no session; configured dummy verification cost; verification for disabled users and lookup failures; and rate/concurrency limits during dummy work. `TestLoginGRPCFailureResponses` starts the real Auth server and service on an in-memory gRPC transport, checks the client-visible responses for unknown emails, wrong passwords, disabled users with both correct and wrong passwords, lookup failures, and malformed hashes, then verifies a successful login still creates a session. No running Core instance or PostgreSQL is needed. The service tests inspect the verification work rather than asserting noisy timing thresholds.
 
 For a running Web + Core deployment, use Web's `cmd/login-enumeration-check` with existing active and disabled test fixture emails. Its README includes the reviewer command and expected results.
+
+---
+
+## Password Policy
+
+New passwords must contain at least 15 Unicode code points and at most 1,024 UTF-8 bytes. Blank, whitespace-only, invalid UTF-8, and blocklisted common passwords are rejected. Spaces and Unicode are supported, with no required mix of uppercase, lowercase, digits, or symbols. These length and composition choices follow the [NIST password guidance for single-factor authentication](https://pages.nist.gov/800-63-4/sp800-63b.html#passwordver).
+
+The policy applies to user/admin creation, password changes, and bootstrap admin creation or promotion. Invalid input returns gRPC `InvalidArgument` with a reason, without echoing the password. Validation happens before password hashing or account mutation. A rejected password change leaves the existing password, first-login flag, and sessions intact. A successful change still revokes all sessions and requires a new login.
+
+The embedded, offline blocklist contains 1,330 entries selected from a pinned public SecLists dataset plus a few predictable public examples. It compares the whole password after lowercasing and trimming surrounding whitespace; hashing always uses the exact original bytes. It performs no external requests and is not comprehensive or live breach screening. Source, license, selection rules, and update instructions are in [the blocklist notes](internal/domain/passwords/README.md).
+
+Existing passwords remain usable for login and current-password verification, even if they do not meet the new policy. Only replacement passwords must satisfy it; this change does not force a reset or require a database migration. Bootstrap configuration also preserves password spaces. Replace weak bootstrap credentials before provisioning a new admin: startup fails validation if it needs to create or promote an admin with a password that violates the policy. When an active admin already exists, bootstrap skips password-policy checks because it does not set credentials; existing input-size checks still apply.
+
+Reviewer checks (no database or running Core instance required):
+
+```bash
+go test ./internal/domain ./internal/platform/config ./internal/service ./internal/server -run TestPasswordPolicy -count=1 -v
+go test ./...
+```
+
+The focused tests cover minimum and maximum boundaries in characters/bytes, Unicode, whitespace, common passwords, unchanged legacy login, exact password preservation, bootstrap creation/promotion, and validation before expensive work. The gRPC test exercises user creation and first-login password changes through the actual server/service, checks client-visible errors, verifies rejected changes leave sessions valid, then confirms a valid change revokes the session and permits login with the exact new password.
 
 ---
 
