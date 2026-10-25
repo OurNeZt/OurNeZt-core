@@ -234,13 +234,13 @@ For a running Web + Core deployment, use Web's `cmd/login-enumeration-check` wit
 
 ## Password Policy
 
-New passwords must contain at least 15 Unicode code points and at most 1,024 UTF-8 bytes. Blank, whitespace-only, invalid UTF-8, and blocklisted common passwords are rejected. Spaces and Unicode are supported, with no required mix of uppercase, lowercase, digits, or symbols. These length and composition choices follow the [NIST password guidance for single-factor authentication](https://pages.nist.gov/800-63-4/sp800-63b.html#passwordver).
+New passwords must contain at least 15 Unicode code points and at most 1,024 UTF-8 bytes. Blank passwords, invalid UTF-8, blocklisted common passwords, and passwords containing any whitespace are rejected. This includes leading, trailing, and internal spaces, tabs, line breaks, and Unicode whitespace. Non-whitespace Unicode is supported, with no required mix of uppercase, lowercase, digits, or symbols. The 15-character minimum follows the [NIST password guidance for single-factor authentication](https://pages.nist.gov/800-63-4/sp800-63b.html#passwordver).
 
 The policy applies to user/admin creation, password changes, and bootstrap admin creation or promotion. Invalid input returns gRPC `InvalidArgument` with a reason, without echoing the password. Validation happens before password hashing or account mutation. A rejected password change leaves the existing password, first-login flag, and sessions intact. A successful change still revokes all sessions and requires a new login.
 
-The embedded, offline blocklist contains 1,330 entries selected from a pinned public SecLists dataset plus a few predictable public examples. It compares the whole password after lowercasing and trimming surrounding whitespace; hashing always uses the exact original bytes. It performs no external requests and is not comprehensive or live breach screening. Source, license, selection rules, and update instructions are in [the blocklist notes](internal/domain/passwords/README.md).
+The embedded, offline blocklist contains 1,330 entries selected from a pinned public SecLists dataset plus a few predictable public examples. It compares the whole password after lowercasing; hashing always uses the exact original bytes. It performs no external requests and is not comprehensive or live breach screening. Source, license, selection rules, and update instructions are in [the blocklist notes](internal/domain/passwords/README.md).
 
-Existing passwords remain usable for login and current-password verification, even if they do not meet the new policy. Only replacement passwords must satisfy it; this change does not force a reset or require a database migration. Bootstrap configuration also preserves password spaces. Replace weak bootstrap credentials before provisioning a new admin: startup fails validation if it needs to create or promote an admin with a password that violates the policy. When an active admin already exists, bootstrap skips password-policy checks because it does not set credentials; existing input-size checks still apply.
+Existing passwords remain usable for login and current-password verification, even if they do not meet the new policy. Only replacement passwords must satisfy it; this change does not force a reset or require a database migration. Bootstrap configuration preserves the submitted bytes so whitespace is rejected instead of silently removed. Replace weak bootstrap credentials before provisioning a new admin: startup fails validation if it needs to create or promote an admin with a password that violates the policy. When an active admin already exists, bootstrap skips password-policy checks because it does not set credentials; existing input-size checks still apply.
 
 Reviewer checks (no database or running Core instance required):
 
@@ -249,7 +249,18 @@ go test ./internal/domain ./internal/platform/config ./internal/service ./intern
 go test ./...
 ```
 
-The focused tests cover minimum and maximum boundaries in characters/bytes, Unicode, whitespace, common passwords, unchanged legacy login, exact password preservation, bootstrap creation/promotion, and validation before expensive work. The gRPC test exercises user creation and first-login password changes through the actual server/service, checks client-visible errors, verifies rejected changes leave sessions valid, then confirms a valid change revokes the session and permits login with the exact new password.
+The focused tests cover minimum and maximum boundaries in characters/bytes, Unicode, whitespace, common passwords, unchanged legacy login (including existing whitespace passwords), exact password preservation, bootstrap creation/promotion, and validation before expensive work. The gRPC test exercises user creation and first-login password changes through the actual server/service, checks client-visible errors, verifies rejected changes leave sessions valid, then confirms a valid change revokes the session and permits login with the exact new password.
+
+Manual reviewer checks using a Core gRPC client and disposable accounts:
+
+1. As an authenticated admin, try `CreateUser` with `quiet otter bay`, ` quiet-otter-bay`, and `quiet-otter-bay `. Each must return `InvalidArgument` with `password must not contain whitespace`, without creating an account. Tabs, line breaks, and Unicode nonbreaking spaces must also be rejected.
+2. Create a user with `quiet-otter-bay` (15 characters) and confirm login succeeds. Shorter passwords, passwords over 1,024 UTF-8 bytes, and `passwordpassword` remain rejected.
+3. With a valid session and the correct current password, try changing to a password containing whitespace. The error must leave the original credentials and all sessions valid.
+4. Change to `another-peaceful-garden-near-home`. Old sessions and the old password must stop working; login with the exact new password must succeed.
+5. If an existing account has whitespace in its password, confirm that exact password still works for login and as the current password when upgrading to a compliant replacement. The new policy applies only when setting credentials.
+6. With no active admin in a fresh test database, bootstrap credentials containing whitespace must fail provisioning without creating or promoting an account. A compliant bootstrap password must still work.
+
+When testing through Web, use its matching whitespace-policy update so password-change forms forward the exact current password and explicitly reject whitespace in new passwords.
 
 ---
 

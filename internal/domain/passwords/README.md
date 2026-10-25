@@ -10,6 +10,6 @@ To regenerate the source-derived entries, select the first 1,000 lines plus ever
 - `passwordpasswordpassword`
 - `ourneztpassword123`
 
-Short entries catch common passwords padded with whitespace; longer source entries cover passwords that pass the minimum length. Screening compares the whole candidate after lowercasing and trimming, never substrings. Hashing preserves the exact original password. The list is embedded at build time and requires no runtime files or network requests.
+The source selection retains common short entries even though they already fail the minimum length. Whitespace-containing entries also fail the whitespace check before blocklist screening. Longer entries cover passwords that pass those checks. Screening compares the whole candidate after lowercasing, never substrings. Hashing preserves the exact original password. The list is embedded at build time and requires no runtime files or network requests.
 
 This is a compact, static blocklist, not comprehensive or live breached-password screening. Review the pinned source and refresh this file deliberately when updating the policy. Keep entries as one lowercase password per line, without comments.
