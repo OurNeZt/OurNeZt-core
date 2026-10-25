@@ -15,11 +15,11 @@ import (
 	"github.com/OurNeZt/ournezt-core/internal/platform/config"
 	"github.com/OurNeZt/ournezt-core/internal/platform/database"
 	"github.com/OurNeZt/ournezt-core/internal/platform/security"
+	"github.com/OurNeZt/ournezt-core/internal/platform/transport"
 	"github.com/OurNeZt/ournezt-core/internal/repository/postgres"
 	"github.com/OurNeZt/ournezt-core/internal/server"
 	"github.com/OurNeZt/ournezt-core/internal/service"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
 )
@@ -32,6 +32,11 @@ func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 		Level: cfg.LogLevel(),
 	}))
+	grpcCredentials, err := transport.ServerCredentials(cfg, logger)
+	if err != nil {
+		logger.Error("invalid grpc transport configuration", "error", err)
+		os.Exit(1)
+	}
 
 	pool, err := database.Open(ctx, cfg.DatabaseURL)
 	if err != nil {
@@ -48,14 +53,9 @@ func main() {
 
 	authLimits := authlimit.New(cfg.AuthLimits)
 	grpcOptions := []grpc.ServerOption{grpc.ChainUnaryInterceptor(server.InputLimitInterceptor, server.AuthRateLimitInterceptor(authLimits, logger)), grpc.MaxRecvMsgSize(1 << 20)}
-	grpcTLS := cfg.GRPCTLSCertFile != "" && cfg.GRPCTLSKeyFile != ""
+	grpcTLS := grpcCredentials != nil
 	if grpcTLS {
-		tlsCreds, tlsErr := credentials.NewServerTLSFromFile(cfg.GRPCTLSCertFile, cfg.GRPCTLSKeyFile)
-		if tlsErr != nil {
-			logger.Error("load grpc tls cert/key", "error", tlsErr)
-			os.Exit(1)
-		}
-		grpcOptions = append(grpcOptions, grpc.Creds(tlsCreds))
+		grpcOptions = append(grpcOptions, grpc.Creds(grpcCredentials))
 	}
 
 	grpcServer := grpc.NewServer(grpcOptions...)
