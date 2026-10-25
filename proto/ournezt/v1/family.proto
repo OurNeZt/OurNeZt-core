@@ -39,10 +39,15 @@ message GetFamilyRequest {
 
 message ListUserFamiliesRequest {
   string user_id = 1;
+
+  // Zero uses 50; maximum 100. Pass next_page_token unchanged to continue.
+  int32 page_size = 99;
+  string page_token = 100;
 }
 
 message ListUserFamiliesResponse {
   repeated Family families = 1;
+  string next_page_token = 99;
 }
 
 message JoinFamilyByCodeRequest {
@@ -62,9 +67,14 @@ message GenerateFamilyJoinCodeResponse {
 message ListFamilyMembersRequest {
   string actor_user_id = 1;
   string family_id = 2;
+
+  // Zero uses 50; maximum 100. Pass next_page_token unchanged to continue.
+  int32 page_size = 99;
+  string page_token = 100;
 }
 
 message ListFamilyMembersResponse {
   repeated FamilyMember members = 1;
+  string next_page_token = 99;
 }
 

@@ -29,11 +29,11 @@ func (r *fakePeopleRepository) GetPersonProfile(_ context.Context, _ domain.ID, 
 	return r.got, nil
 }
 
-func (r *fakePeopleRepository) ListPersonProfilesByFamily(_ context.Context, _ domain.ID, _ domain.ID) ([]domain.PersonProfile, error) {
+func (r *fakePeopleRepository) ListPersonProfilesByFamily(_ context.Context, _ domain.ID, _ domain.ID, pages ...domain.Page) ([]domain.PersonProfile, error) {
 	return r.list, nil
 }
 
-func (r *fakePeopleRepository) ListPersonIncomeHistoryByFamily(_ context.Context, _ domain.ID, _ domain.ID) ([]domain.PersonIncomeHistoryEntry, error) {
+func (r *fakePeopleRepository) ListPersonIncomeHistoryByFamily(_ context.Context, _ domain.ID, _ domain.ID, pages ...domain.Page) ([]domain.PersonIncomeHistoryEntry, error) {
 	return r.incomeHistory, nil
 }
 

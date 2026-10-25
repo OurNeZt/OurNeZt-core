@@ -76,10 +76,15 @@ message ConsumeAdminAccessKeyResponse {
   bool access_granted = 1;
 }
 
-message ListUsersRequest {}
+message ListUsersRequest {
+  // Zero uses 50; maximum 100. Pass next_page_token unchanged to continue.
+  int32 page_size = 99;
+  string page_token = 100;
+}
 
 message ListUsersResponse {
   repeated User users = 1;
+  string next_page_token = 99;
 }
 
 message CreateUserRequest {

@@ -3,6 +3,7 @@ package apperror
 import "errors"
 
 var (
+	ErrQuotaExceeded          = errors.New("resource quota exceeded")
 	ErrUnauthenticated        = errors.New("unauthenticated")
 	ErrForbidden              = errors.New("forbidden")
 	ErrNotFound               = errors.New("not found")
