@@ -40,6 +40,12 @@ func TestPasswordPolicyOverGRPC(t *testing.T) {
 	for _, tc := range []struct{ name, password, reason string }{
 		{"blank", "", "blank or whitespace-only"},
 		{"whitespace", strings.Repeat(" ", 20), "blank or whitespace-only"},
+		{"leading space", " quiet-otter-bay", "must not contain whitespace"},
+		{"trailing space", "quiet-otter-bay ", "must not contain whitespace"},
+		{"internal space", "quiet otter bay", "must not contain whitespace"},
+		{"tab", "quiet\totter-bay", "must not contain whitespace"},
+		{"newline", "quiet-otter\nbay", "must not contain whitespace"},
+		{"unicode space", "quiet\u00a0otter-bay", "must not contain whitespace"},
 		{"short", "x", "at least 15 characters"},
 		{"unicode short", strings.Repeat("界", 14), "at least 15 characters"},
 		{"too long", strings.Repeat("a", 1025), "must not exceed 1024 bytes"},
@@ -66,7 +72,7 @@ func TestPasswordPolicyOverGRPC(t *testing.T) {
 			}
 		})
 	}
-	const replacement = "  a peaceful garden near home  "
+	const replacement = "a-peaceful-garden-near-home"
 	if _, err := client.ChangePassword(userCtx, &pb.ChangePasswordRequest{CurrentPassword: "old-password", NewPassword: replacement}); err != nil {
 		t.Fatalf("valid password change rejected: %v", err)
 	}
@@ -77,12 +83,12 @@ func TestPasswordPolicyOverGRPC(t *testing.T) {
 	if err != nil || resp.GetUser().GetMustChangePassword() {
 		t.Fatalf("updated password or first-login state is incorrect: %v", err)
 	}
-	if _, err := client.Login(ctx, &pb.LoginRequest{Email: user.Email, Password: strings.TrimSpace(replacement)}); status.Code(err) != codes.Unauthenticated || status.Convert(err).Message() != "Invalid email or password." {
-		t.Fatalf("password spaces lost or login failure changed: %v", err)
+	if _, err := client.Login(ctx, &pb.LoginRequest{Email: user.Email, Password: replacement + " "}); status.Code(err) != codes.Unauthenticated || status.Convert(err).Message() != "Invalid email or password." {
+		t.Fatalf("incorrect password accepted or login failure changed: %v", err)
 	}
-	created, err := client.CreateUser(adminCtx, &pb.CreateUserRequest{Email: "new@example.com", Password: "quiet otter bay"})
+	created, err := client.CreateUser(adminCtx, &pb.CreateUserRequest{Email: "new@example.com", Password: "quiet-otter-bay"})
 	if err != nil || created.GetEmail() != "new@example.com" {
 		t.Fatalf("minimum-length passphrase was not provisioned: %v", err)
 	}
-	login("new@example.com", "quiet otter bay")
+	login("new@example.com", "quiet-otter-bay")
 }

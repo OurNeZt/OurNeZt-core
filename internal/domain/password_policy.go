@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"fmt"
 	"strings"
+	"unicode"
 	"unicode/utf8"
 
 	"github.com/OurNeZt/ournezt-core/internal/platform/apperror"
@@ -37,12 +38,14 @@ func ValidateNewPassword(password string) error {
 	if strings.TrimSpace(password) == "" {
 		return fmt.Errorf("%w: password must not be blank or whitespace-only", apperror.ErrInvalidArgument)
 	}
+	if strings.IndexFunc(password, unicode.IsSpace) >= 0 {
+		return fmt.Errorf("%w: password must not contain whitespace", apperror.ErrInvalidArgument)
+	}
 	if utf8.RuneCountInString(password) < MinPasswordCharacters {
 		return fmt.Errorf("%w: password must contain at least %d characters", apperror.ErrInvalidArgument, MinPasswordCharacters)
 	}
-	// Only the blocklist comparison is folded and trimmed. Hash the original
-	// password, preserving every space, character, and byte.
-	if _, blocked := commonPasswords[strings.ToLower(strings.TrimSpace(password))]; blocked {
+	// Only the blocklist comparison is folded. Hash the exact original bytes.
+	if _, blocked := commonPasswords[strings.ToLower(password)]; blocked {
 		return fmt.Errorf("%w: password is too common; choose a less predictable password", apperror.ErrInvalidArgument)
 	}
 	return nil

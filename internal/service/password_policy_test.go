@@ -28,7 +28,7 @@ func TestPasswordPolicyRejectsBeforePasswordWork(t *testing.T) {
 	}
 	defer release()
 	svc := NewAuthService(passwordPolicyNoWorkRepository{}, fastServiceArgon2Params(), guard)
-	for _, password := range []string{"", strings.Repeat(" ", 20), "x", strings.Repeat("界", 14), "passwordpassword", strings.Repeat("x", 1025), "invalid-password\xff"} {
+	for _, password := range []string{"", strings.Repeat(" ", 20), " leading-password", "trailing-password ", "internal password", "tabbed\tpassword", "unicode\u00a0password", "x", strings.Repeat("界", 14), "passwordpassword", strings.Repeat("x", 1025), "invalid-password\xff"} {
 		for _, operation := range []struct {
 			name string
 			run  func() error
@@ -62,7 +62,7 @@ func TestPasswordPolicyRejectsBeforePasswordWork(t *testing.T) {
 }
 
 func TestPasswordPolicyPreservesCredentialsWhenSettingPasswords(t *testing.T) {
-	const password = "  雨の静かな庭でゆっくりお茶を飲む  "
+	const password = "雨の静かな庭でゆっくりお茶を飲む"
 	for _, operation := range []string{"create", "bootstrap create", "bootstrap promote"} {
 		t.Run(operation, func(t *testing.T) {
 			repo := &fakeUserRepository{users: map[string]domain.User{}}
@@ -82,15 +82,15 @@ func TestPasswordPolicyPreservesCredentialsWhenSettingPasswords(t *testing.T) {
 			if _, err := svc.Login(context.Background(), "person@example.com", password); err != nil {
 				t.Fatalf("original password did not verify: %v", err)
 			}
-			if _, err := svc.Login(context.Background(), "person@example.com", strings.TrimSpace(password)); !errors.Is(err, apperror.ErrUnauthenticated) {
-				t.Fatalf("trimmed password authenticated: %v", err)
+			if _, err := svc.Login(context.Background(), "person@example.com", password+" "); !errors.Is(err, apperror.ErrUnauthenticated) {
+				t.Fatalf("password with an extra space authenticated: %v", err)
 			}
 		})
 	}
 }
 
 func TestPasswordPolicyAllowsLegacyLoginAndPasswordUpgrade(t *testing.T) {
-	for _, old := range []string{"x", "passwordpassword"} {
+	for _, old := range []string{"x", "passwordpassword", "legacy password", "  legacy password  "} {
 		t.Run(old, func(t *testing.T) {
 			hash, err := security.HashPassword(old, fastServiceArgon2Params())
 			if err != nil {
@@ -101,7 +101,7 @@ func TestPasswordPolicyAllowsLegacyLoginAndPasswordUpgrade(t *testing.T) {
 			if _, err := svc.Login(context.Background(), "person@example.com", old); err != nil {
 				t.Fatalf("legacy login rejected: %v", err)
 			}
-			const replacement = "  a peaceful garden near home  "
+			const replacement = "a-peaceful-garden-near-home"
 			if err := svc.ChangePassword(context.Background(), "user", old, replacement); err != nil {
 				t.Fatalf("legacy password upgrade rejected: %v", err)
 			}
@@ -109,7 +109,7 @@ func TestPasswordPolicyAllowsLegacyLoginAndPasswordUpgrade(t *testing.T) {
 			if user.MustChangePassword || len(repo.passwordUpdates) != 1 || user.PasswordHash == hash {
 				t.Fatal("password upgrade did not update credentials and clear the first-login flag")
 			}
-			for _, candidate := range []string{old, strings.TrimSpace(replacement)} {
+			for _, candidate := range []string{old, replacement + " "} {
 				if _, err := svc.Login(context.Background(), "person@example.com", candidate); !errors.Is(err, apperror.ErrUnauthenticated) {
 					t.Fatalf("incorrect password accepted after upgrade: %v", err)
 				}
@@ -125,7 +125,7 @@ func TestPasswordPolicyRejectsBootstrapPromotionWithoutChangingAccount(t *testin
 	before := domain.User{ID: "existing", Email: "person@example.com", Role: domain.UserRoleUser, PasswordHash: "existing-hash"}
 	repo := &fakeUserRepository{users: map[string]domain.User{before.Email: before}}
 	svc := NewAuthService(repo, fastServiceArgon2Params())
-	if _, changed, err := svc.EnsureBootstrapAdmin(context.Background(), before.Email, "Admin", "passwordpassword"); !errors.Is(err, apperror.ErrInvalidArgument) || changed {
+	if _, changed, err := svc.EnsureBootstrapAdmin(context.Background(), before.Email, "Admin", "bootstrap password"); !errors.Is(err, apperror.ErrInvalidArgument) || changed {
 		t.Fatalf("invalid bootstrap promotion changed=%v, err=%v", changed, err)
 	}
 	if repo.users[before.Email] != before {
