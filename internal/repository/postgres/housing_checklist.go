@@ -205,6 +205,8 @@ func (r HousingRepository) listHousingAnswers(ctx context.Context, familyID, act
 	if !allowed {
 		return nil, apperror.ErrForbidden
 	}
+	// The family quotas allow 100 housing options x 50 criteria = 5,000 active
+	// answers. Read one extra to detect legacy overflow without truncating scores.
 	rows, err := r.pool.Query(ctx, `SELECT a.housing_id::text,a.criterion_id::text,a.state,a.rating,CASE WHEN $3 THEN a.notes ELSE '' END FROM housing_checklist_answers a JOIN housing_checklist_criteria c ON c.id=a.criterion_id WHERE a.family_id=$1::uuid AND c.deleted_at IS NULL AND (cardinality($2::uuid[])=0 OR a.housing_id=ANY($2::uuid[])) LIMIT 5001`, string(familyID), ids, notes)
 	if err != nil {
 		return nil, normalizeError(err)
