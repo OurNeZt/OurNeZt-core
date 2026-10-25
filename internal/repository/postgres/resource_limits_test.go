@@ -31,8 +31,8 @@ func TestResourceLimitsPostgresConcurrentQuotas(t *testing.T) {
 	}{
 		{"sessions", 100, `INSERT INTO sessions(user_id,token_hash,expires_at) SELECT $1,'seed-'||i,now()+interval '1 hour' FROM generate_series(1,$2::int) i`, `INSERT INTO sessions(user_id,token_hash,expires_at) VALUES($1,$2,now()+interval '1 hour')`, true},
 		{"admin_access_keys", 100, `INSERT INTO admin_access_keys(user_id,token_hash,expires_at) SELECT $1,'seed-'||i,now()+interval '1 hour' FROM generate_series(1,$2::int) i`, `INSERT INTO admin_access_keys(user_id,token_hash,expires_at) VALUES($1,$2,now()+interval '1 hour')`, true},
-		{"person_profiles", 50, `INSERT INTO person_profiles(family_id,name,age,employment_status) SELECT $1,'Person '||i,30,'full_time_employee' FROM generate_series(1,$2::int) i`, `INSERT INTO person_profiles(family_id,name,age,employment_status) VALUES($1,$2,30,'full_time_employee')`, false},
-		{"housing_options", 50, `INSERT INTO housing_options(family_id,name,housing_type,purchase_price_cents,loan_type) SELECT $1,'Home '||i,'bto',1,'cash' FROM generate_series(1,$2::int) i`, `INSERT INTO housing_options(family_id,name,housing_type,purchase_price_cents,loan_type) VALUES($1,$2,'bto',1,'cash')`, false},
+		{"person_profiles", 20, `INSERT INTO person_profiles(family_id,name,age,employment_status) SELECT $1,'Person '||i,30,'full_time_employee' FROM generate_series(1,$2::int) i`, `INSERT INTO person_profiles(family_id,name,age,employment_status) VALUES($1,$2,30,'full_time_employee')`, false},
+		{"housing_options", 100, `INSERT INTO housing_options(family_id,name,housing_type,purchase_price_cents,loan_type) SELECT $1,'Home '||i,'bto',1,'cash' FROM generate_series(1,$2::int) i`, `INSERT INTO housing_options(family_id,name,housing_type,purchase_price_cents,loan_type) VALUES($1,$2,'bto',1,'cash')`, false},
 		{"housing_groups", 50, `INSERT INTO housing_groups(family_id,name) SELECT $1,'Group '||i FROM generate_series(1,$2::int) i`, `INSERT INTO housing_groups(family_id,name) VALUES($1,$2)`, false},
 		{"housing_checklist_criteria", 50, `INSERT INTO housing_checklist_criteria(family_id,name,display_order,deleted_at) SELECT $1,'Criterion '||i,i,CASE WHEN i%2=0 THEN now() END FROM generate_series(1,$2::int) i`, `INSERT INTO housing_checklist_criteria(family_id,name,display_order) VALUES($1,$2,50)`, false},
 		{"family_invites", 100, `INSERT INTO family_invites(family_id,code_hash,expires_at,revoked_at) SELECT $1,'seed-'||i,now()+interval '1 hour',CASE WHEN i%2=0 THEN now() END FROM generate_series(1,$2::int) i`, `INSERT INTO family_invites(family_id,code_hash,expires_at) VALUES($1,$2,now()+interval '1 hour')`, false},
@@ -93,7 +93,7 @@ func TestResourceLimitsPostgresConcurrentQuotas(t *testing.T) {
 func TestResourceLimitsPostgresFamilyMemberships(t *testing.T) {
 	f := familyInviteFixture(t)
 	ctx := context.Background()
-	for i := 1; i < 20; i++ {
+	for i := 1; i < 10; i++ {
 		if _, err := f.repo.CreateFamily(ctx, domain.Family{Name: fmt.Sprintf("Home %d", i), Type: domain.FamilyTypeFamily}, f.owner.ID); err != nil {
 			t.Fatal(err)
 		}
@@ -102,7 +102,7 @@ func TestResourceLimitsPostgresFamilyMemberships(t *testing.T) {
 		t.Fatalf("family cap bypassed: %v", err)
 	}
 	var count int
-	if err := f.pool.QueryRow(ctx, "SELECT count(*) FROM families").Scan(&count); err != nil || count != 20 {
+	if err := f.pool.QueryRow(ctx, "SELECT count(*) FROM families").Scan(&count); err != nil || count != 10 {
 		t.Fatalf("failed create left orphan: count=%d err=%v", count, err)
 	}
 	other := f.user(t, "other-owner")
@@ -121,7 +121,7 @@ func TestResourceLimitsPostgresFamilyMemberships(t *testing.T) {
 func TestResourceLimitsPostgresConcurrentFamilyJoins(t *testing.T) {
 	f := familyInviteFixture(t)
 	ctx := context.Background()
-	resourceExec(t, f, `WITH created AS (INSERT INTO users(email,role,password_hash) SELECT 'member-'||i||'@test','user','hash' FROM generate_series(1,48) i RETURNING id) INSERT INTO family_members(family_id,user_id,role) SELECT $1,id,'member' FROM created`, f.family.ID)
+	resourceExec(t, f, `WITH created AS (INSERT INTO users(email,role,password_hash) SELECT 'member-'||i||'@test','user','hash' FROM generate_series(1,18) i RETURNING id) INSERT INTO family_members(family_id,user_id,role) SELECT $1,id,'member' FROM created`, f.family.ID)
 	f.generate(t, "join-code")
 	first, second := f.user(t, "first"), f.user(t, "second")
 	start, results := make(chan struct{}), make(chan error, 2)
@@ -147,8 +147,53 @@ func TestResourceLimitsPostgresConcurrentFamilyJoins(t *testing.T) {
 	if success != 1 || limited != 1 {
 		t.Fatalf("member quota race: success=%d limited=%d", success, limited)
 	}
+	var members int
+	if err := f.pool.QueryRow(ctx, "SELECT count(*) FROM family_members WHERE family_id=$1", f.family.ID).Scan(&members); err != nil || members != 20 {
+		t.Fatalf("member quota count=%d, err=%v", members, err)
+	}
+	for i := 1; i < 10; i++ {
+		if _, err := f.repo.CreateFamily(ctx, domain.Family{Name: "Other home", Type: domain.FamilyTypeFamily}, f.owner.ID); err != nil {
+			t.Fatal(err)
+		}
+	}
 	// Existing membership can be joined again even when both quotas are full.
 	f.requireJoin(t, f.owner, "join-code", true)
+}
+
+func TestResourceLimitsPostgresMixedFamilyMemberships(t *testing.T) {
+	f := familyInviteFixture(t)
+	ctx := context.Background()
+	member := f.user(t, "member")
+	if _, err := f.repo.CreateFamily(ctx, domain.Family{Name: "Owned home", Type: domain.FamilyTypeFamily}, member.ID); err != nil {
+		t.Fatal(err)
+	}
+	// Nine joined families plus one owned family use the same ten slots.
+	for i := 0; i < 9; i++ {
+		family, err := f.repo.CreateFamily(ctx, domain.Family{Name: fmt.Sprintf("Joined %d", i), Type: domain.FamilyTypeFamily}, f.owner.ID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		code := fmt.Sprintf("mixed-%d", i)
+		if err := f.repo.GenerateFamilyJoinCode(ctx, f.owner.ID, family.ID, security.HashToken(code), nil); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := f.repo.JoinFamilyByCode(ctx, member.ID, security.HashToken(code)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.repo.CreateFamily(ctx, domain.Family{Name: "Over quota", Type: domain.FamilyTypeFamily}, member.ID); !errors.Is(err, apperror.ErrQuotaExceeded) || !strings.Contains(err.Error(), "maximum 10 families per user") {
+		t.Fatalf("mixed memberships bypassed creation quota: %v", err)
+	}
+	f.generate(t, "extra-family")
+	if _, err := f.repo.JoinFamilyByCode(ctx, member.ID, security.HashToken("extra-family")); !errors.Is(err, apperror.ErrQuotaExceeded) {
+		t.Fatalf("mixed memberships bypassed joining quota: %v", err)
+	}
+	var families, memberships int
+	if err := f.pool.QueryRow(ctx, "SELECT (SELECT count(*) FROM families),(SELECT count(*) FROM family_members WHERE user_id=$1)", member.ID).Scan(&families, &memberships); err != nil || families != 11 || memberships != 10 {
+		t.Fatalf("failed operation altered families/memberships: families=%d memberships=%d err=%v", families, memberships, err)
+	}
+	f.requireMembership(t, member, false)
+	f.requireJoin(t, f.user(t, "independent-member"), "extra-family", true)
 }
 
 func TestResourceLimitsPostgresInputConstraints(t *testing.T) {
@@ -193,7 +238,7 @@ func TestResourceLimitsPostgresConcurrentFamilyCreates(t *testing.T) {
 	f := familyInviteFixture(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	for i := 0; i < 18; i++ {
+	for i := 0; i < 8; i++ {
 		if _, err := f.repo.CreateFamily(ctx, domain.Family{Name: "Home", Type: domain.FamilyTypeFamily}, f.owner.ID); err != nil {
 			t.Fatal(err)
 		}
@@ -222,7 +267,7 @@ func TestResourceLimitsPostgresConcurrentFamilyCreates(t *testing.T) {
 	if err := f.pool.QueryRow(ctx, "SELECT (SELECT count(*) FROM families),(SELECT count(*) FROM family_members)").Scan(&families, &members); err != nil {
 		t.Fatal(err)
 	}
-	if success != 1 || limited != 1 || families != 20 || members != 20 {
+	if success != 1 || limited != 1 || families != 10 || members != 10 {
 		t.Fatalf("family quota race/orphan: success=%d limited=%d families=%d memberships=%d", success, limited, families, members)
 	}
 }
@@ -318,14 +363,14 @@ func TestResourceLimitsPostgresMigrationPreservesLegacy(t *testing.T) {
 	}
 	resourceExec(t, f, string(down))
 	resourceExec(t, f, `UPDATE users SET display_name=$1 WHERE id=$2`, strings.Repeat("界", 121), f.owner.ID)
-	resourceExec(t, f, `INSERT INTO person_profiles(family_id,name,age,employment_status) SELECT $1,'Legacy',30,'full_time_employee' FROM generate_series(1,51)`, f.family.ID)
+	resourceExec(t, f, `INSERT INTO person_profiles(family_id,name,age,employment_status) SELECT $1,'Legacy',30,'full_time_employee' FROM generate_series(1,21)`, f.family.ID)
 	up, err := os.ReadFile("../../../db/migrations/000008_resource_limits.up.sql")
 	if err != nil {
 		t.Fatal(err)
 	}
 	resourceExec(t, f, string(up))
 	var count int
-	if err := f.pool.QueryRow(ctx, "SELECT count(*) FROM person_profiles").Scan(&count); err != nil || count != 51 {
+	if err := f.pool.QueryRow(ctx, "SELECT count(*) FROM person_profiles").Scan(&count); err != nil || count != 21 {
 		t.Fatal("migration removed legacy records")
 	}
 	if _, err := NewPersonRepository(f.pool).ListPersonProfilesByFamily(ctx, f.family.ID, f.owner.ID, domain.Page{Size: 10}); err != nil {

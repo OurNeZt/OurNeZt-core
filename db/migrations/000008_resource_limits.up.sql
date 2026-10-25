@@ -48,8 +48,8 @@ BEGIN
     END IF;
     RETURN NEW;
 END $$;
-CREATE TRIGGER person_profiles_quota BEFORE INSERT OR UPDATE OF family_id ON person_profiles FOR EACH ROW EXECUTE FUNCTION enforce_family_resource_quota('50');
-CREATE TRIGGER housing_options_quota BEFORE INSERT OR UPDATE OF family_id ON housing_options FOR EACH ROW EXECUTE FUNCTION enforce_family_resource_quota('50');
+CREATE TRIGGER person_profiles_quota BEFORE INSERT OR UPDATE OF family_id ON person_profiles FOR EACH ROW EXECUTE FUNCTION enforce_family_resource_quota('20');
+CREATE TRIGGER housing_options_quota BEFORE INSERT OR UPDATE OF family_id ON housing_options FOR EACH ROW EXECUTE FUNCTION enforce_family_resource_quota('100');
 CREATE TRIGGER housing_groups_quota BEFORE INSERT OR UPDATE OF family_id ON housing_groups FOR EACH ROW EXECUTE FUNCTION enforce_family_resource_quota('50');
 -- Retired criteria count too, preserving answers without unbounded soft deletes.
 CREATE TRIGGER housing_criteria_quota BEFORE INSERT OR UPDATE OF family_id ON housing_checklist_criteria FOR EACH ROW EXECUTE FUNCTION enforce_family_resource_quota('50');
@@ -68,11 +68,11 @@ BEGIN
     PERFORM id FROM families WHERE id=NEW.family_id FOR UPDATE;
     PERFORM id FROM users WHERE id=NEW.user_id FOR UPDATE;
     IF EXISTS (SELECT 1 FROM family_members WHERE family_id=NEW.family_id AND user_id=NEW.user_id) THEN RETURN NEW; END IF;
-    IF (SELECT count(*) FROM family_members WHERE user_id=NEW.user_id) >= 20 THEN
-        RAISE EXCEPTION 'resource quota exceeded: maximum 20 families per user' USING ERRCODE='P0001', CONSTRAINT='resource_quota';
+    IF (SELECT count(*) FROM family_members WHERE user_id=NEW.user_id) >= 10 THEN
+        RAISE EXCEPTION 'resource quota exceeded: maximum 10 families per user' USING ERRCODE='P0001', CONSTRAINT='resource_quota';
     END IF;
-    IF (SELECT count(*) FROM family_members WHERE family_id=NEW.family_id) >= 50 THEN
-        RAISE EXCEPTION 'resource quota exceeded: maximum 50 members per family' USING ERRCODE='P0001', CONSTRAINT='resource_quota';
+    IF (SELECT count(*) FROM family_members WHERE family_id=NEW.family_id) >= 20 THEN
+        RAISE EXCEPTION 'resource quota exceeded: maximum 20 members per family' USING ERRCODE='P0001', CONSTRAINT='resource_quota';
     END IF;
     RETURN NEW;
 END $$;
