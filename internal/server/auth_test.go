@@ -421,7 +421,7 @@ func TestAuthServerChangePassword(t *testing.T) {
 	ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs("x-session-token", "admin-token"))
 	_, err = server.ChangePassword(ctx, &ourneztv1.ChangePasswordRequest{
 		CurrentPassword: "temporary-pass",
-		NewPassword:     "safer-pass",
+		NewPassword:     "safer-passphrase-for-tests",
 	})
 	if err != nil {
 		t.Fatalf("ChangePassword returned error: %v", err)

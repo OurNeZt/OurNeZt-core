@@ -64,8 +64,11 @@ func (s AuthService) CreateUser(ctx context.Context, email, displayName, passwor
 	if err := domain.ValidateAuthInputLengths(email, displayName, password); err != nil {
 		return domain.User{}, err
 	}
+	if err := domain.ValidateNewPassword(password); err != nil {
+		return domain.User{}, err
+	}
 	email = strings.ToLower(strings.TrimSpace(email))
-	if email == "" || strings.TrimSpace(password) == "" {
+	if email == "" {
 		return domain.User{}, apperror.ErrInvalidArgument
 	}
 	if role == "" {
@@ -134,10 +137,10 @@ func (s AuthService) ChangePassword(ctx context.Context, userID domain.ID, curre
 	if err := domain.ValidateAuthInputLengths("", "", currentPassword); err != nil {
 		return err
 	}
-	if err := domain.ValidateAuthInputLengths("", "", newPassword); err != nil {
+	if err := domain.ValidateNewPassword(newPassword); err != nil {
 		return err
 	}
-	if strings.TrimSpace(string(userID)) == "" || strings.TrimSpace(currentPassword) == "" || strings.TrimSpace(newPassword) == "" {
+	if strings.TrimSpace(string(userID)) == "" || strings.TrimSpace(currentPassword) == "" {
 		return apperror.ErrInvalidArgument
 	}
 
@@ -256,8 +259,7 @@ func (s AuthService) EnsureBootstrapAdmin(ctx context.Context, email, displayNam
 	}
 	email = strings.ToLower(strings.TrimSpace(email))
 	displayName = strings.TrimSpace(displayName)
-	temporaryPassword = strings.TrimSpace(temporaryPassword)
-	if email == "" || temporaryPassword == "" {
+	if email == "" {
 		return domain.User{}, false, apperror.ErrInvalidArgument
 	}
 	if displayName == "" {
@@ -270,6 +272,9 @@ func (s AuthService) EnsureBootstrapAdmin(ctx context.Context, email, displayNam
 	}
 	if hasAdmin {
 		return domain.User{}, false, nil
+	}
+	if err := domain.ValidateNewPassword(temporaryPassword); err != nil {
+		return domain.User{}, false, err
 	}
 
 	release, err := s.limits.Acquire(ctx)
