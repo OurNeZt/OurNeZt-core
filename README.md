@@ -267,18 +267,20 @@ Core bounds persisted strings, incoming requests, list queries, and resource cou
 
 Queries seek by timestamp and UUID, with supporting indexes and a SQL limit of page size plus one. Users, families, profiles, housing, and groups sort newest first; members and income history sort oldest first. UUIDs break timestamp ties. Tokens survive deletion of their boundary row, are scoped to the list and viewer/family, and never replace authorization. Pagination does not provide a snapshot across concurrent mutations.
 
-Checklist lists and single-housing evaluations remain complete bounded collections, because pagination would break ordering and scoring. Internal dashboard and grant calculations read complete collections or fail explicitly if legacy data exceeds the aggregate bound of 100 records. Housing list summaries fetch answers only for the selected housing rows and do not load answer notes.
+Checklist lists and single-housing evaluations remain complete bounded collections, because pagination would break ordering and scoring. A family can have 100 housing options and 50 checklist criteria, giving at most 5,000 active answers. The existing answer-read bound supports this full matrix. A single-housing evaluation returns at most 50 answers.
 
-**Client rollout:** the new protobuf fields are additive, but older clients receive only the first page. Update Web/client bindings and follow `next_page_token` before deploying where more than 50 users or income-history rows are expected. Core alone cannot make an older Web client display later pages. Normal new family collections fit within the default page size under the quotas below.
+Internal dashboard and grant calculations read complete collections or fail explicitly if legacy data exceeds the aggregate bound of 100 records. Housing list summaries fetch answers only for the selected housing rows and do not load answer notes.
+
+**Client rollout:** the new protobuf fields are additive, but older clients receive only the first page. Update Web/client bindings and follow `next_page_token` before deploying where more than 50 users, income-history rows, or housing options are expected. Core alone cannot make an older Web client display later pages. A full housing collection now spans two default pages of 50; an explicit `page_size=100` returns all 100 options. The current Web client does not follow these tokens, so its housing list and comparison view need a client update to include options beyond the first 50.
 
 ### Storage Quotas
 
 | Resource | Maximum |
 | --- | --- |
-| Family memberships, including owned families | 20 per user |
-| Family members | 50 per family |
-| Person profiles | 50 per family |
-| Housing options | 50 per family |
+| Family memberships, including owned families | 10 per user |
+| Family members | 20 per family |
+| Person profiles | 20 per family |
+| Housing options | 100 per family |
 | Housing groups | 50 per family |
 | Checklist criteria, including retired criteria | 50 per family |
 | Income-history snapshots | 5,000 per family |
@@ -315,7 +317,7 @@ Core runs cleanup at startup and every **10 minutes**. A pass deletes at most **
 
 ### Migration And Reviewer Checks
 
-Apply migration `000008_resource_limits` before starting this Core version. Its down migration removes the new checks, quota triggers, and indexes; it cannot restore expired credential rows already deleted by retention.
+Apply migration `000008_resource_limits` before starting this Core version. This review revision updates that migration directly; use a fresh disposable database for reviewer checks if an earlier revision was already applied, since the migration version alone will not reapply edited SQL. Its down migration removes the new checks, quota triggers, and indexes; it cannot restore expired credential rows already deleted by retention.
 
 Length checks use `NOT VALID` to preserve legacy records during rollout while enforcing new writes and updates. Audit existing oversized strings and over-quota families, repair them explicitly, then run `VALIDATE CONSTRAINT` on each new length/JSON check. Migration does not truncate names, delete financial history, or remove existing families. Legacy collections exceeding aggregate bounds require operator repair; paginated list APIs remain available. The application database role needs its existing SELECT/INSERT/UPDATE/DELETE privileges for the cleanup worker.
 
@@ -331,7 +333,7 @@ For database checks, set `TEST_DATABASE_URL` to a disposable PostgreSQL database
 go test ./internal/repository/postgres -run TestResourceLimitsPostgres -count=1 -v
 ```
 
-Each test creates and drops its own schema. The suite checks last-slot races, owner/family isolation, membership idempotency, rollback, Unicode limits, JSON limits, seven paginated list endpoints, timestamp ties, deleted cursor boundaries, access control, retention cutoffs and batches, quota recovery, and migration up/down with legacy data. Existing CI runs these tests against its PostgreSQL service with `go test ./...`.
+Each test creates and drops its own schema. The suite checks the 10-membership, 20-member, 20-profile, and 100-housing limits, last-slot races, owner/family isolation, combined owned/joined memberships, membership idempotency, rollback, Unicode limits, JSON limits, seven paginated list endpoints, timestamp ties, deleted cursor boundaries, access control, retention cutoffs and batches, quota recovery, and migration up/down with legacy data. `TestResourceLimitsPostgresChecklistAtHousingCapacity` fills 100 housing options with 50 criteria and 5,000 answers, checks scores across both default pages and a 100-option page, and verifies single-option evaluation and answer edits at capacity. Existing CI runs these tests against its PostgreSQL service with `go test ./...`.
 
 ---
 
