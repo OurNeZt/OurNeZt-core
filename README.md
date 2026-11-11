@@ -59,6 +59,7 @@
         <li><a href="#configuration">Configuration</a></li>
       </ul>
     </li>
+    <li><a href="#production-transport-security">Production Transport Security</a></li>
     <li><a href="#login-response-protections">Login Response Protections</a></li>
     <li><a href="#password-policy">Password Policy</a></li>
     <li><a href="#session-revocation">Session Revocation</a></li>
@@ -197,6 +198,7 @@ The service is configured using environment variables.
 Example:
 
 ```bash
+export APP_ENV="development"
 export GRPC_ADDR=":50051"
 export DATABASE_URL="postgres://ournezt:ournezt@localhost:5432/ournezt?sslmode=disable"
 export SESSION_TOKEN_BYTES="32"
@@ -213,6 +215,59 @@ Behaviour:
 - If any active admin already exists, bootstrap is skipped.
 
 ---
+
+## Production Transport Security
+
+Set `APP_ENV=production` in production deployments. Core refuses to start without gRPC TLS unless `GRPC_ALLOW_INSECURE=true` explicitly permits a trusted plaintext hop. Production detection trims surrounding whitespace and ignores case; the default environment remains `development` for local use.
+
+| Setting | Behavior |
+| --- | --- |
+| `GRPC_TLS_CERT_FILE` | PEM server certificate/chain; configure with the key file |
+| `GRPC_TLS_KEY_FILE` | PEM private key matching the certificate |
+| `GRPC_ALLOW_INSECURE` | Defaults to `false`; explicit plaintext opt-in for trusted internal networks or TLS-terminating proxies |
+
+Configure TLS using certificate files readable by the Core process:
+
+```bash
+export APP_ENV=production
+export GRPC_TLS_CERT_FILE=/etc/ournezt/tls/tls.crt
+export GRPC_TLS_KEY_FILE=/etc/ournezt/tls/tls.key
+export GRPC_ALLOW_INSECURE=false
+```
+
+Core validates transport policy and loads the certificate/key before connecting to its application database or opening a listener. TLS uses a minimum of TLS 1.2. An incomplete pair, unreadable/malformed files, a mismatched key, or an invalid transport boolean causes startup failure. The plaintext opt-in never overrides broken TLS settings or causes a downgrade. This uses [gRPC transport credentials](https://grpc.io/docs/guides/auth/) to protect the bearer-session hop.
+
+When plaintext is explicitly enabled, Core logs a `WARN` naming `GRPC_ALLOW_INSECURE` and explaining that bearer session tokens are unencrypted. Restrict this listener to the trusted network or the TLS-terminating proxy; the setting does not create network isolation or authenticate that proxy.
+
+### Production Transport Models
+
+| Model | Core settings | Web settings |
+| --- | --- | --- |
+| TLS directly to Core | Both TLS files; `GRPC_ALLOW_INSECURE=false` | `CORE_GRPC_USE_TLS=true`; trusted CA and matching certificate name |
+| TLS-terminating gRPC proxy | No local TLS files; `GRPC_ALLOW_INSECURE=true`; restrict backend access to the proxy | Verified TLS to the proxy's gRPC endpoint |
+| Explicit trusted internal plaintext hop | No local TLS files; `GRPC_ALLOW_INSECURE=true` | `CORE_GRPC_USE_TLS=false`, `CORE_ALLOW_INSECURE=true` |
+
+Both applications enforce their own configuration. HTTPS on the browser-facing ingress does not encrypt the Web-to-Core hop. Before upgrading production Helm/Compose deployments, ensure their manifests pass the appropriate TLS settings or explicit plaintext opt-ins to both processes. No database migration is required for this transport change.
+
+### Transport Reviewer Checks
+
+No database, external service, or manually generated certificates are required:
+
+```bash
+go test ./internal/platform/config ./internal/platform/transport ./cmd/core -run TestTransport -count=1 -v
+```
+
+The tests launch actual startup subprocesses, verify rejection before database access, generate temporary certificates, and exercise loopback gRPC connections. They cover explicit plaintext warnings, malformed and mismatched TLS files, invalid booleans, verified TLS, rejection of plaintext clients, and session metadata reaching handlers only after a successful TLS handshake.
+
+Manual checks with a disposable deployment:
+
+1. Start Core with `APP_ENV=production`, no TLS files, and `GRPC_ALLOW_INSECURE=false`. Expect a nonzero exit and a clear TLS configuration error, before database access.
+2. Set only one TLS file, or supply invalid certificate/key files. Startup must still fail even with `GRPC_ALLOW_INSECURE=true`.
+3. Configure a valid certificate/key and connect Web using the corresponding trusted CA and certificate DNS name. A normal login should work; plaintext clients must fail their connection.
+4. For a deliberately trusted plaintext test, remove both TLS paths and set `GRPC_ALLOW_INSECURE=true`. Configure Web's matching opt-in separately and verify the `WARN` logs. Normal database and other startup requirements still apply.
+
+---
+
 
 ## Login Response Protections
 
@@ -495,16 +550,20 @@ Build the image locally:
 docker build -t ournezt-core:local .
 ```
 
-Run the container:
+Run the production container with a valid certificate/key in `./tls`:
 
 ```bash
 docker run --rm \
   -p 50051:50051 \
+  --mount type=bind,source="$(pwd)/tls",target=/etc/ournezt/tls,readonly \
+  -e APP_ENV="production" \
   -e GRPC_ADDR=":50051" \
+  -e GRPC_TLS_CERT_FILE="/etc/ournezt/tls/tls.crt" \
+  -e GRPC_TLS_KEY_FILE="/etc/ournezt/tls/tls.key" \
   -e DATABASE_URL="postgres://ournezt:ournezt@host.docker.internal:5432/ournezt?sslmode=disable" \
   -e RUN_MIGRATIONS="true" \
   -e BOOTSTRAP_ADMIN_EMAIL="admin@ournezt.local" \
-  -e BOOTSTRAP_ADMIN_PASSWORD="P@ssw0rd" \
+  -e BOOTSTRAP_ADMIN_PASSWORD="replace-with-a-unique-passphrase" \
   -e BOOTSTRAP_ADMIN_DISPLAY_NAME="Admin" \
   ournezt-core:local
 ```
