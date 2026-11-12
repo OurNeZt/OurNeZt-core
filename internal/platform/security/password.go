@@ -29,6 +29,16 @@ func DefaultArgon2Params() Argon2Params {
 	}
 }
 
+// DummyPasswordHash supplies a valid verification target with the configured
+// Argon2 cost, without running a KDF during startup. Its salt and key are public
+// placeholders. A dummy verification must never authorize a login.
+func DummyPasswordHash(params Argon2Params) string {
+	if params.MemoryKB == 0 {
+		params = DefaultArgon2Params()
+	}
+	return encodeArgon2idHash(params, make([]byte, params.SaltLength), make([]byte, params.KeyLength))
+}
+
 func HashPassword(password string, params Argon2Params) (string, error) {
 	if strings.TrimSpace(password) == "" {
 		return "", errors.New("password is required")
@@ -43,10 +53,14 @@ func HashPassword(password string, params Argon2Params) (string, error) {
 	}
 
 	key := argon2.IDKey([]byte(password), salt, params.Iterations, params.MemoryKB, params.Parallelism, params.KeyLength)
+	return encodeArgon2idHash(params, salt, key), nil
+}
+
+func encodeArgon2idHash(params Argon2Params, salt, key []byte) string {
 	encodedSalt := base64.RawStdEncoding.EncodeToString(salt)
 	encodedKey := base64.RawStdEncoding.EncodeToString(key)
 
-	return fmt.Sprintf("$argon2id$v=19$m=%d,t=%d,p=%d$%s$%s", params.MemoryKB, params.Iterations, params.Parallelism, encodedSalt, encodedKey), nil
+	return fmt.Sprintf("$argon2id$v=19$m=%d,t=%d,p=%d$%s$%s", params.MemoryKB, params.Iterations, params.Parallelism, encodedSalt, encodedKey)
 }
 
 func VerifyPassword(password, encodedHash string) (bool, error) {
@@ -74,6 +88,9 @@ func decodeArgon2idHash(encodedHash string) (Argon2Params, []byte, []byte, error
 	if _, err := fmt.Sscanf(parts[3], "m=%d,t=%d,p=%d", &params.MemoryKB, &params.Iterations, &params.Parallelism); err != nil {
 		return Argon2Params{}, nil, nil, errors.New("invalid argon2id parameters")
 	}
+	if params.MemoryKB == 0 || params.Iterations == 0 || params.Parallelism == 0 {
+		return Argon2Params{}, nil, nil, errors.New("invalid argon2id parameters")
+	}
 
 	salt, err := base64.RawStdEncoding.DecodeString(parts[4])
 	if err != nil {
@@ -83,6 +100,9 @@ func decodeArgon2idHash(encodedHash string) (Argon2Params, []byte, []byte, error
 	key, err := base64.RawStdEncoding.DecodeString(parts[5])
 	if err != nil {
 		return Argon2Params{}, nil, nil, err
+	}
+	if len(salt) == 0 || len(key) == 0 {
+		return Argon2Params{}, nil, nil, errors.New("invalid argon2id salt or key")
 	}
 
 	params.SaltLength = uint32(len(salt))

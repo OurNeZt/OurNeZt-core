@@ -13,22 +13,26 @@ import (
 
 type UserRepository interface {
 	CreateUser(ctx context.Context, user domain.User) (domain.User, error)
-	ListUsers(ctx context.Context) ([]domain.User, error)
+	ListUsers(ctx context.Context, pages ...domain.Page) ([]domain.User, error)
 	HasActiveAdmin(ctx context.Context) (bool, error)
 	GetUserByID(ctx context.Context, userID domain.ID) (domain.User, error)
 	GetUserByEmail(ctx context.Context, email string) (domain.User, error)
 	UpdateUserAccount(ctx context.Context, userID domain.ID, email string, displayName string) (domain.User, error)
 	PromoteToBootstrapAdmin(ctx context.Context, userID domain.ID, displayName string, passwordHash string) (domain.User, error)
-	UpdateUserPassword(ctx context.Context, userID domain.ID, passwordHash string, mustChangePassword bool) error
+	// UpdateUserPassword compares the verified hash and atomically revokes all
+	// sessions with the password update. Failed updates must leave both intact.
+	UpdateUserPassword(ctx context.Context, userID domain.ID, expectedPasswordHash, passwordHash string, mustChangePassword bool) error
 	DisableUser(ctx context.Context, userID domain.ID) error
 	CreateAdminAccessKey(ctx context.Context, userID domain.ID, tokenHash string, expiresAt time.Time) error
 	ConsumeAdminAccessKey(ctx context.Context, userID domain.ID, tokenHash string, now time.Time) (bool, error)
 }
 
 type AuthService struct {
-	users        UserRepository
-	argon2Params security.Argon2Params
-	limits       *authlimit.Limiter
+	users             UserRepository
+	argon2Params      security.Argon2Params
+	limits            *authlimit.Limiter
+	dummyPasswordHash string
+	verifyPassword    func(string, string) (bool, error)
 }
 
 func NewAuthService(users UserRepository, argon2Params security.Argon2Params, limits ...*authlimit.Limiter) AuthService {
@@ -39,7 +43,11 @@ func NewAuthService(users UserRepository, argon2Params security.Argon2Params, li
 	if guard == nil {
 		guard = authlimit.New(authlimit.Config{})
 	}
-	return AuthService{users: users, argon2Params: argon2Params, limits: guard}
+	return AuthService{
+		users: users, argon2Params: argon2Params, limits: guard,
+		dummyPasswordHash: security.DummyPasswordHash(argon2Params),
+		verifyPassword:    security.VerifyPassword,
+	}
 }
 
 func (s AuthService) beginPasswordWork(ctx context.Context, account string) (func(), error) {
@@ -53,8 +61,14 @@ func (s AuthService) beginPasswordWork(ctx context.Context, account string) (fun
 }
 
 func (s AuthService) CreateUser(ctx context.Context, email, displayName, password string, role domain.UserRole) (domain.User, error) {
+	if err := domain.ValidateAuthInputLengths(email, displayName, password); err != nil {
+		return domain.User{}, err
+	}
+	if err := domain.ValidateNewPassword(password); err != nil {
+		return domain.User{}, err
+	}
 	email = strings.ToLower(strings.TrimSpace(email))
-	if email == "" || strings.TrimSpace(password) == "" {
+	if email == "" {
 		return domain.User{}, apperror.ErrInvalidArgument
 	}
 	if role == "" {
@@ -84,11 +98,14 @@ func (s AuthService) CreateUser(ctx context.Context, email, displayName, passwor
 	})
 }
 
-func (s AuthService) ListUsers(ctx context.Context) ([]domain.User, error) {
-	return s.users.ListUsers(ctx)
+func (s AuthService) ListUsers(ctx context.Context, pages ...domain.Page) ([]domain.User, error) {
+	return s.users.ListUsers(ctx, pages...)
 }
 
 func (s AuthService) Login(ctx context.Context, email, password string) (domain.User, error) {
+	if err := domain.ValidateAuthInputLengths(email, "", password); err != nil {
+		return domain.User{}, apperror.ErrUnauthenticated
+	}
 	email = strings.ToLower(strings.TrimSpace(email))
 	release, err := s.beginPasswordWork(ctx, "login:"+email)
 	if err != nil {
@@ -96,19 +113,20 @@ func (s AuthService) Login(ctx context.Context, email, password string) (domain.
 	}
 	defer release()
 
-	user, err := s.users.GetUserByEmail(ctx, email)
-	if err != nil {
-		return domain.User{}, err
-	}
-	if user.DisabledAt != nil {
-		return domain.User{}, apperror.ErrDisabledUser
+	user, lookupErr := s.users.GetUserByEmail(ctx, email)
+	hash := user.PasswordHash
+	if lookupErr != nil {
+		hash = s.dummyPasswordHash
 	}
 
-	ok, err := security.VerifyPassword(password, user.PasswordHash)
-	if err != nil {
-		return domain.User{}, err
+	// Unknown accounts and lookup failures do the same bounded password work as
+	// known accounts. Disabled accounts are verified before rejecting them.
+	ok, verifyErr := s.verifyPassword(password, hash)
+	if verifyErr != nil && lookupErr == nil {
+		// A malformed stored hash fails before the KDF; do dummy work as well.
+		_, _ = s.verifyPassword(password, s.dummyPasswordHash)
 	}
-	if !ok {
+	if lookupErr != nil || verifyErr != nil || !ok || user.DisabledAt != nil {
 		return domain.User{}, apperror.ErrUnauthenticated
 	}
 
@@ -116,7 +134,13 @@ func (s AuthService) Login(ctx context.Context, email, password string) (domain.
 }
 
 func (s AuthService) ChangePassword(ctx context.Context, userID domain.ID, currentPassword, newPassword string) error {
-	if strings.TrimSpace(string(userID)) == "" || strings.TrimSpace(currentPassword) == "" || strings.TrimSpace(newPassword) == "" {
+	if err := domain.ValidateAuthInputLengths("", "", currentPassword); err != nil {
+		return err
+	}
+	if err := domain.ValidateNewPassword(newPassword); err != nil {
+		return err
+	}
+	if strings.TrimSpace(string(userID)) == "" || strings.TrimSpace(currentPassword) == "" {
 		return apperror.ErrInvalidArgument
 	}
 
@@ -147,10 +171,13 @@ func (s AuthService) ChangePassword(ctx context.Context, userID domain.ID, curre
 		return err
 	}
 
-	return s.users.UpdateUserPassword(ctx, userID, newHash, false)
+	return s.users.UpdateUserPassword(ctx, userID, user.PasswordHash, newHash, false)
 }
 
 func (s AuthService) UpdateMyAccount(ctx context.Context, userID domain.ID, email, displayName string) (domain.User, error) {
+	if err := domain.ValidateAuthInputLengths(email, displayName, ""); err != nil {
+		return domain.User{}, err
+	}
 	if strings.TrimSpace(string(userID)) == "" {
 		return domain.User{}, apperror.ErrInvalidArgument
 	}
@@ -227,10 +254,12 @@ func (s AuthService) DisableUser(ctx context.Context, userID domain.ID) error {
 }
 
 func (s AuthService) EnsureBootstrapAdmin(ctx context.Context, email, displayName, temporaryPassword string) (domain.User, bool, error) {
+	if err := domain.ValidateAuthInputLengths(email, displayName, temporaryPassword); err != nil {
+		return domain.User{}, false, err
+	}
 	email = strings.ToLower(strings.TrimSpace(email))
 	displayName = strings.TrimSpace(displayName)
-	temporaryPassword = strings.TrimSpace(temporaryPassword)
-	if email == "" || temporaryPassword == "" {
+	if email == "" {
 		return domain.User{}, false, apperror.ErrInvalidArgument
 	}
 	if displayName == "" {
@@ -243,6 +272,9 @@ func (s AuthService) EnsureBootstrapAdmin(ctx context.Context, email, displayNam
 	}
 	if hasAdmin {
 		return domain.User{}, false, nil
+	}
+	if err := domain.ValidateNewPassword(temporaryPassword); err != nil {
+		return domain.User{}, false, err
 	}
 
 	release, err := s.limits.Acquire(ctx)

@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"strings"
+	"time"
 
 	"github.com/OurNeZt/ournezt-core/internal/calculation"
 	"github.com/OurNeZt/ournezt-core/internal/domain"
@@ -94,12 +95,19 @@ func (s HousingServer) ListHousingOptions(ctx context.Context, req *ourneztv1.Li
 		return nil, toStatusError(err)
 	}
 
-	options, err := s.housing.ListHousingOptions(ctx, familyID, viewerID)
+	scope := "housing:" + string(familyID) + ":" + string(viewerID)
+	page, err := domain.ParsePage(req.GetPageSize(), req.GetPageToken(), scope)
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+	options, err := s.housing.ListHousingOptions(ctx, familyID, viewerID, page)
 	if err != nil {
 		return nil, toStatusError(err)
 	}
 
+	options, nextToken := domain.PageResult(options, page, scope, func(item domain.HousingOption) (time.Time, domain.ID) { return item.CreatedAt, item.ID })
 	response := &ourneztv1.ListHousingOptionsResponse{
+		NextPageToken:  nextToken,
 		HousingOptions: make([]*ourneztv1.HousingOption, 0, len(options)),
 	}
 	for _, option := range options {
@@ -200,12 +208,19 @@ func (s HousingServer) ListHousingGroups(ctx context.Context, req *ourneztv1.Lis
 		return nil, toStatusError(err)
 	}
 
-	groups, err := s.housing.ListHousingGroups(ctx, familyID, viewerID)
+	scope := "groups:" + string(familyID) + ":" + string(viewerID)
+	page, err := domain.ParsePage(req.GetPageSize(), req.GetPageToken(), scope)
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+	groups, err := s.housing.ListHousingGroups(ctx, familyID, viewerID, page)
 	if err != nil {
 		return nil, toStatusError(err)
 	}
 
+	groups, nextToken := domain.PageResult(groups, page, scope, func(item domain.HousingGroup) (time.Time, domain.ID) { return item.CreatedAt, item.ID })
 	response := &ourneztv1.ListHousingGroupsResponse{
+		NextPageToken: nextToken,
 		HousingGroups: make([]*ourneztv1.HousingGroup, 0, len(groups)),
 	}
 	for _, group := range groups {

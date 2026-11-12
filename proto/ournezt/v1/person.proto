@@ -41,15 +41,24 @@ message GetPersonProfileRequest {
 message ListPersonProfilesByFamilyRequest {
   string viewer_user_id = 1;
   string family_id = 2;
+
+  // Zero uses 50; maximum 100. Pass next_page_token unchanged to continue.
+  int32 page_size = 99;
+  string page_token = 100;
 }
 
 message ListPersonProfilesByFamilyResponse {
   repeated PersonProfile people = 1;
+  string next_page_token = 99;
 }
 
 message ListIncomeHistoryByFamilyRequest {
   string viewer_user_id = 1;
   string family_id = 2;
+
+  // Zero uses 50; maximum 100. Pass next_page_token unchanged to continue.
+  int32 page_size = 99;
+  string page_token = 100;
 }
 
 message IncomeHistoryEntry {
@@ -62,6 +71,7 @@ message IncomeHistoryEntry {
 
 message ListIncomeHistoryByFamilyResponse {
   repeated IncomeHistoryEntry entries = 1;
+  string next_page_token = 99;
 }
 
 message DeletePersonProfileRequest {

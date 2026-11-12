@@ -124,7 +124,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 const listHousingGroupsByFamily = `-- name: ListHousingGroupsByFamily :many
 SELECT id, family_id, name, created_at, updated_at FROM housing_groups
 WHERE family_id = $1
-ORDER BY created_at DESC
+ORDER BY created_at DESC LIMIT 101
 `
 
 func (q *Queries) ListHousingGroupsByFamily(ctx context.Context, familyID pgtype.UUID) ([]HousingGroup, error) {
@@ -156,7 +156,7 @@ func (q *Queries) ListHousingGroupsByFamily(ctx context.Context, familyID pgtype
 const listHousingOptionsByFamily = `-- name: ListHousingOptionsByFamily :many
 SELECT id, family_id, name, housing_type, location, unit_type, purchase_price_cents, grant_amount_cents, loan_type, loan_amount_cents, interest_rate_bps, loan_tenure_months, downpayment_percent_bps, renovation_budget_cents, furniture_budget_cents, legal_fees_cents, buyer_stamp_duty_cents, monthly_maintenance_cents, expected_key_collection_date, created_at, updated_at, dia_income_overrides, housing_group_id, visible_on_dashboard, notes FROM housing_options
 WHERE family_id = $1
-ORDER BY created_at DESC
+ORDER BY created_at DESC LIMIT 101
 `
 
 func (q *Queries) ListHousingOptionsByFamily(ctx context.Context, familyID pgtype.UUID) ([]HousingOption, error) {
@@ -208,7 +208,7 @@ func (q *Queries) ListHousingOptionsByFamily(ctx context.Context, familyID pgtyp
 const listPersonProfilesByFamily = `-- name: ListPersonProfilesByFamily :many
 SELECT id, family_id, name, age, relationship_label, employment_status, gross_monthly_income_cents, expected_future_income_cents, expected_income_start_date, graduation_date, ord_date, cash_savings_cents, cpf_oa_cents, cpf_sa_cents, cpf_ma_cents, monthly_expenses_cents, created_at, updated_at, linked_user_id FROM person_profiles
 WHERE family_id = $1
-ORDER BY created_at DESC
+ORDER BY created_at DESC LIMIT 101
 `
 
 func (q *Queries) ListPersonProfilesByFamily(ctx context.Context, familyID pgtype.UUID) ([]PersonProfile, error) {
@@ -256,7 +256,7 @@ SELECT f.id, f.name, f.family_type, f.created_at, f.updated_at
 FROM families f
 JOIN family_members fm ON fm.family_id = f.id
 WHERE fm.user_id = $1
-ORDER BY f.created_at DESC
+ORDER BY f.created_at DESC LIMIT 101
 `
 
 func (q *Queries) ListUserFamilies(ctx context.Context, userID pgtype.UUID) ([]Family, error) {

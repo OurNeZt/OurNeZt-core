@@ -7,6 +7,8 @@ option go_package = "github.com/OurNeZt/ournezt-core/internal/gen/proto/ournezt/
 service AuthService {
   rpc Login(LoginRequest) returns (LoginResponse);
   rpc ValidateSession(ValidateSessionRequest) returns (ValidateSessionResponse);
+  // Revoke the token supplied in session metadata; repeated calls are safe.
+  rpc RevokeCurrentSession(RevokeCurrentSessionRequest) returns (RevokeCurrentSessionResponse);
   rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordResponse);
   rpc UpdateMyAccount(UpdateMyAccountRequest) returns (User);
   rpc GenerateAdminAccessKey(GenerateAdminAccessKeyRequest) returns (GenerateAdminAccessKeyResponse);
@@ -43,6 +45,10 @@ message ValidateSessionResponse {
   User user = 1;
 }
 
+message RevokeCurrentSessionRequest {}
+
+message RevokeCurrentSessionResponse {}
+
 message ChangePasswordRequest {
   string current_password = 1;
   string new_password = 2;
@@ -70,10 +76,15 @@ message ConsumeAdminAccessKeyResponse {
   bool access_granted = 1;
 }
 
-message ListUsersRequest {}
+message ListUsersRequest {
+  // Zero uses 50; maximum 100. Pass next_page_token unchanged to continue.
+  int32 page_size = 99;
+  string page_token = 100;
+}
 
 message ListUsersResponse {
   repeated User users = 1;
+  string next_page_token = 99;
 }
 
 message CreateUserRequest {

@@ -102,6 +102,9 @@ func (s HousingServer) ReorderHousingCriteria(ctx context.Context, req *pb.Reord
 	if err != nil {
 		return nil, toStatusError(err)
 	}
+	if len(req.GetCriterionIds()) > 50 {
+		return nil, toStatusError(apperror.ErrInvalidArgument)
+	}
 	ids := make([]domain.ID, 0, len(req.GetCriterionIds()))
 	seen := map[domain.ID]bool{}
 	for _, raw := range req.GetCriterionIds() {
@@ -135,7 +138,7 @@ func (s HousingServer) GetHousingEvaluation(ctx context.Context, req *pb.GetHous
 	if err != nil {
 		return nil, toStatusError(err)
 	}
-	answers, err := s.checklist.ListHousingAnswers(ctx, option.FamilyID, actor)
+	answers, err := s.checklist.ListHousingAnswers(ctx, option.FamilyID, actor, id)
 	if err != nil {
 		return nil, toStatusError(err)
 	}

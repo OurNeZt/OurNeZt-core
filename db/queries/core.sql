@@ -28,20 +28,20 @@ SELECT f.*
 FROM families f
 JOIN family_members fm ON fm.family_id = f.id
 WHERE fm.user_id = $1
-ORDER BY f.created_at DESC;
+ORDER BY f.created_at DESC LIMIT 101;
 
 -- name: ListPersonProfilesByFamily :many
 SELECT * FROM person_profiles
 WHERE family_id = $1
-ORDER BY created_at DESC;
+ORDER BY created_at DESC LIMIT 101;
 
 -- name: ListHousingOptionsByFamily :many
 SELECT * FROM housing_options
 WHERE family_id = $1
-ORDER BY created_at DESC;
+ORDER BY created_at DESC LIMIT 101;
 
 -- name: ListHousingGroupsByFamily :many
 SELECT * FROM housing_groups
 WHERE family_id = $1
-ORDER BY created_at DESC;
+ORDER BY created_at DESC LIMIT 101;
 

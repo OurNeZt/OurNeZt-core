@@ -21,6 +21,7 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	AuthService_Login_FullMethodName                  = "/ournezt.v1.AuthService/Login"
 	AuthService_ValidateSession_FullMethodName        = "/ournezt.v1.AuthService/ValidateSession"
+	AuthService_RevokeCurrentSession_FullMethodName   = "/ournezt.v1.AuthService/RevokeCurrentSession"
 	AuthService_ChangePassword_FullMethodName         = "/ournezt.v1.AuthService/ChangePassword"
 	AuthService_UpdateMyAccount_FullMethodName        = "/ournezt.v1.AuthService/UpdateMyAccount"
 	AuthService_GenerateAdminAccessKey_FullMethodName = "/ournezt.v1.AuthService/GenerateAdminAccessKey"
@@ -36,6 +37,8 @@ const (
 type AuthServiceClient interface {
 	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
 	ValidateSession(ctx context.Context, in *ValidateSessionRequest, opts ...grpc.CallOption) (*ValidateSessionResponse, error)
+	// Revoke the token supplied in session metadata; repeated calls are safe.
+	RevokeCurrentSession(ctx context.Context, in *RevokeCurrentSessionRequest, opts ...grpc.CallOption) (*RevokeCurrentSessionResponse, error)
 	ChangePassword(ctx context.Context, in *ChangePasswordRequest, opts ...grpc.CallOption) (*ChangePasswordResponse, error)
 	UpdateMyAccount(ctx context.Context, in *UpdateMyAccountRequest, opts ...grpc.CallOption) (*User, error)
 	GenerateAdminAccessKey(ctx context.Context, in *GenerateAdminAccessKeyRequest, opts ...grpc.CallOption) (*GenerateAdminAccessKeyResponse, error)
@@ -67,6 +70,16 @@ func (c *authServiceClient) ValidateSession(ctx context.Context, in *ValidateSes
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ValidateSessionResponse)
 	err := c.cc.Invoke(ctx, AuthService_ValidateSession_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) RevokeCurrentSession(ctx context.Context, in *RevokeCurrentSessionRequest, opts ...grpc.CallOption) (*RevokeCurrentSessionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RevokeCurrentSessionResponse)
+	err := c.cc.Invoke(ctx, AuthService_RevokeCurrentSession_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -149,6 +162,8 @@ func (c *authServiceClient) DisableUser(ctx context.Context, in *DisableUserRequ
 type AuthServiceServer interface {
 	Login(context.Context, *LoginRequest) (*LoginResponse, error)
 	ValidateSession(context.Context, *ValidateSessionRequest) (*ValidateSessionResponse, error)
+	// Revoke the token supplied in session metadata; repeated calls are safe.
+	RevokeCurrentSession(context.Context, *RevokeCurrentSessionRequest) (*RevokeCurrentSessionResponse, error)
 	ChangePassword(context.Context, *ChangePasswordRequest) (*ChangePasswordResponse, error)
 	UpdateMyAccount(context.Context, *UpdateMyAccountRequest) (*User, error)
 	GenerateAdminAccessKey(context.Context, *GenerateAdminAccessKeyRequest) (*GenerateAdminAccessKeyResponse, error)
@@ -171,6 +186,9 @@ func (UnimplementedAuthServiceServer) Login(context.Context, *LoginRequest) (*Lo
 }
 func (UnimplementedAuthServiceServer) ValidateSession(context.Context, *ValidateSessionRequest) (*ValidateSessionResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ValidateSession not implemented")
+}
+func (UnimplementedAuthServiceServer) RevokeCurrentSession(context.Context, *RevokeCurrentSessionRequest) (*RevokeCurrentSessionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RevokeCurrentSession not implemented")
 }
 func (UnimplementedAuthServiceServer) ChangePassword(context.Context, *ChangePasswordRequest) (*ChangePasswordResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ChangePassword not implemented")
@@ -246,6 +264,24 @@ func _AuthService_ValidateSession_Handler(srv interface{}, ctx context.Context, 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AuthServiceServer).ValidateSession(ctx, req.(*ValidateSessionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_RevokeCurrentSession_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RevokeCurrentSessionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).RevokeCurrentSession(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_RevokeCurrentSession_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).RevokeCurrentSession(ctx, req.(*RevokeCurrentSessionRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -390,6 +426,10 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ValidateSession",
 			Handler:    _AuthService_ValidateSession_Handler,
+		},
+		{
+			MethodName: "RevokeCurrentSession",
+			Handler:    _AuthService_RevokeCurrentSession_Handler,
 		},
 		{
 			MethodName: "ChangePassword",

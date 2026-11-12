@@ -24,9 +24,12 @@ type fakeAuthSessionStore struct {
 	}
 	usersByToken map[string]domain.User
 	revokedUsers []domain.ID
+	repository   *fakeServerUserRepository
 }
 
 type fakeServerUserRepository struct {
+	sessions        *fakeAuthSessionStore
+	passwordError   error
 	created         domain.User
 	listed          []domain.User
 	users           map[string]domain.User
@@ -34,7 +37,20 @@ type fakeServerUserRepository struct {
 	adminAccessKeys map[string]time.Time
 }
 
-func (s *fakeAuthSessionStore) CreateSession(_ context.Context, userID domain.ID, tokenHash string, expiresAt time.Time) error {
+func (s *fakeAuthSessionStore) CreateSession(ctx context.Context, userID domain.ID, verifiedPasswordHash, tokenHash string, expiresAt time.Time) error {
+	if s.repository != nil {
+		user, err := s.repository.GetUserByID(ctx, userID)
+		if err != nil {
+			return err
+		}
+		if user.PasswordHash != verifiedPasswordHash {
+			return apperror.ErrUnauthenticated
+		}
+		if s.usersByToken == nil {
+			s.usersByToken = map[string]domain.User{}
+		}
+		s.usersByToken[tokenHash] = user
+	}
 	s.created.userID = userID
 	s.created.tokenHash = tokenHash
 	s.created.expiresAt = expiresAt
@@ -54,6 +70,16 @@ func (s *fakeAuthSessionStore) GetUserBySessionTokenHash(_ context.Context, toke
 
 func (s *fakeAuthSessionStore) RevokeSessionsByUserID(_ context.Context, userID domain.ID) error {
 	s.revokedUsers = append(s.revokedUsers, userID)
+	for hash, user := range s.usersByToken {
+		if user.ID == userID {
+			delete(s.usersByToken, hash)
+		}
+	}
+	return nil
+}
+
+func (s *fakeAuthSessionStore) RevokeSessionByTokenHash(_ context.Context, tokenHash string) error {
+	delete(s.usersByToken, tokenHash)
 	return nil
 }
 
@@ -69,7 +95,7 @@ func (r *fakeServerUserRepository) CreateUser(_ context.Context, user domain.Use
 	return user, nil
 }
 
-func (r *fakeServerUserRepository) ListUsers(_ context.Context) ([]domain.User, error) {
+func (r *fakeServerUserRepository) ListUsers(_ context.Context, pages ...domain.Page) ([]domain.User, error) {
 	if r.listed != nil {
 		return r.listed, nil
 	}
@@ -140,12 +166,21 @@ func (r *fakeServerUserRepository) DisableUser(_ context.Context, userID domain.
 	return nil
 }
 
-func (r *fakeServerUserRepository) UpdateUserPassword(_ context.Context, userID domain.ID, passwordHash string, mustChangePassword bool) error {
+func (r *fakeServerUserRepository) UpdateUserPassword(ctx context.Context, userID domain.ID, expectedPasswordHash, passwordHash string, mustChangePassword bool) error {
+	if r.passwordError != nil {
+		return r.passwordError
+	}
 	for email, user := range r.users {
 		if user.ID == userID {
+			if user.PasswordHash != expectedPasswordHash {
+				return apperror.ErrUnauthenticated
+			}
 			user.PasswordHash = passwordHash
 			user.MustChangePassword = mustChangePassword
 			r.users[email] = user
+			if r.sessions != nil {
+				return r.sessions.RevokeSessionsByUserID(ctx, userID)
+			}
 			return nil
 		}
 	}
@@ -386,7 +421,7 @@ func TestAuthServerChangePassword(t *testing.T) {
 	ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs("x-session-token", "admin-token"))
 	_, err = server.ChangePassword(ctx, &ourneztv1.ChangePasswordRequest{
 		CurrentPassword: "temporary-pass",
-		NewPassword:     "safer-pass",
+		NewPassword:     "safer-passphrase-for-tests",
 	})
 	if err != nil {
 		t.Fatalf("ChangePassword returned error: %v", err)

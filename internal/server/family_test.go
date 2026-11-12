@@ -38,7 +38,7 @@ func (r *fakeFamiliesRepository) GetFamily(_ context.Context, _ domain.ID, _ dom
 	return r.getFamily, nil
 }
 
-func (r *fakeFamiliesRepository) ListUserFamilies(_ context.Context, _ domain.ID) ([]domain.Family, error) {
+func (r *fakeFamiliesRepository) ListUserFamilies(_ context.Context, _ domain.ID, pages ...domain.Page) ([]domain.Family, error) {
 	return r.listFamilies, nil
 }
 
@@ -55,7 +55,7 @@ func (r *fakeFamiliesRepository) GenerateFamilyJoinCode(_ context.Context, actor
 	return nil
 }
 
-func (r *fakeFamiliesRepository) ListFamilyMembers(_ context.Context, _ domain.ID, _ domain.ID) ([]repository.FamilyMember, error) {
+func (r *fakeFamiliesRepository) ListFamilyMembers(_ context.Context, _ domain.ID, _ domain.ID, pages ...domain.Page) ([]repository.FamilyMember, error) {
 	return r.members, nil
 }
 

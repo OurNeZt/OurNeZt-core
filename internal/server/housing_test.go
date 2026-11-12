@@ -44,7 +44,7 @@ func (r *fakeHousingRepository) GetHousingOption(_ context.Context, _ domain.ID,
 	return r.got, nil
 }
 
-func (r *fakeHousingRepository) ListHousingOptions(_ context.Context, _ domain.ID, _ domain.ID) ([]domain.HousingOption, error) {
+func (r *fakeHousingRepository) ListHousingOptions(_ context.Context, _ domain.ID, _ domain.ID, pages ...domain.Page) ([]domain.HousingOption, error) {
 	return r.list, nil
 }
 
@@ -63,7 +63,7 @@ func (r *fakeHousingRepository) CreateHousingGroup(_ context.Context, group doma
 	return r.createdGroup, nil
 }
 
-func (r *fakeHousingRepository) ListHousingGroups(_ context.Context, _ domain.ID, _ domain.ID) ([]domain.HousingGroup, error) {
+func (r *fakeHousingRepository) ListHousingGroups(_ context.Context, _ domain.ID, _ domain.ID, pages ...domain.Page) ([]domain.HousingGroup, error) {
 	return r.groups, nil
 }
 

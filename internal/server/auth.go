@@ -13,9 +13,10 @@ import (
 )
 
 type AuthSessionStore interface {
-	CreateSession(ctx context.Context, userID domain.ID, tokenHash string, expiresAt time.Time) error
+	CreateSession(ctx context.Context, userID domain.ID, verifiedPasswordHash, tokenHash string, expiresAt time.Time) error
 	GetUserBySessionTokenHash(ctx context.Context, tokenHash string, now time.Time) (domain.User, error)
 	RevokeSessionsByUserID(ctx context.Context, userID domain.ID) error
+	RevokeSessionByTokenHash(ctx context.Context, tokenHash string) error
 }
 
 type AuthServer struct {
@@ -75,20 +76,17 @@ func (s AuthServer) Login(ctx context.Context, req *ourneztv1.LoginRequest) (*ou
 
 	user, err := s.auth.Login(ctx, req.GetEmail(), req.GetPassword())
 	if err != nil {
-		if errors.Is(err, apperror.ErrNotFound) || errors.Is(err, apperror.ErrDisabledUser) || errors.Is(err, apperror.ErrUnauthenticated) {
-			return nil, toStatusError(apperror.ErrUnauthenticated)
-		}
-		return nil, toStatusError(err)
+		return nil, toLoginStatusError(err)
 	}
 
 	token, err := security.NewSessionToken(s.tokenBytes)
 	if err != nil {
-		return nil, toStatusError(err)
+		return nil, toLoginStatusError(err)
 	}
 	tokenHash := security.HashToken(token)
 
-	if err := s.sessions.CreateSession(ctx, user.ID, tokenHash, s.now().Add(s.sessionTTL)); err != nil {
-		return nil, toStatusError(err)
+	if err := s.sessions.CreateSession(ctx, user.ID, user.PasswordHash, tokenHash, s.now().Add(s.sessionTTL)); err != nil {
+		return nil, toLoginStatusError(err)
 	}
 
 	return &ourneztv1.LoginResponse{
@@ -104,6 +102,9 @@ func (s AuthServer) ValidateSession(ctx context.Context, req *ourneztv1.Validate
 
 	user, err := s.sessions.GetUserBySessionTokenHash(ctx, security.HashToken(req.GetSessionToken()), s.now())
 	if err != nil {
+		if errors.Is(err, apperror.ErrNotFound) {
+			err = apperror.ErrUnauthenticated
+		}
 		return nil, toStatusError(err)
 	}
 	if user.DisabledAt != nil {
@@ -111,6 +112,22 @@ func (s AuthServer) ValidateSession(ctx context.Context, req *ourneztv1.Validate
 	}
 
 	return &ourneztv1.ValidateSessionResponse{User: userToProto(user)}, nil
+}
+
+// RevokeCurrentSession uses only the presented token, never a caller-supplied
+// user ID. Revoking an unknown, expired, or already-revoked token is idempotent.
+func (s AuthServer) RevokeCurrentSession(ctx context.Context, req *ourneztv1.RevokeCurrentSessionRequest) (*ourneztv1.RevokeCurrentSessionResponse, error) {
+	if req == nil {
+		return nil, toStatusError(apperror.ErrInvalidArgument)
+	}
+	token := sessionTokenFromContext(ctx)
+	if token == "" {
+		return nil, toStatusError(apperror.ErrUnauthenticated)
+	}
+	if err := s.sessions.RevokeSessionByTokenHash(ctx, security.HashToken(token)); err != nil {
+		return nil, toStatusError(err)
+	}
+	return &ourneztv1.RevokeCurrentSessionResponse{}, nil
 }
 
 func (s AuthServer) ChangePassword(ctx context.Context, req *ourneztv1.ChangePasswordRequest) (*ourneztv1.ChangePasswordResponse, error) {
@@ -180,18 +197,25 @@ func (s AuthServer) ConsumeAdminAccessKey(ctx context.Context, req *ourneztv1.Co
 	return &ourneztv1.ConsumeAdminAccessKeyResponse{AccessGranted: true}, nil
 }
 
-func (s AuthServer) ListUsers(ctx context.Context, _ *ourneztv1.ListUsersRequest) (*ourneztv1.ListUsersResponse, error) {
+func (s AuthServer) ListUsers(ctx context.Context, req *ourneztv1.ListUsersRequest) (*ourneztv1.ListUsersResponse, error) {
 	if _, err := authenticatedAdmin(ctx, s); err != nil {
 		return nil, toStatusError(err)
 	}
 
-	users, err := s.auth.ListUsers(ctx)
+	scope := "users"
+	page, err := domain.ParsePage(req.GetPageSize(), req.GetPageToken(), scope)
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+	users, err := s.auth.ListUsers(ctx, page)
 	if err != nil {
 		return nil, toStatusError(err)
 	}
 
+	users, nextToken := domain.PageResult(users, page, scope, func(item domain.User) (time.Time, domain.ID) { return item.CreatedAt, item.ID })
 	response := &ourneztv1.ListUsersResponse{
-		Users: make([]*ourneztv1.User, 0, len(users)),
+		NextPageToken: nextToken,
+		Users:         make([]*ourneztv1.User, 0, len(users)),
 	}
 	for _, user := range users {
 		response.Users = append(response.Users, userToProto(user))

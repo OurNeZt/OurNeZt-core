@@ -90,13 +90,20 @@ func (s FamilyServer) ListUserFamilies(ctx context.Context, req *ourneztv1.ListU
 		return nil, toStatusError(err)
 	}
 
-	families, err := s.families.ListUserFamilies(ctx, userID)
+	scope := "families:" + string(userID)
+	page, err := domain.ParsePage(req.GetPageSize(), req.GetPageToken(), scope)
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+	families, err := s.families.ListUserFamilies(ctx, userID, page)
 	if err != nil {
 		return nil, toStatusError(err)
 	}
 
+	families, nextToken := domain.PageResult(families, page, scope, func(item domain.Family) (time.Time, domain.ID) { return item.CreatedAt, item.ID })
 	response := &ourneztv1.ListUserFamiliesResponse{
-		Families: make([]*ourneztv1.Family, 0, len(families)),
+		NextPageToken: nextToken,
+		Families:      make([]*ourneztv1.Family, 0, len(families)),
 	}
 	for _, family := range families {
 		response.Families = append(response.Families, familyToProto(family))
@@ -162,13 +169,20 @@ func (s FamilyServer) ListFamilyMembers(ctx context.Context, req *ourneztv1.List
 		return nil, toStatusError(err)
 	}
 
-	members, err := s.families.ListFamilyMembers(ctx, actorID, familyID)
+	scope := "members:" + string(familyID) + ":" + string(actorID)
+	page, err := domain.ParsePage(req.GetPageSize(), req.GetPageToken(), scope)
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+	members, err := s.families.ListFamilyMembers(ctx, actorID, familyID, page)
 	if err != nil {
 		return nil, toStatusError(err)
 	}
 
+	members, nextToken := domain.PageResult(members, page, scope, func(item repository.FamilyMember) (time.Time, domain.ID) { return item.JoinedAt, item.UserID })
 	response := &ourneztv1.ListFamilyMembersResponse{
-		Members: make([]*ourneztv1.FamilyMember, 0, len(members)),
+		NextPageToken: nextToken,
+		Members:       make([]*ourneztv1.FamilyMember, 0, len(members)),
 	}
 	for _, member := range members {
 		response.Members = append(response.Members, &ourneztv1.FamilyMember{

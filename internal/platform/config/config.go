@@ -11,10 +11,12 @@ import (
 )
 
 type Config struct {
+	transportError            error
 	AppEnv                    string
 	GRPCAddr                  string
 	GRPCTLSCertFile           string
 	GRPCTLSKeyFile            string
+	GRPCAllowInsecure         bool
 	DatabaseURL               string
 	BootstrapAdminEmail       string
 	BootstrapAdminPassword    string
@@ -30,13 +32,15 @@ type Config struct {
 
 func Load() Config {
 	return Config{
+		transportError:            transportBooleanError("GRPC_ALLOW_INSECURE"),
 		AppEnv:                    env("APP_ENV", "development"),
 		GRPCAddr:                  env("GRPC_ADDR", ":50051"),
 		GRPCTLSCertFile:           env("GRPC_TLS_CERT_FILE", ""),
 		GRPCTLSKeyFile:            env("GRPC_TLS_KEY_FILE", ""),
+		GRPCAllowInsecure:         envBool("GRPC_ALLOW_INSECURE"),
 		DatabaseURL:               env("DATABASE_URL", ""),
 		BootstrapAdminEmail:       env("BOOTSTRAP_ADMIN_EMAIL", ""),
-		BootstrapAdminPassword:    env("BOOTSTRAP_ADMIN_PASSWORD", ""),
+		BootstrapAdminPassword:    os.Getenv("BOOTSTRAP_ADMIN_PASSWORD"),
 		BootstrapAdminDisplayName: env("BOOTSTRAP_ADMIN_DISPLAY_NAME", "Bootstrap Admin"),
 		ShutdownTimeout:           envDuration("SHUTDOWN_TIMEOUT", 10*time.Second),
 		SessionTokenBytes:         envInt("SESSION_TOKEN_BYTES", 32),
@@ -89,4 +93,9 @@ func envDuration(key string, fallback time.Duration) time.Duration {
 		return fallback
 	}
 	return parsed
+}
+
+func envBool(key string) bool {
+	value, err := strconv.ParseBool(strings.ToLower(strings.TrimSpace(os.Getenv(key))))
+	return err == nil && value
 }

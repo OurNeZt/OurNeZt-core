@@ -262,8 +262,11 @@ func (x *GetFamilyRequest) GetFamilyId() string {
 }
 
 type ListUserFamiliesRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	state  protoimpl.MessageState `protogen:"open.v1"`
+	UserId string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	// Zero uses 50; maximum 100. Pass next_page_token unchanged to continue.
+	PageSize      int32  `protobuf:"varint,99,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	PageToken     string `protobuf:"bytes,100,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -305,9 +308,24 @@ func (x *ListUserFamiliesRequest) GetUserId() string {
 	return ""
 }
 
+func (x *ListUserFamiliesRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+func (x *ListUserFamiliesRequest) GetPageToken() string {
+	if x != nil {
+		return x.PageToken
+	}
+	return ""
+}
+
 type ListUserFamiliesResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Families      []*Family              `protobuf:"bytes,1,rep,name=families,proto3" json:"families,omitempty"`
+	NextPageToken string                 `protobuf:"bytes,99,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -347,6 +365,13 @@ func (x *ListUserFamiliesResponse) GetFamilies() []*Family {
 		return x.Families
 	}
 	return nil
+}
+
+func (x *ListUserFamiliesResponse) GetNextPageToken() string {
+	if x != nil {
+		return x.NextPageToken
+	}
+	return ""
 }
 
 type JoinFamilyByCodeRequest struct {
@@ -498,9 +523,12 @@ func (x *GenerateFamilyJoinCodeResponse) GetCode() string {
 }
 
 type ListFamilyMembersRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	ActorUserId   string                 `protobuf:"bytes,1,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
-	FamilyId      string                 `protobuf:"bytes,2,opt,name=family_id,json=familyId,proto3" json:"family_id,omitempty"`
+	state       protoimpl.MessageState `protogen:"open.v1"`
+	ActorUserId string                 `protobuf:"bytes,1,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
+	FamilyId    string                 `protobuf:"bytes,2,opt,name=family_id,json=familyId,proto3" json:"family_id,omitempty"`
+	// Zero uses 50; maximum 100. Pass next_page_token unchanged to continue.
+	PageSize      int32  `protobuf:"varint,99,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	PageToken     string `protobuf:"bytes,100,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -549,9 +577,24 @@ func (x *ListFamilyMembersRequest) GetFamilyId() string {
 	return ""
 }
 
+func (x *ListFamilyMembersRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+func (x *ListFamilyMembersRequest) GetPageToken() string {
+	if x != nil {
+		return x.PageToken
+	}
+	return ""
+}
+
 type ListFamilyMembersResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Members       []*FamilyMember        `protobuf:"bytes,1,rep,name=members,proto3" json:"members,omitempty"`
+	NextPageToken string                 `protobuf:"bytes,99,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -593,6 +636,13 @@ func (x *ListFamilyMembersResponse) GetMembers() []*FamilyMember {
 	return nil
 }
 
+func (x *ListFamilyMembersResponse) GetNextPageToken() string {
+	if x != nil {
+		return x.NextPageToken
+	}
+	return ""
+}
+
 var File_ournezt_v1_family_proto protoreflect.FileDescriptor
 
 const file_ournezt_v1_family_proto_rawDesc = "" +
@@ -616,11 +666,15 @@ const file_ournezt_v1_family_proto_rawDesc = "" +
 	"familyType\"U\n" +
 	"\x10GetFamilyRequest\x12$\n" +
 	"\x0eviewer_user_id\x18\x01 \x01(\tR\fviewerUserId\x12\x1b\n" +
-	"\tfamily_id\x18\x02 \x01(\tR\bfamilyId\"2\n" +
+	"\tfamily_id\x18\x02 \x01(\tR\bfamilyId\"n\n" +
 	"\x17ListUserFamiliesRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\"J\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1b\n" +
+	"\tpage_size\x18c \x01(\x05R\bpageSize\x12\x1d\n" +
+	"\n" +
+	"page_token\x18d \x01(\tR\tpageToken\"r\n" +
 	"\x18ListUserFamiliesResponse\x12.\n" +
-	"\bfamilies\x18\x01 \x03(\v2\x12.ournezt.v1.FamilyR\bfamilies\"F\n" +
+	"\bfamilies\x18\x01 \x03(\v2\x12.ournezt.v1.FamilyR\bfamilies\x12&\n" +
+	"\x0fnext_page_token\x18c \x01(\tR\rnextPageToken\"F\n" +
 	"\x17JoinFamilyByCodeRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x12\n" +
 	"\x04code\x18\x02 \x01(\tR\x04code\"`\n" +
@@ -628,12 +682,16 @@ const file_ournezt_v1_family_proto_rawDesc = "" +
 	"\ractor_user_id\x18\x01 \x01(\tR\vactorUserId\x12\x1b\n" +
 	"\tfamily_id\x18\x02 \x01(\tR\bfamilyId\"4\n" +
 	"\x1eGenerateFamilyJoinCodeResponse\x12\x12\n" +
-	"\x04code\x18\x01 \x01(\tR\x04code\"[\n" +
+	"\x04code\x18\x01 \x01(\tR\x04code\"\x97\x01\n" +
 	"\x18ListFamilyMembersRequest\x12\"\n" +
 	"\ractor_user_id\x18\x01 \x01(\tR\vactorUserId\x12\x1b\n" +
-	"\tfamily_id\x18\x02 \x01(\tR\bfamilyId\"O\n" +
+	"\tfamily_id\x18\x02 \x01(\tR\bfamilyId\x12\x1b\n" +
+	"\tpage_size\x18c \x01(\x05R\bpageSize\x12\x1d\n" +
+	"\n" +
+	"page_token\x18d \x01(\tR\tpageToken\"w\n" +
 	"\x19ListFamilyMembersResponse\x122\n" +
-	"\amembers\x18\x01 \x03(\v2\x18.ournezt.v1.FamilyMemberR\amembers2\x92\x04\n" +
+	"\amembers\x18\x01 \x03(\v2\x18.ournezt.v1.FamilyMemberR\amembers\x12&\n" +
+	"\x0fnext_page_token\x18c \x01(\tR\rnextPageToken2\x92\x04\n" +
 	"\rFamilyService\x12C\n" +
 	"\fCreateFamily\x12\x1f.ournezt.v1.CreateFamilyRequest\x1a\x12.ournezt.v1.Family\x12=\n" +
 	"\tGetFamily\x12\x1c.ournezt.v1.GetFamilyRequest\x1a\x12.ournezt.v1.Family\x12]\n" +

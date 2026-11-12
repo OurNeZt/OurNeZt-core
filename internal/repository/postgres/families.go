@@ -2,12 +2,14 @@ package postgres
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"time"
 
 	"github.com/OurNeZt/ournezt-core/internal/domain"
 	"github.com/OurNeZt/ournezt-core/internal/platform/apperror"
 	"github.com/OurNeZt/ournezt-core/internal/repository"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -74,14 +76,21 @@ func (r FamilyRepository) GetFamily(ctx context.Context, familyID domain.ID, vie
 	return family, nil
 }
 
-func (r FamilyRepository) ListUserFamilies(ctx context.Context, userID domain.ID) ([]domain.Family, error) {
+func (r FamilyRepository) ListUserFamilies(ctx context.Context, userID domain.ID, pages ...domain.Page) ([]domain.Family, error) {
+	limit, afterTime, afterID, pageErr := listWindow(pages)
+	if pageErr != nil {
+		return nil, pageErr
+	}
+
 	rows, err := r.pool.Query(ctx, `
 		SELECT f.id::text, f.name, f.family_type, f.created_at, f.updated_at
 		FROM families f
 		JOIN family_members fm ON fm.family_id = f.id
 		WHERE fm.user_id = $1::uuid
-		ORDER BY f.created_at DESC
-	`, string(userID))
+		AND (f.created_at,f.id) < (COALESCE($2::timestamptz,'infinity'::timestamptz),COALESCE(NULLIF($3,''),'ffffffff-ffff-ffff-ffff-ffffffffffff')::uuid)
+		ORDER BY f.created_at DESC,f.id DESC
+		LIMIT $4
+	`, string(userID), afterTime, afterID, limit)
 	if err != nil {
 		return nil, normalizeError(err)
 	}
@@ -98,7 +107,7 @@ func (r FamilyRepository) ListUserFamilies(ctx context.Context, userID domain.ID
 	if err := rows.Err(); err != nil {
 		return nil, normalizeError(err)
 	}
-	return families, nil
+	return completeList(families, pages)
 }
 
 func (r FamilyRepository) JoinFamilyByCode(ctx context.Context, userID domain.ID, codeHash string) (domain.Family, error) {
@@ -106,15 +115,21 @@ func (r FamilyRepository) JoinFamilyByCode(ctx context.Context, userID domain.ID
 		return domain.Family{}, apperror.ErrInvalidArgument
 	}
 
-	row := r.pool.QueryRow(ctx, `
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return domain.Family{}, normalizeError(err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	// Hold the family lock until membership is committed. Regeneration takes
+	// an exclusive lock on the same row, so it cannot replace a code between
+	// validation and adding the member. Joins serialize so membership quotas cannot race.
+	row := tx.QueryRow(ctx, `
 		SELECT f.id::text, f.name, f.family_type, f.created_at, f.updated_at
 		FROM family_invites fi
 		JOIN families f ON f.id = fi.family_id
 		WHERE fi.code_hash = $1
-		  AND fi.revoked_at IS NULL
-		  AND (fi.expires_at IS NULL OR fi.expires_at > now())
-		ORDER BY fi.created_at DESC
-		LIMIT 1
+		FOR UPDATE OF f
 	`, codeHash)
 
 	family, err := scanFamilyRow(row)
@@ -122,13 +137,33 @@ func (r FamilyRepository) JoinFamilyByCode(ctx context.Context, userID domain.ID
 		return domain.Family{}, normalizeError(err)
 	}
 
-	_, err = r.pool.Exec(ctx, `
+	// This must be a separate statement after acquiring the lock: a waiting
+	// request needs to see any revocation committed while it was blocked.
+	var active bool
+	err = tx.QueryRow(ctx, `
+		SELECT EXISTS (
+			SELECT 1 FROM family_invites
+			WHERE code_hash = $1 AND revoked_at IS NULL
+			  AND (expires_at IS NULL OR expires_at > clock_timestamp())
+		)
+	`, codeHash).Scan(&active)
+	if err != nil {
+		return domain.Family{}, normalizeError(err)
+	}
+	if !active {
+		return domain.Family{}, apperror.ErrNotFound
+	}
+
+	_, err = tx.Exec(ctx, `
 		INSERT INTO family_members (family_id, user_id, role)
 		VALUES ($1::uuid, $2::uuid, $3)
 		ON CONFLICT (family_id, user_id)
 		DO NOTHING
 	`, string(family.ID), string(userID), string(domain.FamilyRoleMember))
 	if err != nil {
+		return domain.Family{}, normalizeError(err)
+	}
+	if err := tx.Commit(ctx); err != nil {
 		return domain.Family{}, normalizeError(err)
 	}
 
@@ -139,18 +174,48 @@ func (r FamilyRepository) GenerateFamilyJoinCode(ctx context.Context, actorID do
 	if strings.TrimSpace(codeHash) == "" {
 		return apperror.ErrInvalidArgument
 	}
-	if err := r.assertFamilyManager(ctx, actorID, familyID); err != nil {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return normalizeError(err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	// Serialize replacements even when this family has no invites yet.
+	var lockedID string
+	err = tx.QueryRow(ctx, `SELECT id::text FROM families WHERE id = $1::uuid FOR UPDATE`, string(familyID)).Scan(&lockedID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return apperror.ErrForbidden
+	}
+	if err != nil {
+		return normalizeError(err)
+	}
+	if err := r.assertFamilyManager(ctx, tx, actorID, familyID); err != nil {
 		return err
 	}
 
-	_, err := r.pool.Exec(ctx, `
-		INSERT INTO family_invites (family_id, code_hash, expires_at, created_by)
-		VALUES ($1::uuid, $2, $3, $4::uuid)
+	_, err = tx.Exec(ctx, `
+		UPDATE family_invites SET revoked_at = statement_timestamp()
+		WHERE family_id = $1::uuid AND revoked_at IS NULL
+	`, string(familyID))
+	if err != nil {
+		return normalizeError(err)
+	}
+	_, err = tx.Exec(ctx, `
+		INSERT INTO family_invites (family_id, code_hash, expires_at, created_by, created_at)
+		VALUES ($1::uuid, $2, $3, $4::uuid, statement_timestamp())
 	`, string(familyID), codeHash, expiresAt, string(actorID))
-	return normalizeError(err)
+	if err != nil {
+		return normalizeError(err)
+	}
+	return normalizeError(tx.Commit(ctx))
 }
 
-func (r FamilyRepository) ListFamilyMembers(ctx context.Context, actorID domain.ID, familyID domain.ID) ([]repository.FamilyMember, error) {
+func (r FamilyRepository) ListFamilyMembers(ctx context.Context, actorID domain.ID, familyID domain.ID, pages ...domain.Page) ([]repository.FamilyMember, error) {
+	limit, afterTime, afterID, pageErr := listWindow(pages)
+	if pageErr != nil {
+		return nil, pageErr
+	}
+
 	allowed, err := r.hasFamilyAccess(ctx, actorID, familyID)
 	if err != nil {
 		return nil, err
@@ -160,12 +225,14 @@ func (r FamilyRepository) ListFamilyMembers(ctx context.Context, actorID domain.
 	}
 
 	rows, err := r.pool.Query(ctx, `
-		SELECT fm.family_id::text, fm.user_id::text, COALESCE(u.display_name, ''), fm.role
+		SELECT fm.family_id::text, fm.user_id::text, COALESCE(u.display_name, ''), fm.role, fm.joined_at
 		FROM family_members fm
 		JOIN users u ON u.id = fm.user_id
 		WHERE fm.family_id = $1::uuid
-		ORDER BY fm.joined_at ASC
-	`, string(familyID))
+		AND (fm.joined_at,fm.user_id) > (COALESCE($2::timestamptz,'-infinity'::timestamptz),COALESCE(NULLIF($3,''),'00000000-0000-0000-0000-000000000000')::uuid)
+		ORDER BY fm.joined_at ASC,fm.user_id ASC
+		LIMIT $4
+	`, string(familyID), afterTime, afterID, limit)
 	if err != nil {
 		return nil, normalizeError(err)
 	}
@@ -179,7 +246,7 @@ func (r FamilyRepository) ListFamilyMembers(ctx context.Context, actorID domain.
 			userID   string
 			role     string
 		)
-		if err := rows.Scan(&familyID, &userID, &member.DisplayName, &role); err != nil {
+		if err := rows.Scan(&familyID, &userID, &member.DisplayName, &role, &member.JoinedAt); err != nil {
 			return nil, normalizeError(err)
 		}
 		member.FamilyID = domain.ID(familyID)
@@ -190,12 +257,12 @@ func (r FamilyRepository) ListFamilyMembers(ctx context.Context, actorID domain.
 	if err := rows.Err(); err != nil {
 		return nil, normalizeError(err)
 	}
-	return members, nil
+	return completeList(members, pages)
 }
 
-func (r FamilyRepository) assertFamilyManager(ctx context.Context, actorID domain.ID, familyID domain.ID) error {
+func (r FamilyRepository) assertFamilyManager(ctx context.Context, tx pgx.Tx, actorID domain.ID, familyID domain.ID) error {
 	var hasManagerRole bool
-	err := r.pool.QueryRow(ctx, `
+	err := tx.QueryRow(ctx, `
 		SELECT EXISTS(
 			SELECT 1
 			FROM family_members
