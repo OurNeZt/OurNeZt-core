@@ -6,6 +6,50 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ---
 
+## [v2.0.0] - 2026-11-13
+
+### Added
+
+- `RevokeCurrentSession` RPC for idempotent revocation of the session token supplied in request metadata.
+- Cursor pagination for user, family, family member, person profile, income history, housing option, and housing group lists, with `page_size`, `page_token`, and `next_page_token` fields.
+- Database-enforced resource quotas and persisted input limits through migration `000008_resource_limits`, including indexes for paginated queries.
+- Bounded credential cleanup at startup and every 10 minutes, deleting up to 500 rows per credential table per pass after the seven-day retention period.
+- Configurable gRPC TLS with `GRPC_TLS_CERT_FILE` and `GRPC_TLS_KEY_FILE`, plus production startup validation.
+- An embedded offline common-password blocklist and a shared policy for user/admin creation, password changes, and bootstrap provisioning.
+- Regression coverage and reviewer checks for session revocation, concurrent invite rotation, login enumeration, password policy, resource quotas, pagination, retention, and TLS.
+
+### Changed
+
+- List APIs now default to 50 records and accept explicit page sizes from 1 to 100. Clients must follow `next_page_token` to retrieve complete collections; existing clients no longer receive every row in one response.
+- Production startup now requires gRPC TLS unless `GRPC_ALLOW_INSECURE=true` explicitly permits a trusted plaintext hop. Partial or invalid TLS configuration does not fall back to plaintext.
+- New passwords must contain at least 15 Unicode code points, fit within 1,024 UTF-8 bytes, contain no whitespace, and avoid the common-password blocklist. Existing passwords remain usable for login and current-password verification within the input limits; no forced reset is introduced.
+- Successful password changes atomically revoke every session for the user, including the current session, and require a fresh login. Bootstrap credential replacement also revokes existing sessions.
+- Incoming gRPC messages are capped at 1 MiB, with field and repeated-input limits checked before expensive work. Persisted strings and resource counts are bounded by database checks and quotas.
+- Families can hold up to 100 housing options and 50 checklist criteria; checklist scoring supports the full 5,000-answer matrix. Other per-user and per-family quotas are documented in the resource limits guide.
+- Internal dashboard and grant calculations read complete bounded collections or fail explicitly when legacy data exceeds their aggregate limits. Housing list summaries load answers only for the selected page.
+
+### Fixed
+
+- Prevented revoked logout tokens and sessions invalidated by password changes from remaining usable, including races between login and password updates.
+- Made family invite regeneration atomically revoke all earlier active codes, with locking to coordinate concurrent regenerations and joins and rollback on failure.
+- Unified login failures for unknown accounts, incorrect passwords, disabled accounts, lookup failures, and malformed password hashes. Dummy Argon2id verification reduces account-dependent timing differences while preserving rate and concurrency limits.
+- Rejected invalid new passwords before hashing or account mutation while preserving the exact submitted credential bytes and existing sessions after failed changes.
+- Prevented concurrent requests from exceeding resource quotas or leaving partial family, invite, profile, or income-history updates after a failure.
+- Made GitHub Actions cache export best-effort so cache reservation failures do not fail a release after its image is built and pushed. Build and image push failures still fail the workflow.
+
+### Removed
+
+- Unbounded list responses from the paginated APIs.
+
+### Upgrade Notes
+
+- Apply migration `000008_resource_limits` before starting Core 2.0. Audit oversized legacy fields and over-quota collections, repair them explicitly, and validate the new length/JSON constraints after cleanup. The migration preserves existing records while enforcing limits on new writes and updates.
+- Update client bindings and pagination handling before rollout where collections can exceed 50 records. The matching Web 2.0 release does not yet follow pagination tokens, so later records can be omitted from its lists and housing comparisons.
+- Configure production gRPC certificates or explicitly allow a trusted internal plaintext hop. Web enforces its own transport configuration separately; browser-facing HTTPS does not encrypt the Web-to-Core connection.
+- Deploy Core before the matching Web release to provide the new session revocation RPC. Clients must require a fresh login after successful password changes.
+- Replace weak bootstrap credentials before creating or promoting an admin. Existing credentials are not automatically reset, and invalid replacement passwords leave accounts and sessions unchanged.
+- Credential retention permanently removes eligible expired, revoked, or used rows after seven days; rolling back the migration cannot restore rows already deleted. Financial history is retained rather than automatically pruned.
+
 ## [v1.6.0] - 2026-10-09
 
 ### Added
