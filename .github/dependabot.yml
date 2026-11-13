@@ -1,0 +1,28 @@
+version: 2
+updates:
+  # Security fixes target the default branch (stable). Alerts and security
+  # updates must also be enabled in the repository's GitHub settings.
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: daily
+    # Keep security fix PRs enabled without routine version update PRs.
+    open-pull-requests-limit: 0
+    groups:
+      go-security:
+        applies-to: security-updates
+        patterns: ["*"]
+
+  # Keep the scanners and other CI actions maintained through the dev branch.
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: dev
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Asia/Singapore
+    open-pull-requests-limit: 2
+    groups:
+      actions:
+        patterns: ["*"]
