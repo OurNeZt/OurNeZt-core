@@ -22,6 +22,8 @@ jobs:
       - name: Check trigger
         id: check
         shell: bash
+        env:
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
         run: |
           set -euo pipefail
 
@@ -41,7 +43,7 @@ jobs:
               exit 0
             fi
 
-            if [[ "${{ github.event.pull_request.head.ref }}" != release/* ]]; then
+            if [[ "$PR_HEAD_REF" != release/* ]]; then
               echo "ok=false" >> "$GITHUB_OUTPUT"
               exit 0
             fi
@@ -59,7 +61,7 @@ jobs:
 
     steps:
       - name: Checkout stable commit
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: stable
           fetch-depth: 0
@@ -192,7 +194,7 @@ jobs:
 
       - name: Create GitHub Release
         if: steps.releasecheck.outputs.exists != 'true'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.version.outputs.tag }}
           name: ${{ steps.version.outputs.tag }}
@@ -201,13 +203,13 @@ jobs:
           prerelease: false
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Login to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -215,7 +217,7 @@ jobs:
 
       - name: Docker metadata
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ghcr.io/${{ github.repository_owner }}/ournezt-core
           tags: |
@@ -223,7 +225,7 @@ jobs:
             type=raw,value=latest
 
       - name: Build and push Docker image to GHCR
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: ./Dockerfile
