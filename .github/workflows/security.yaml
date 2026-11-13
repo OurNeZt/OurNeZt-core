@@ -6,8 +6,8 @@ on:
   push:
     branches: [dev, stable]
   schedule:
-    # Daily at 09:11 Singapore time; scheduled scans use the default branch.
-    - cron: "11 1 * * *"
+    # Daily at 09:00 Singapore time; scheduled scans use the default branch.
+    - cron: "0 1 * * *"
   workflow_dispatch:
 
 permissions:
