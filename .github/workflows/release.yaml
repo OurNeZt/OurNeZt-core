@@ -22,6 +22,8 @@ jobs:
       - name: Check trigger
         id: check
         shell: bash
+        env:
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
         run: |
           set -euo pipefail
 
@@ -41,7 +43,7 @@ jobs:
               exit 0
             fi
 
-            if [[ "${{ github.event.pull_request.head.ref }}" != release/* ]]; then
+            if [[ "$PR_HEAD_REF" != release/* ]]; then
               echo "ok=false" >> "$GITHUB_OUTPUT"
               exit 0
             fi
