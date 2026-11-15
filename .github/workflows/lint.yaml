@@ -14,7 +14,7 @@ jobs:
     outputs:
       modules: ${{ steps.mods.outputs.modules }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Find modules
         id: mods
@@ -47,7 +47,7 @@ jobs:
       matrix:
         module: ${{ fromJson(needs.discover-modules.outputs.modules) }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Debug matrix value
         run: |
@@ -56,13 +56,13 @@ jobs:
           ls -la "${{ matrix.module }}"
 
       - name: Set up Go from module
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v7
         with:
           go-version-file: ${{ matrix.module }}/go.mod
           cache: false
 
       - name: Cache Go build & mod
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.cache/go-build
